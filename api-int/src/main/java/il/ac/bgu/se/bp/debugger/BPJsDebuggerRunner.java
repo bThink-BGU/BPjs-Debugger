@@ -8,4 +8,9 @@ public interface BPJsDebuggerRunner<T> {
     T continueRun();
     T stepInto();
     T stepOver();
+    T stepOut();
+    T getVars();
+    T exit();
+    void nextSync();
+
 }

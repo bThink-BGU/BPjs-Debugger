@@ -2,18 +2,24 @@ package il.ac.bgu.se.bp.engine;
 
 import il.ac.bgu.se.bp.debugger.DebuggerCommand;
 import org.mozilla.javascript.ContextFactory;
+import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.ScriptableObject;
+import org.mozilla.javascript.Undefined;
 import org.mozilla.javascript.tools.debugger.Dim;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
+import java.util.stream.Collectors;
 
 public class DebuggerEngine implements DebuggerCallback<FutureTask<String>> {
     private final Dim dim;
     private final BlockingQueue<FutureTask<String>> queue;
     private final String filename;
-
+    private Dim.ContextData lastContextData = null;
     public DebuggerEngine(String filename) {
         this.filename = filename;
         queue = new ArrayBlockingQueue<>(1);
@@ -23,8 +29,11 @@ public class DebuggerEngine implements DebuggerCallback<FutureTask<String>> {
         dim.attachTo(factory);
     }
 
-    public void setup() {
-        setBreakpoint(3, true);
+    public void setup(int[] lineNumbers) {
+        for(int i=0; i< lineNumbers.length; i++){
+            setBreakpoint(lineNumbers[i], true);
+        }
+
     }
 
     @Override
@@ -34,9 +43,8 @@ public class DebuggerEngine implements DebuggerCallback<FutureTask<String>> {
 
     @Override
     public void enterInterrupt(Dim.StackFrame stackFrame, String s, String s1) {
-        System.out.println("Got interrupt! " + s);
-        Dim.ContextData contextData = stackFrame.contextData();
-        System.out.println(stackFrame.getLineNumber());
+        System.out.println("Breakpoint reached- " + s + " Line no: " + stackFrame.getLineNumber());
+        this.lastContextData = stackFrame.contextData();
         // Update service -> we on breakpoint! (apply callback)
     }
 
@@ -71,18 +79,24 @@ public class DebuggerEngine implements DebuggerCallback<FutureTask<String>> {
             case STEP_OUT:
                 callback = this::stepOut;
                 break;
+            case EXIT:
+                callback = this::exit;
+                break;
             case SET_BREAKPOINT:
                 callback = () -> this.setBreakpoint((Integer) command.getArgs()[0], true);
                 break;
             case REMOVE_BREAKPOINT:
                 callback = () -> this.setBreakpoint((Integer) command.getArgs()[0], false);
                 break;
+            case GET_VARS:
+                callback = this::getVars;
+                break;
         }
         return new FutureTask<>(callback);
     }
 
     private String stepOut() {
-        dim.setReturnValue(Dim.STEP_OVER);
+        dim.setReturnValue(Dim.STEP_OUT);
         return "step into";
         //        return getDebuggerStatus();
     }
@@ -99,6 +113,12 @@ public class DebuggerEngine implements DebuggerCallback<FutureTask<String>> {
         //        return getDebuggerStatus();
     }
 
+    private String exit() {
+        dim.setReturnValue(Dim.EXIT);
+        return "exit";
+        //        return getDebuggerStatus();
+    }
+
     private String continueRun() {
         this.dim.go();
         return "continue run";
@@ -112,7 +132,17 @@ public class DebuggerEngine implements DebuggerCallback<FutureTask<String>> {
 //        return getDebuggerStatus();
     }
 
-    private String getDebuggerStatus() {
-        return "";
+    private String getVars() {
+        String vars= "";
+        Dim.StackFrame stackFrame = this.lastContextData.getFrame(0);
+        Scriptable o = (Scriptable) stackFrame.scope();
+        Object[] objects = o.getIds();
+        List<String> arguments = Arrays.stream(objects).map(p -> p.toString()).collect(Collectors.toList()).subList(1, objects.length);
+        for(String arg : arguments){
+            Object res = ScriptableObject.getProperty(o, arg);
+            if(Undefined.instance != res)
+                vars += arg + " " + res  + "\n";
+        }
+        return "Vars: \n"+ vars;
     }
 }
