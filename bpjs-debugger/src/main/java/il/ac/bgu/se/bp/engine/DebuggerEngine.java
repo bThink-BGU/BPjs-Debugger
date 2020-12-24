@@ -41,4 +41,7 @@ public class DebuggerEngine implements DebuggerCallback {
         this.dim= dim;
     }
 
+    public Dim getDim() {
+        return dim;
+    }
 }

@@ -12,9 +12,15 @@
     <artifactId>bp-ide-bpjs-debugger</artifactId>
 
     <dependencies>
+<!--        <dependency>-->
+<!--            <groupId>com.github.bthink-bgu</groupId>-->
+<!--            <artifactId>BPjs</artifactId>-->
+<!--        </dependency>-->
+
         <dependency>
-            <groupId>com.github.bthink-bgu</groupId>
+            <groupId>il.ac.bgu.se.bp</groupId>
             <artifactId>BPjs</artifactId>
+            <version>0.10.6</version>
         </dependency>
         <dependency>
             <groupId>org.mozilla</groupId>

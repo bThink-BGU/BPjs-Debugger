@@ -1,10 +1,10 @@
 package il.ac.bgu.se.bp.mains;
 
-import il.ac.bgu.cs.bp.bpjs.execution.BProgramRunner;
+import il.ac.bgu.se.bp.execution.BPJsDebuggerRunner;
 
 public class BPJsDebuggerCliRunner {
     public static void main(String[] args) {
-        BProgramRunner bProgramRunner = new BProgramRunner();
-        bProgramRunner.run();
+        BPJsDebuggerRunner bpJsDebuggerRunner = new BPJsDebuggerRunner();
+        bpJsDebuggerRunner.run();
     }
 }

@@ -4,6 +4,7 @@ import il.ac.bgu.cs.bp.bpjs.execution.listeners.PrintBProgramRunnerListener;
 import il.ac.bgu.cs.bp.bpjs.model.BProgram;
 import il.ac.bgu.cs.bp.bpjs.model.ResourceBProgram;
 import il.ac.bgu.se.bp.engine.DebuggerEngine;
+import org.mozilla.javascript.tools.debugger.Dim;
 
 /**
  * Runs a {@link BProgram} in debug mode.
@@ -16,10 +17,13 @@ public class BPJsDebuggerRunner {
     }
 
     public void run(){
-        final BProgram bprog = new ResourceBProgram("BPJSDebuggerTest.js");
+        String filename= "BPJSDebuggerTest.js";
+        final BProgram bprog = new ResourceBProgram(filename);
         BProgramRunner rnr = new BProgramRunner();
         rnr.addListener(new PrintBProgramRunnerListener());
         rnr.setBProgram(bprog);
+
+
         rnr.run();
     }
     // Service
