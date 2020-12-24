@@ -19,11 +19,6 @@ public class BPjsIDERestControllerImpl implements BPjsIDERestController {
 
     private static final Logger logger = new Logger(BPjsIDERestControllerImpl.class);
 
-    @PostConstruct
-    public void ABC() {
-        logger.info("CREATED!!");
-    }
-
     @Override
     @RequestMapping(value = "/run", method = RequestMethod.POST)
     public @ResponseBody

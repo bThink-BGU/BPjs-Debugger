@@ -5,27 +5,20 @@ import il.ac.bgu.se.bp.DummyDataResponse;
 import il.ac.bgu.se.bp.logger.Logger;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
-
 @Service
 public class BPjsIDEServiceImpl implements BPjsIDEService {
 
     private static final Logger logger = new Logger(BPjsIDEServiceImpl.class);
 
-    @PostConstruct
-    public void ABC() {
-        logger.info("CREATED!!");
-    }
-
     @Override
     public DummyDataResponse run(DummyDataRequest code) {
-        logger.info("received run request with code: ", code.toString());
+        logger.info("received run request with code: {0}", code.toString());
         return new DummyDataResponse("RUN!");
     }
 
     @Override
     public DummyDataResponse debug(DummyDataRequest code) {
-        logger.info("received debug request with code: ", code.toString());
+        logger.info("received debug request with code: {0}", code.toString());
         return new DummyDataResponse("DEBUG!");
     }
 }
