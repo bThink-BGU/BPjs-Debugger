@@ -1,26 +1,30 @@
 package il.ac.bgu.se.bp.engine;
 
+import il.ac.bgu.se.bp.debugger.DebuggerCommand;
 import org.mozilla.javascript.ContextFactory;
 import org.mozilla.javascript.tools.debugger.Dim;
 
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.FutureTask;
 
-public class DebuggerEngine implements DebuggerCallback {
-    private Dim dim;
-    private final BlockingQueue<String> queue;
-    private String filename;
+public class DebuggerEngine implements DebuggerCallback<FutureTask<String>> {
+    private final Dim dim;
+    private final BlockingQueue<FutureTask<String>> queue;
+    private final String filename;
 
-    public DebuggerEngine(BlockingQueue queue, String filename) {
-        this.queue = queue;
+    public DebuggerEngine(String filename) {
         this.filename = filename;
-        this.dim = new Dim();
+        queue = new ArrayBlockingQueue<>(1);
+        dim = new Dim();
         dim.setGuiCallback(this);
         ContextFactory factory = ContextFactory.getGlobal();
         dim.attachTo(factory);
     }
 
-    public void setup(){
-
+    public void setup() {
+        setBreakpoint(3, true);
     }
 
     @Override
@@ -34,8 +38,6 @@ public class DebuggerEngine implements DebuggerCallback {
         Dim.ContextData contextData = stackFrame.contextData();
         System.out.println(stackFrame.getLineNumber());
         // Update service -> we on breakpoint! (apply callback)
-
-
     }
 
     @Override
@@ -45,38 +47,72 @@ public class DebuggerEngine implements DebuggerCallback {
 
     @Override
     public void dispatchNextGuiEvent() throws InterruptedException {
-        System.out.println("trying to take");
-        String nextCmd= queue.take();
+        queue.take().run();
+    }
 
-        String[] splat = nextCmd.split(" ");
-        switch (splat[0]) {
-            case "go": {
-                System.out.println("trying to take");
-                this.dim.go();
+    public FutureTask<String> addCommand(DebuggerCommand command) {
+        FutureTask<String> futureTask = debuggerCommandToCallback(command);
+        queue.add(futureTask);
+        return futureTask;
+    }
+
+    public FutureTask<String> debuggerCommandToCallback(DebuggerCommand command) {
+        Callable<String> callback = null;
+        switch (command.getDebuggerOperation()) {
+            case CONTINUE:
+                callback = this::continueRun;
                 break;
-            }
-            case "break": {
-                Dim.SourceInfo sourceInfo = dim.sourceInfo(this.filename);
-                sourceInfo.breakpoint(Integer.parseInt(splat[1]), true);
+            case STEP_INTO:
+                callback = this::stepInto;
                 break;
-            }
-            case "remove": {
-                Dim.SourceInfo sourceInfo = dim.sourceInfo(this.filename);
-                sourceInfo.breakpoint(Integer.parseInt(splat[1]), false);
+            case STEP_OVER:
+                callback = this::stepOver;
                 break;
-            }
-            default: {
+            case STEP_OUT:
+                callback = this::stepOut;
                 break;
-            }
+            case SET_BREAKPOINT:
+                callback = () -> this.setBreakpoint((Integer) command.getArgs()[0], true);
+                break;
+            case REMOVE_BREAKPOINT:
+                callback = () -> this.setBreakpoint((Integer) command.getArgs()[0], false);
+                break;
         }
-        // sleep until user enter next command...
+        return new FutureTask<>(callback);
     }
 
-    public void setDim(Dim dim){
-        this.dim= dim;
+    private String stepOut() {
+        dim.setReturnValue(Dim.STEP_OVER);
+        return "step into";
+        //        return getDebuggerStatus();
     }
 
-    public Dim getDim() {
-        return dim;
+    private String stepInto() {
+        dim.setReturnValue(Dim.STEP_INTO);
+        return "step into";
+        //        return getDebuggerStatus();
+    }
+
+    private String stepOver() {
+        dim.setReturnValue(Dim.STEP_OVER);
+        return "step over";
+        //        return getDebuggerStatus();
+    }
+
+    private String continueRun() {
+        this.dim.go();
+        return "continue run";
+//        return getDebuggerStatus();
+    }
+
+    private String setBreakpoint(int lineNumber, boolean stopOnBreakpoint) {
+        Dim.SourceInfo sourceInfo = dim.sourceInfo(this.filename);
+        sourceInfo.breakpoint(lineNumber, stopOnBreakpoint);
+        return "after set breakpoint -" + " line " + lineNumber + " changed to " + stopOnBreakpoint;
+//        return getDebuggerStatus();
+    }
+
+    private String getDebuggerStatus() {
+        return "";
     }
 }
