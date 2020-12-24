@@ -96,7 +96,6 @@ public class BProgramRunner implements Runnable {
                                 
                 // see which events are selectable
                 Set<BEvent> possibleEvents = bprog.getEventSelectionStrategy().selectableEvents(cur);
-                System.out.println(possibleEvents);
                 if ( possibleEvents.isEmpty() ) {
                     // Superstep done: No events available for selection.
                     
@@ -130,7 +129,6 @@ public class BProgramRunner implements Runnable {
                             cur = cur.copyWith(updatedExternals);
                         }
 
-                        System.out.println("Trigger event: " + esr.getEvent());
                         cur = cur.triggerEvent(esr.getEvent(), execSvc, listeners);
                         if ( ! cur.isStateValid() ) {
                             failedAssertion = cur.getFailedAssertion();

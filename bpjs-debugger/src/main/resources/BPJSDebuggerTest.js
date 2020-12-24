@@ -2,6 +2,7 @@ bp.registerBThread("bt-world",function(){
     bp.sync({waitFor:bp.Event("hello")});
     bp.sync({request:bp.Event("aba")});
     var tal1 = 5;
+    tal1 = 6;
     bp.sync({request:bp.Event("world12121")});
 })
 
