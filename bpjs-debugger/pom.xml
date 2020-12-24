@@ -19,8 +19,8 @@
 
         <dependency>
             <groupId>il.ac.bgu.se.bp</groupId>
-            <artifactId>BPjs</artifactId>
-            <version>0.10.6</version>
+            <artifactId>bp-ide-bpjs-bp-framework</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.mozilla</groupId>

@@ -16,7 +16,7 @@ import il.ac.bgu.cs.bp.bpjs.model.eventsets.ExplicitEventSet;
 public class EventPattern {
 	
 	/** Must be an array list, as we may do lots of random access. */
-	private final List<EventPatternPart> glob = new ArrayList<>();
+	private final List<EventPatternPart> glob = new ArrayList();
 	
 	public boolean matches( List<? extends BEvent> eventList ) {
 		return matches( eventList, 0 );

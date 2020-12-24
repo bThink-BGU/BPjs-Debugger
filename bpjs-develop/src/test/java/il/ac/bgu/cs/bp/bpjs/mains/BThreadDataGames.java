@@ -38,7 +38,7 @@ public class BThreadDataGames {
         BProgram sut = new ResourceBProgram("execution/bthreadData_dataObj.js");
         BProgramRunner rnr = new BProgramRunner();
         rnr.addListener(new PrintBProgramRunnerListener());
-        var evtListener = rnr.addListener(new InMemoryEventLoggingListener());
+        InMemoryEventLoggingListener evtListener = rnr.addListener(new InMemoryEventLoggingListener());
         
         rnr.setBProgram(sut);
         rnr.run();
