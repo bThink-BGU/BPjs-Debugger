@@ -129,16 +129,20 @@ public class DebuggerEngine implements DebuggerCallback<FutureTask<String>> {
     }
 
     private String getVars() {
-        StringBuilder vars = new StringBuilder();
-        Dim.StackFrame stackFrame = this.lastContextData.getFrame(0);
-        Scriptable o = (Scriptable) stackFrame.scope();
-        Object[] objects = o.getIds();
-        List<String> arguments = Arrays.stream(objects).map(Object::toString).collect(Collectors.toList()).subList(1, objects.length);
-        for (String arg : arguments) {
-            Object res = ScriptableObject.getProperty(o, arg);
-            if (Undefined.instance != res)
-                vars.append(arg).append(" ").append(res).append("\n");
+        String vars= "";
+        for(int i=0; i< this.lastContextData.frameCount(); i++){
+            vars += "Scope no: "+ i +"\n";
+            Dim.StackFrame stackFrame = this.lastContextData.getFrame(i);
+            Scriptable o = (Scriptable) stackFrame.scope();
+            Object[] objects = o.getIds();
+            List<String> arguments = Arrays.stream(objects).map(p -> p.toString()).collect(Collectors.toList()).subList(1, objects.length);
+            for(String arg : arguments){
+                Object res = ScriptableObject.getProperty(o, arg);
+                if(Undefined.instance != res)
+                    vars += arg + " " + res  + "\n";
+            }
         }
-        return "Vars: \n" + vars;
+
+        return "Vars: \n"+ vars;
     }
 }

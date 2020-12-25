@@ -58,7 +58,6 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
         this.isSetup = isSetup;
     }
 
-
     @Override
     public synchronized boolean isSetup() {
         return isSetup;
@@ -77,6 +76,12 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
         }
         BProgramRunner rnr = new BProgramRunner();
         rnr.addListener(new PrintBProgramRunnerListener());
+        rnr.addListener(new BProgramRunnerListenerAdapter() {
+            @Override
+            public void ended(BProgram bp) {
+                setItStarted(false);
+            }
+        });
         rnr.setBProgram(bProg);
         new Thread(rnr).start();
         setItStarted(true);
@@ -154,7 +159,10 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
         if (!isSetup()) {
             return createResolvedFuture("setup is needed");
         }
-        return debuggerEngine.addCommand(new DebuggerCommand(DebuggerOperations.EXIT));
+        else if (!isStarted())
+            return createResolvedFuture("The program has ended");
+        else
+            return debuggerEngine.addCommand(new DebuggerCommand(DebuggerOperations.EXIT));
     }
 
     private FutureTask<String> createResolvedFuture(String result) {
