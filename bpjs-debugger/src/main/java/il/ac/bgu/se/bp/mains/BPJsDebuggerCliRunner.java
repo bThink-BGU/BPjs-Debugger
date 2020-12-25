@@ -12,7 +12,7 @@ public class BPJsDebuggerCliRunner {
 
     public static void main(String[] args) {
         final String filename = "BPJSDebuggerTest.js";
-        int[] breakpoints = {5, 12};
+        int[] breakpoints = {5, 13, 20};
         BPJsDebuggerRunner<FutureTask<String>> bpJsDebuggerRunner = new BPJsDebuggerRunnerImpl(filename,breakpoints);
         bpJsDebuggerRunner.start();
         try {

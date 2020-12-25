@@ -26,6 +26,7 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
     private final DebuggerEngine debuggerEngine;
     ExecutorService execSvc = ExecutorServiceMaker.makeWithName("BPJsDebuggerRunner-" + 1);
     private BProgramSyncSnapshot syncSnapshot = null;
+    private boolean started;
 
     public BPJsDebuggerRunnerImpl(String filename, int[] breakpoints) {
         debuggerEngine = new DebuggerEngine(filename);
@@ -37,7 +38,14 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
     public void start() {
         BProgramRunner rnr = new BProgramRunner();
         rnr.addListener(new PrintBProgramRunnerListener());
+        rnr.addListener(new BProgramRunnerListenerAdapter() {
+            @Override
+            public void ended(BProgram bp) {
+                started = false;
+            }
+        });
         rnr.setBProgram(bProg);
+        this.started= true;
         new Thread(rnr).start();
     }
 
@@ -89,7 +97,12 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
     }
 
     public FutureTask<String> exit() {
-        return debuggerEngine.addCommand(new DebuggerCommand(DebuggerOperations.EXIT));
+        if(this.started)
+            return debuggerEngine.addCommand(new DebuggerCommand(DebuggerOperations.EXIT));
+        else {
+            FutureTask futureTask = new FutureTask<>(() -> "The program has ended");
+            futureTask.run();
+            return futureTask;
+        }
     }
-
 }

@@ -1,11 +1,12 @@
 package il.ac.bgu.se.bp.engine;
-
 import il.ac.bgu.se.bp.debugger.DebuggerCommand;
 import org.mozilla.javascript.ContextFactory;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.Undefined;
 import org.mozilla.javascript.tools.debugger.Dim;
+import org.mozilla.javascript.tools.debugger.ScopeProvider;
+import org.mozilla.javascript.tools.shell.Global;
 
 import java.util.Arrays;
 import java.util.List;
@@ -20,6 +21,7 @@ public class DebuggerEngine implements DebuggerCallback<FutureTask<String>> {
     private final BlockingQueue<FutureTask<String>> queue;
     private final String filename;
     private Dim.ContextData lastContextData = null;
+
     public DebuggerEngine(String filename) {
         this.filename = filename;
         queue = new ArrayBlockingQueue<>(1);
@@ -33,7 +35,6 @@ public class DebuggerEngine implements DebuggerCallback<FutureTask<String>> {
         for(int i=0; i< lineNumbers.length; i++){
             setBreakpoint(lineNumbers[i], true);
         }
-
     }
 
     @Override
@@ -134,15 +135,19 @@ public class DebuggerEngine implements DebuggerCallback<FutureTask<String>> {
 
     private String getVars() {
         String vars= "";
-        Dim.StackFrame stackFrame = this.lastContextData.getFrame(0);
-        Scriptable o = (Scriptable) stackFrame.scope();
-        Object[] objects = o.getIds();
-        List<String> arguments = Arrays.stream(objects).map(p -> p.toString()).collect(Collectors.toList()).subList(1, objects.length);
-        for(String arg : arguments){
-            Object res = ScriptableObject.getProperty(o, arg);
-            if(Undefined.instance != res)
-                vars += arg + " " + res  + "\n";
+        for(int i=0; i< this.lastContextData.frameCount(); i++){
+            vars += "Scope no: "+ i +"\n";
+            Dim.StackFrame stackFrame = this.lastContextData.getFrame(i);
+            Scriptable o = (Scriptable) stackFrame.scope();
+            Object[] objects = o.getIds();
+            List<String> arguments = Arrays.stream(objects).map(p -> p.toString()).collect(Collectors.toList()).subList(1, objects.length);
+            for(String arg : arguments){
+                Object res = ScriptableObject.getProperty(o, arg);
+                if(Undefined.instance != res)
+                    vars += arg + " " + res  + "\n";
+            }
         }
+
         return "Vars: \n"+ vars;
     }
 }
