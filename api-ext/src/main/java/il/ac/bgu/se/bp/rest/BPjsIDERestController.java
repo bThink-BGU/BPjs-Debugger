@@ -1,10 +1,10 @@
 package il.ac.bgu.se.bp.rest;
 
 import il.ac.bgu.se.bp.DummyDataRequest;
-import il.ac.bgu.se.bp.DummyDataResponse;
+import il.ac.bgu.se.bp.ExecuteBPjsResponse;
 
 public interface BPjsIDERestController {
 
-    DummyDataResponse run(DummyDataRequest code);
-    DummyDataResponse debug(DummyDataRequest code);
+    ExecuteBPjsResponse run(DummyDataRequest code);
+    ExecuteBPjsResponse debug(DummyDataRequest code);
 }
