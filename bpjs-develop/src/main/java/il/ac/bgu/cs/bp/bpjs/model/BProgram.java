@@ -273,6 +273,9 @@ public abstract class BProgram {
         recentlyEnqueuedExternalEvents.add(e);
     }
 
+    public BProgramSyncSnapshot getFirstSnapshot(){
+        return this.firstSnapshot;
+    }
     /**
      * Sets up the program scope and evaluates the program source.
      *

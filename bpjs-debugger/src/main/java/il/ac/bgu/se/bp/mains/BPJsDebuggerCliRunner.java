@@ -11,19 +11,20 @@ import java.util.concurrent.FutureTask;
 public class BPJsDebuggerCliRunner {
 
     public static void main(String[] args) {
-        BPJsDebuggerRunner<FutureTask<String>> bpJsDebuggerRunner = new BPJsDebuggerRunnerImpl();
+        final String filename = "BPJSDebuggerTest.js";
+        int[] breakpoints = {5, 12};
+        BPJsDebuggerRunner<FutureTask<String>> bpJsDebuggerRunner = new BPJsDebuggerRunnerImpl(filename,breakpoints);
         bpJsDebuggerRunner.start();
         try {
-            Thread.sleep(1000);
+            Thread.sleep(2000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
 
         String cmd = "";
         Scanner sc = new Scanner(System.in);
-        System.out.println("BEFOREEEEEEEE  Thread count: " + Thread.activeCount());
         while (!cmd.equals("exit")) {
-            System.out.println("Enter command: b / rb / go / si / so");
+            System.out.println("Enter command: b / rb / go / si / sov / sou / get / n");
             cmd = sc.nextLine();
             String[] splat = cmd.split(" ");
             switch (splat[0]) {
@@ -39,9 +40,22 @@ public class BPJsDebuggerCliRunner {
                 case "si":
                     awaitForResponse(bpJsDebuggerRunner.stepInto());
                     break;
-                case "so":
+                case "sov":
                     awaitForResponse(bpJsDebuggerRunner.stepOver());
                     break;
+                case "sou":
+                    awaitForResponse(bpJsDebuggerRunner.stepOut());
+                    break;
+                case "get":
+                    awaitForResponse(bpJsDebuggerRunner.getVars());
+                    break;
+                case "exit":
+                    awaitForResponse(bpJsDebuggerRunner.exit());
+                    break;
+                case "n":
+                    bpJsDebuggerRunner.nextSync();
+                    break;
+
             }
         }
     }
