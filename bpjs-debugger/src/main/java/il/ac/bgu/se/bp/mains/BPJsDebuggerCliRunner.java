@@ -23,14 +23,14 @@ public class BPJsDebuggerCliRunner {
             String[] splat = cmd.split(" ");
             switch (splat[0]) {
                 case "b":
-                    if (!bpJsDebuggerRunner.isSetup()) {
+                    if (!bpJsDebuggerRunner.isSetup() || !bpJsDebuggerRunner.isStarted()) {
                         bpJsDebuggerRunner.setup(Collections.singletonMap(Integer.parseInt(splat[1]), true));
                     }
                     else
                         awaitForResponse(bpJsDebuggerRunner.setBreakpoint(Integer.parseInt(splat[1])));
                     break;
                 case "rb":
-                    if (!bpJsDebuggerRunner.isSetup()) {
+                    if (!bpJsDebuggerRunner.isSetup() || !bpJsDebuggerRunner.isStarted()) {
                         bpJsDebuggerRunner.setup(Collections.singletonMap(Integer.parseInt(splat[1]), false));
                     }
                     else

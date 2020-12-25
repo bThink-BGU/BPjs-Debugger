@@ -50,7 +50,7 @@ public class Logger {
         }
         String newMsg = msg;
         for (int i = 0; i < args.length; i++) {
-            newMsg = newMsg.replace("{" + i + "}", args[i].toString());
+            newMsg = newMsg.replace("{" + i + "}", args[i] == null ? "null" : args[i].toString());
         }
         return newMsg;
     }

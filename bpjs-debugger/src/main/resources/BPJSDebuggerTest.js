@@ -18,6 +18,12 @@ bp.registerBThread("bt-hello", function(){
 function foo() {
     var m = 50;
     var n = 100;
+    goo();
     var p = m+n;
     const t = 200
+}
+
+function goo() {
+    var tt = 123;
+    var qqq = 111;
 }

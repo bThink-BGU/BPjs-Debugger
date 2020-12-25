@@ -12,7 +12,7 @@ import il.ac.bgu.cs.bp.bpjs.model.eventselection.EventSelectionStrategy;
 import il.ac.bgu.se.bp.debugger.BPJsDebuggerRunner;
 import il.ac.bgu.se.bp.debugger.DebuggerCommand;
 import il.ac.bgu.se.bp.debugger.DebuggerOperations;
-import il.ac.bgu.se.bp.engine.DebuggerEngine;
+import il.ac.bgu.se.bp.engine.DebuggerEngineImpl;
 import il.ac.bgu.se.bp.logger.Logger;
 
 import java.util.ArrayList;
@@ -27,45 +27,27 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
     private final Logger logger = new Logger(BPJsDebuggerRunnerImpl.class);
 
     private final BProgram bProg;
-    private final DebuggerEngine debuggerEngine;
+    private final DebuggerEngineImpl debuggerEngineImpl;
     private final ExecutorService execSvc = ExecutorServiceMaker.makeWithName("BPJsDebuggerRunner-" + 1);
     private BProgramSyncSnapshot syncSnapshot = null;
     private volatile boolean isSetup = false;
     private volatile boolean isStarted = false;
 
     public BPJsDebuggerRunnerImpl(String filename) {
-        debuggerEngine = new DebuggerEngine(filename);
+        debuggerEngineImpl = new DebuggerEngineImpl(filename);
         bProg = new ResourceBProgram(filename);
     }
 
     @Override
     public void setup(Map<Integer, Boolean> breakpoints) {
         if (isSetup()) {
-            debuggerEngine.setupBreakpoint(breakpoints);
+            debuggerEngineImpl.setupBreakpoint(breakpoints);
             return;
         }
 
         bProg.setup();
-        debuggerEngine.setupBreakpoint(breakpoints);
+        debuggerEngineImpl.setupBreakpoint(breakpoints);
         setIsSetup(true);
-    }
-
-    private void setItStarted(boolean isStarted) {
-        this.isSetup = isStarted;
-    }
-
-    private synchronized void setIsSetup(boolean isSetup) {
-        this.isSetup = isSetup;
-    }
-
-    @Override
-    public synchronized boolean isSetup() {
-        return isSetup;
-    }
-
-    @Override
-    public synchronized boolean isStarted() {
-        return isStarted;
     }
 
     @Override
@@ -83,8 +65,26 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
             }
         });
         rnr.setBProgram(bProg);
-        new Thread(rnr).start();
         setItStarted(true);
+        new Thread(rnr).start();
+    }
+
+    private void setItStarted(boolean isStarted) {
+        this.isStarted = isStarted;
+    }
+
+    private synchronized void setIsSetup(boolean isSetup) {
+        this.isSetup = isSetup;
+    }
+
+    @Override
+    public synchronized boolean isSetup() {
+        return isSetup;
+    }
+
+    @Override
+    public synchronized boolean isStarted() {
+        return isStarted;
     }
 
     public void startSync() {
@@ -110,49 +110,49 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
         if (!isSetup()) {
             return createResolvedFuture("setup is needed");
         }
-        return debuggerEngine.addCommand(new DebuggerCommand(DebuggerOperations.SET_BREAKPOINT, lineNumber));
+        return debuggerEngineImpl.addCommand(new DebuggerCommand(DebuggerOperations.SET_BREAKPOINT, lineNumber));
     }
 
     public FutureTask<String> removeBreakpoint(int lineNumber) {
         if (!isSetup()) {
             return createResolvedFuture("setup is needed");
         }
-        return debuggerEngine.addCommand(new DebuggerCommand(DebuggerOperations.REMOVE_BREAKPOINT, lineNumber));
+        return debuggerEngineImpl.addCommand(new DebuggerCommand(DebuggerOperations.REMOVE_BREAKPOINT, lineNumber));
     }
 
     public FutureTask<String> continueRun() {
         if (!isSetup()) {
             return createResolvedFuture("setup is needed");
         }
-        return debuggerEngine.addCommand(new DebuggerCommand(DebuggerOperations.CONTINUE));
+        return debuggerEngineImpl.addCommand(new DebuggerCommand(DebuggerOperations.CONTINUE));
     }
 
     public FutureTask<String> stepInto() {
         if (!isSetup()) {
             return createResolvedFuture("setup is needed");
         }
-        return debuggerEngine.addCommand(new DebuggerCommand(DebuggerOperations.STEP_INTO));
+        return debuggerEngineImpl.addCommand(new DebuggerCommand(DebuggerOperations.STEP_INTO));
     }
 
     public FutureTask<String> stepOver() {
         if (!isSetup()) {
             return createResolvedFuture("setup is needed");
         }
-        return debuggerEngine.addCommand(new DebuggerCommand(DebuggerOperations.STEP_OVER));
+        return debuggerEngineImpl.addCommand(new DebuggerCommand(DebuggerOperations.STEP_OVER));
     }
 
     public FutureTask<String> stepOut() {
         if (!isSetup()) {
             return createResolvedFuture("setup is needed");
         }
-        return debuggerEngine.addCommand(new DebuggerCommand(DebuggerOperations.STEP_OUT));
+        return debuggerEngineImpl.addCommand(new DebuggerCommand(DebuggerOperations.STEP_OUT));
     }
 
     public FutureTask<String> getVars() {
         if (!isSetup()) {
             return createResolvedFuture("setup is needed");
         }
-        return debuggerEngine.addCommand(new DebuggerCommand(DebuggerOperations.GET_VARS));
+        return debuggerEngineImpl.addCommand(new DebuggerCommand(DebuggerOperations.GET_VARS));
     }
 
     public FutureTask<String> exit() {
@@ -162,7 +162,7 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
         else if (!isStarted())
             return createResolvedFuture("The program has ended");
         else
-            return debuggerEngine.addCommand(new DebuggerCommand(DebuggerOperations.EXIT));
+            return debuggerEngineImpl.addCommand(new DebuggerCommand(DebuggerOperations.EXIT));
     }
 
     private FutureTask<String> createResolvedFuture(String result) {
