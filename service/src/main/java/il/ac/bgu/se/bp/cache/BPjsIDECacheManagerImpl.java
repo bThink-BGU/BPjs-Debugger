@@ -2,6 +2,7 @@ package il.ac.bgu.se.bp.cache;
 
 import il.ac.bgu.cs.bp.bpjs.execution.BProgramRunner;
 import il.ac.bgu.se.bp.debugger.BPJsDebuggerRunner;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -12,6 +13,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
+@EnableScheduling
 public class BPjsIDECacheManagerImpl implements BPjsIDECacheManager {
 
     private static final int ONE_HOUR = 60 * 60 * 1000;
@@ -56,5 +58,4 @@ public class BPjsIDECacheManagerImpl implements BPjsIDECacheManager {
             bpRunProgramsByUsers.remove(userId);
         });
     }
-
 }

@@ -9,6 +9,7 @@ import org.mozilla.javascript.tools.debugger.Dim;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -20,26 +21,21 @@ public class DebuggerEngine implements DebuggerCallback<FutureTask<String>> {
     private final BlockingQueue<FutureTask<String>> queue;
     private final String filename;
     private Dim.ContextData lastContextData = null;
+
     public DebuggerEngine(String filename) {
         this.filename = filename;
         queue = new ArrayBlockingQueue<>(1);
         dim = new Dim();
         dim.setGuiCallback(this);
-        ContextFactory factory = ContextFactory.getGlobal();
-        dim.attachTo(factory);
+        dim.attachTo(ContextFactory.getGlobal());
     }
 
-    public void setup(int[] lineNumbers) {
-        for(int i=0; i< lineNumbers.length; i++){
-            setBreakpoint(lineNumbers[i], true);
-        }
-
+    public void setupBreakpoint(Map<Integer, Boolean> breakpoints) {
+        breakpoints.forEach(this::setBreakpoint);
     }
 
     @Override
-    public void updateSourceText(Dim.SourceInfo sourceInfo) {
-
-    }
+    public void updateSourceText(Dim.SourceInfo sourceInfo) { }
 
     @Override
     public void enterInterrupt(Dim.StackFrame stackFrame, String s, String s1) {
@@ -133,16 +129,16 @@ public class DebuggerEngine implements DebuggerCallback<FutureTask<String>> {
     }
 
     private String getVars() {
-        String vars= "";
+        StringBuilder vars = new StringBuilder();
         Dim.StackFrame stackFrame = this.lastContextData.getFrame(0);
         Scriptable o = (Scriptable) stackFrame.scope();
         Object[] objects = o.getIds();
-        List<String> arguments = Arrays.stream(objects).map(p -> p.toString()).collect(Collectors.toList()).subList(1, objects.length);
-        for(String arg : arguments){
+        List<String> arguments = Arrays.stream(objects).map(Object::toString).collect(Collectors.toList()).subList(1, objects.length);
+        for (String arg : arguments) {
             Object res = ScriptableObject.getProperty(o, arg);
-            if(Undefined.instance != res)
-                vars += arg + " " + res  + "\n";
+            if (Undefined.instance != res)
+                vars.append(arg).append(" ").append(res).append("\n");
         }
-        return "Vars: \n"+ vars;
+        return "Vars: \n" + vars;
     }
 }

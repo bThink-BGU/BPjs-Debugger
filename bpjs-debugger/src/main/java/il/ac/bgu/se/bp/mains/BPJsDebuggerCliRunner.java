@@ -3,6 +3,7 @@ package il.ac.bgu.se.bp.mains;
 import il.ac.bgu.se.bp.debugger.BPJsDebuggerRunner;
 import il.ac.bgu.se.bp.execution.BPJsDebuggerRunnerImpl;
 
+import java.util.Collections;
 import java.util.Scanner;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
@@ -12,14 +13,7 @@ public class BPJsDebuggerCliRunner {
 
     public static void main(String[] args) {
         final String filename = "BPJSDebuggerTest.js";
-        int[] breakpoints = {5, 12};
-        BPJsDebuggerRunner<FutureTask<String>> bpJsDebuggerRunner = new BPJsDebuggerRunnerImpl(filename,breakpoints);
-        bpJsDebuggerRunner.start();
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        BPJsDebuggerRunner<FutureTask<String>> bpJsDebuggerRunner = new BPJsDebuggerRunnerImpl(filename);
 
         String cmd = "";
         Scanner sc = new Scanner(System.in);
@@ -29,13 +23,26 @@ public class BPJsDebuggerCliRunner {
             String[] splat = cmd.split(" ");
             switch (splat[0]) {
                 case "b":
-                    awaitForResponse(bpJsDebuggerRunner.setBreakpoint(Integer.parseInt(splat[1])));
+                    if (!bpJsDebuggerRunner.isSetup()) {
+                        bpJsDebuggerRunner.setup(Collections.singletonMap(Integer.parseInt(splat[1]), true));
+                    }
+                    else
+                        awaitForResponse(bpJsDebuggerRunner.setBreakpoint(Integer.parseInt(splat[1])));
                     break;
                 case "rb":
-                    awaitForResponse(bpJsDebuggerRunner.removeBreakpoint(Integer.parseInt(splat[1])));
+                    if (!bpJsDebuggerRunner.isSetup()) {
+                        bpJsDebuggerRunner.setup(Collections.singletonMap(Integer.parseInt(splat[1]), false));
+                    }
+                    else
+                        awaitForResponse(bpJsDebuggerRunner.removeBreakpoint(Integer.parseInt(splat[1])));
                     break;
                 case "go":
-                    awaitForResponse(bpJsDebuggerRunner.continueRun());
+                    if (!bpJsDebuggerRunner.isStarted()) {
+                        bpJsDebuggerRunner.start(Collections.emptyMap());
+                    }
+                    else {
+                        awaitForResponse(bpJsDebuggerRunner.continueRun());
+                    }
                     break;
                 case "si":
                     awaitForResponse(bpJsDebuggerRunner.stepInto());

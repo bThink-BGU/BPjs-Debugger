@@ -1,6 +1,6 @@
 package il.ac.bgu.se.bp.rest;
 
-import il.ac.bgu.se.bp.DummyDataRequest;
+import il.ac.bgu.se.bp.DebugRequest;
 import il.ac.bgu.se.bp.ExecuteBPjsResponse;
 import il.ac.bgu.se.bp.logger.Logger;
 import il.ac.bgu.se.bp.service.BPjsIDEService;
@@ -20,14 +20,14 @@ public class BPjsIDERestControllerImpl implements BPjsIDERestController {
     @Override
     @RequestMapping(value = "/run", method = RequestMethod.POST)
     public @ResponseBody
-    ExecuteBPjsResponse run(@RequestBody DummyDataRequest code) {
+    ExecuteBPjsResponse run(@RequestBody DebugRequest code) {
         return bPjsIDEService.run(code);
     }
 
     @Override
     @RequestMapping(value = "/debug", method = RequestMethod.POST)
     public @ResponseBody
-    ExecuteBPjsResponse debug(@RequestBody DummyDataRequest code) {
+    ExecuteBPjsResponse debug(@RequestBody DebugRequest code) {
         return bPjsIDEService.debug(code);
     }
 
