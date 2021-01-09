@@ -34,10 +34,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.ContextFactory;
 import org.mozilla.javascript.Function;
@@ -123,7 +121,7 @@ public class BProgramSyncSnapshotIO {
                     events.add((BEvent) sis.readObject());
                 }
 
-                return new BProgramSyncSnapshot(bprogram, bthreads, events, header.fa);
+                return new BProgramSyncSnapshot(bprogram, bthreads, events, header.fa, new HashMap<>());
             }
         } finally {
             Context.exit();

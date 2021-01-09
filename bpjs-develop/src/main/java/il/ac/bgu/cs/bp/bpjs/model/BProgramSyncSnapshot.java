@@ -10,11 +10,8 @@ import il.ac.bgu.cs.bp.bpjs.execution.jsproxy.BProgramJsProxy;
 import il.ac.bgu.cs.bp.bpjs.execution.tasks.ResumeBThread;
 import il.ac.bgu.cs.bp.bpjs.execution.tasks.StartBThread;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
+
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import org.mozilla.javascript.Context;
@@ -55,7 +52,12 @@ public class BProgramSyncSnapshot {
     
     /** A flag to ensure the snapshot is only triggered once. */
     private boolean triggered=false;
-    
+    private final Map<String, BPEngineTask> bThreads;
+
+    public Map<String, BPEngineTask> getbThreads() {
+        return bThreads;
+    }
+
     /**
      * A listener that populates the {@link #violationRecord} field.
      */
@@ -80,15 +82,16 @@ public class BProgramSyncSnapshot {
     }
     
     public BProgramSyncSnapshot(BProgram aBProgram, Set<BThreadSyncSnapshot> someThreadSnapshots,
-                                List<BEvent> someExternalEvents, FailedAssertion aViolationRecord ) {
+                                List<BEvent> someExternalEvents, FailedAssertion aViolationRecord, Map<String, BPEngineTask> bThreads ) {
         threadSnapshots = someThreadSnapshots;
         externalEvents = someExternalEvents;
         bprog = aBProgram;
         violationRecord.set(aViolationRecord);
+        this.bThreads = bThreads;
     }
     
-    public BProgramSyncSnapshot copyWith( List<BEvent> updatedExternalEvents ) {
-        return new BProgramSyncSnapshot(bprog, threadSnapshots, updatedExternalEvents, violationRecord.get());
+    public BProgramSyncSnapshot copyWith( List<BEvent> updatedExternalEvents, Map<String, BPEngineTask> bThreads ) {
+        return new BProgramSyncSnapshot(bprog, threadSnapshots, updatedExternalEvents, violationRecord.get(), bThreads);
     }
 
     /**
@@ -103,14 +106,18 @@ public class BProgramSyncSnapshot {
         Set<BThreadSyncSnapshot> nextRound = new HashSet<>(threadSnapshots.size());
         BPEngineTask.Listener halter = new ViolationRecorder(bprog, violationRecord);
         nextRound.addAll(exSvc.invokeAll(threadSnapshots.stream()
-                                .map(bt -> new StartBThread(bt, halter))
+                                .map(bt -> {
+                                    StartBThread bThread = new StartBThread(bt, halter);
+                                    bThreads.putIfAbsent(bt.getName(), bThread);
+                                    return bThread;
+                                })
                                 .collect(toList())
                 ).stream().map(f -> safeGet(f) ).collect(toList())
         );
         executeAllAddedBThreads(nextRound, exSvc, halter);
         List<BEvent> nextExternalEvents = new ArrayList<>(getExternalEvents());
         nextExternalEvents.addAll( bprog.drainEnqueuedExternalEvents() );
-        return new BProgramSyncSnapshot(bprog, nextRound, nextExternalEvents, violationRecord.get());
+        return new BProgramSyncSnapshot(bprog, nextRound, nextExternalEvents, violationRecord.get(), bThreads);
     }
 
     /**
@@ -152,7 +159,11 @@ public class BProgramSyncSnapshot {
         try {
             nextRound.addAll(exSvc.invokeAll(
                                 resumingThisRound.stream()
-                                                 .map(bt -> new ResumeBThread(bt, anEvent, halter))
+                                                 .map(bt -> {
+                                                     ResumeBThread bThread = new ResumeBThread(bt, anEvent, halter);
+                                                     bThread.setJsContext(bThreads.get(bt.getName()).getJsContext());
+                                                     return bThread;
+                                                 })
                                                  .collect(toList())
                     ).stream().map(f -> safeGet(f)).filter(Objects::nonNull).collect(toList())
             );
@@ -195,7 +206,7 @@ public class BProgramSyncSnapshot {
         nextRound.addAll(sleepingThisRound);
 
 
-        return new BProgramSyncSnapshot(bprog, nextRound, nextExternalEvents, violationRecord.get());
+        return new BProgramSyncSnapshot(bprog, nextRound, nextExternalEvents, violationRecord.get(), this.bThreads);
         
     }
     
@@ -307,7 +318,11 @@ public class BProgramSyncSnapshot {
         while ( ((!addedBThreads.isEmpty()) || (!addedForks.isEmpty())) 
                 && !exSvc.isShutdown() ) {
             Stream<BPEngineTask> threadStream = addedBThreads.stream()
-                .map(bt -> new StartBThread(bt, listener));
+                .map(bt -> {
+                    StartBThread bThread = new StartBThread(bt, listener);
+                    bThreads.putIfAbsent(bt.getName(), bThread);
+                    return bThread;
+                });
             Stream<BPEngineTask> forkStream = addedForks.stream().flatMap( f -> convertToTasks(f, listener) );
             
             nextRound.addAll(exSvc.invokeAll(Stream.concat(forkStream, threadStream).collect(toList())).stream()

@@ -321,7 +321,7 @@ public abstract class BProgram {
         }
 
         started = true;
-        this.firstSnapshot = new BProgramSyncSnapshot(this, bthreads, Collections.emptyList(), failedAssertion);
+        this.firstSnapshot = new BProgramSyncSnapshot(this, bthreads, Collections.emptyList(), failedAssertion, new HashMap<>());
 
         return this.firstSnapshot;
     }

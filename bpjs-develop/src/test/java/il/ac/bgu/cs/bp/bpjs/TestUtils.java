@@ -31,13 +31,8 @@ import il.ac.bgu.cs.bp.bpjs.model.BProgram;
 import il.ac.bgu.cs.bp.bpjs.model.BProgramSyncSnapshot;
 import il.ac.bgu.cs.bp.bpjs.model.BThreadSyncSnapshot;
 import il.ac.bgu.cs.bp.bpjs.model.StringBProgram;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import static java.util.stream.Collectors.joining;
@@ -101,7 +96,7 @@ public abstract class TestUtils {
     public static BProgramSyncSnapshot makeBPSS( Collection<BThreadSyncSnapshot> snapshots ) {
         BProgram bprog = new StringBProgram("");
         Set<BThreadSyncSnapshot> bts = new HashSet<>(snapshots);
-        return new MockBProgramSyncSnapshot(new BProgramSyncSnapshot(bprog, bts, Collections.emptyList(), null));
+        return new MockBProgramSyncSnapshot(new BProgramSyncSnapshot(bprog, bts, Collections.emptyList(), null, new HashMap<>()));
     }
     
     /**

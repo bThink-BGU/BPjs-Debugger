@@ -6,6 +6,9 @@ import il.ac.bgu.cs.bp.bpjs.exceptions.BPjsRuntimeException;
 import il.ac.bgu.cs.bp.bpjs.execution.jsproxy.BProgramJsProxy;
 import il.ac.bgu.cs.bp.bpjs.model.BProgram;
 import il.ac.bgu.cs.bp.bpjs.model.SyncStatement;
+
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import il.ac.bgu.cs.bp.bpjs.model.BThreadSyncSnapshot;
 import il.ac.bgu.cs.bp.bpjs.model.FailedAssertion;
@@ -15,23 +18,17 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.mozilla.javascript.Context;
-import org.mozilla.javascript.ContinuationPending;
-import org.mozilla.javascript.EcmaError;
-import org.mozilla.javascript.EvaluatorException;
-import org.mozilla.javascript.JavaScriptException;
-import org.mozilla.javascript.Scriptable;
-import org.mozilla.javascript.ScriptableObject;
-import org.mozilla.javascript.Undefined;
-import org.mozilla.javascript.WrappedException;
+
+import org.mozilla.javascript.*;
 
 /**
  * Base interface for a parallel task executed during the execution of a {@link BProgram}.
 
 * @author Michael
  */
-public abstract class BPEngineTask implements Callable<BThreadSyncSnapshot>{    
-    
+public abstract class BPEngineTask implements Callable<BThreadSyncSnapshot>{
+
+
     /**
      * Callback interface for when assertions fail.
      */
@@ -42,6 +39,17 @@ public abstract class BPEngineTask implements Callable<BThreadSyncSnapshot>{
     
     protected final BThreadSyncSnapshot bss;
     protected final Listener listener;
+    protected Context jsContext;
+
+    public Context getJsContext() {
+        return jsContext;
+    }
+
+    public void setJsContext(Context jsContext) {
+        this.jsContext = Context.enter(jsContext);
+//        Object helper = VMBridge.instance.getThreadContextHelper();
+//        return VMBridge.instance.getContext(helper);
+    }
 
     BPEngineTask(BThreadSyncSnapshot aBss, Listener aListener) {
         listener = aListener;
@@ -52,9 +60,13 @@ public abstract class BPEngineTask implements Callable<BThreadSyncSnapshot>{
     
     @Override
     public BThreadSyncSnapshot call() {
+        System.out.println(this);
+        if (jsContext == null) {
+            jsContext = Context.enter();
+        }
+        System.out.println(this + ", context: " + jsContext);
 
-        Context jsContext = Context.enter();
-        try {            
+        try {
             BProgramJsProxy.setCurrentBThread(bss);
             callImpl( jsContext );
             return null;

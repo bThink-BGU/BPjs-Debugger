@@ -126,7 +126,7 @@ public class BProgramRunner implements Runnable {
                             List<BEvent> updatedExternals = new ArrayList<>(cur.getExternalEvents());
                             esr.getIndicesToRemove().stream().sorted(reverseOrder())
                                 .forEach( idxObj -> updatedExternals.remove(idxObj.intValue()) );
-                            cur = cur.copyWith(updatedExternals);
+                            cur = cur.copyWith(updatedExternals, cur.getbThreads());
                         }
 
                         cur = cur.triggerEvent(esr.getEvent(), execSvc, listeners);
