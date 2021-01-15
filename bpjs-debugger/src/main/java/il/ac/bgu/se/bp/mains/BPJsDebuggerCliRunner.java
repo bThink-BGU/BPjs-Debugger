@@ -1,13 +1,10 @@
 package il.ac.bgu.se.bp.mains;
-
 import il.ac.bgu.se.bp.debugger.BPJsDebuggerRunner;
 import il.ac.bgu.se.bp.execution.BPJsDebuggerRunnerImpl;
-
 import java.util.Collections;
 import java.util.Scanner;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
-
 
 public class BPJsDebuggerCliRunner {
 
@@ -38,7 +35,8 @@ public class BPJsDebuggerCliRunner {
                     break;
                 case "go":
                     if (!bpJsDebuggerRunner.isStarted()) {
-                        bpJsDebuggerRunner.start(Collections.emptyMap());
+//                        bpJsDebuggerRunner.start(Collections.emptyMap());
+                        bpJsDebuggerRunner.startSync();
                     }
                     else {
                         awaitForResponse(bpJsDebuggerRunner.continueRun());

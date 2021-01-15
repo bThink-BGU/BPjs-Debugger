@@ -36,6 +36,7 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
     public BPJsDebuggerRunnerImpl(String filename) {
         debuggerEngineImpl = new DebuggerEngineImpl(filename);
         bProg = new ResourceBProgram(filename);
+        this.syncSnapshot = bProg.setup();
     }
 
     @Override
@@ -88,22 +89,33 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
     }
 
     public void startSync() {
-        try {
-            this.syncSnapshot = this.bProg.getFirstSnapshot().start(execSvc);
-            System.out.println(this.syncSnapshot);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        setIsSetup(true);
+        setItStarted(true);
+        new Thread(() -> {
+            try {
+                this.syncSnapshot = this.bProg.getFirstSnapshot().start(execSvc);
+                System.out.println("GOT NEW SYNC STATE");
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }).start();
     }
 
     public void nextSync() {
-        EventSelectionStrategy eventSelectionStrategy = this.bProg.getEventSelectionStrategy();
-        Set<BEvent> events = eventSelectionStrategy.selectableEvents(this.syncSnapshot);
-        try {
-            this.syncSnapshot = this.syncSnapshot.triggerEvent(eventSelectionStrategy.select(this.syncSnapshot, events).get().getEvent(), execSvc, new ArrayList<>());
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        new Thread(() -> {
+            EventSelectionStrategy eventSelectionStrategy = this.bProg.getEventSelectionStrategy();
+            Set<BEvent> events = eventSelectionStrategy.selectableEvents(this.syncSnapshot);
+            try {
+                BEvent event = eventSelectionStrategy.select(this.syncSnapshot, events).get().getEvent();
+                System.out.println(event);
+                this.syncSnapshot = this.syncSnapshot.triggerEvent(event, execSvc, new ArrayList<>());
+                System.out.println("GOT NEW SYNC STATE");
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }).start();
+
+
     }
 
     public FutureTask<String> setBreakpoint(int lineNumber) {

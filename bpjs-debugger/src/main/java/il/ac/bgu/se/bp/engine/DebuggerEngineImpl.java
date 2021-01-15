@@ -1,10 +1,12 @@
 package il.ac.bgu.se.bp.engine;
 
+import il.ac.bgu.cs.bp.bpjs.internal.ScriptableUtils;
 import il.ac.bgu.se.bp.debugger.DebuggerCommand;
 import il.ac.bgu.se.bp.logger.Logger;
 import org.mozilla.javascript.*;
 import org.mozilla.javascript.tools.debugger.Dim;
 
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +21,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
     private final Dim dim;
     private final BlockingQueue<FutureTask<String>> queue;
     private final String filename;
+    private Dim.ContextData lastContextData = null;
 //    private Dim.ContextData lastContextData = null;
 
     public DebuggerEngineImpl(String filename) {
@@ -36,10 +39,35 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
     @Override
     public void updateSourceText(Dim.SourceInfo sourceInfo) { }
 
+    private Object getValue( Object instance, String fieldName ) throws NoSuchFieldException, IllegalAccessException {
+        Field fld = instance.getClass().getDeclaredField(fieldName);
+        fld.setAccessible(true);
+        return fld.get(instance);
+    }
+
     @Override
-    public void enterInterrupt(Dim.StackFrame stackFrame, String threadTitle, String alertMessage) {
-        logger.info("Breakpoint reached, thread title: {0}, line number: {1}, alertMessage: {2}", threadTitle, stackFrame.getLineNumber(), alertMessage);
-//        this.lastContextData = stackFrame.contextData();
+    public void enterInterrupt(Dim.StackFrame stackFrame, String s, String s1) {
+        System.out.println("Breakpoint reached- " + s + " Line no: " + stackFrame.getLineNumber());
+        this.lastContextData = stackFrame.contextData();
+        for(int i= 0; i<this.lastContextData.frameCount(); i++){
+            System.out.println(ScriptableUtils.toString((Scriptable) this.lastContextData.getFrame(i).scope()));
+        }
+
+        Context cx = Context.getCurrentContext();
+        try {
+            Object lastFrame = getValue(cx, "lastInterpreterFrame");
+            Object parentFrame = getValue(lastFrame, "parentFrame");
+            if(parentFrame != null){
+                Object debuggerFrame = (Object) getValue(parentFrame, "debuggerFrame");
+                Scriptable scriptable = (Scriptable) getValue(debuggerFrame, "scope");
+                if(debuggerFrame != this.lastContextData)
+                    System.out.println(ScriptableUtils.toString(scriptable));
+            }
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
         // Update service -> we on breakpoint! (apply callback)
     }
 
