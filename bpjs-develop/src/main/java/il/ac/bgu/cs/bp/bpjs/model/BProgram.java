@@ -93,7 +93,6 @@ public abstract class BProgram {
     
     private BpLog.LogLevel preSetLogLevel = null;
 
-    private BProgramSyncSnapshot firstSnapshot = null;
     /**
      * Objects that client code wishes to put in scope before the scope is
      * initialized are collected here.
@@ -273,9 +272,6 @@ public abstract class BProgram {
         recentlyEnqueuedExternalEvents.add(e);
     }
 
-    public BProgramSyncSnapshot getFirstSnapshot(){
-        return this.firstSnapshot;
-    }
     /**
      * Sets up the program scope and evaluates the program source.
      *
@@ -287,8 +283,7 @@ public abstract class BProgram {
      */
     public BProgramSyncSnapshot setup() {
         if (started) {
-            return this.firstSnapshot;
-//            throw new IllegalStateException("Program already set up.");
+            throw new IllegalStateException("Program already set up.");
         }
         Set<BThreadSyncSnapshot> bthreads = drainRecentlyRegisteredBthreads();
 
@@ -321,9 +316,8 @@ public abstract class BProgram {
         }
 
         started = true;
-        this.firstSnapshot = new BProgramSyncSnapshot(this, bthreads, Collections.emptyList(), failedAssertion);
 
-        return this.firstSnapshot;
+        return new BProgramSyncSnapshot(this, bthreads, Collections.emptyList(), failedAssertion);
     }
 
     private void initProgramScope(Context cx) {

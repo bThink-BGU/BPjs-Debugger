@@ -22,7 +22,6 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
     private final BlockingQueue<FutureTask<String>> queue;
     private final String filename;
     private Dim.ContextData lastContextData = null;
-//    private Dim.ContextData lastContextData = null;
 
     public DebuggerEngineImpl(String filename) {
         this.filename = filename;
@@ -37,9 +36,10 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
     }
 
     @Override
-    public void updateSourceText(Dim.SourceInfo sourceInfo) { }
+    public void updateSourceText(Dim.SourceInfo sourceInfo) {
+    }
 
-    private Object getValue( Object instance, String fieldName ) throws NoSuchFieldException, IllegalAccessException {
+    private Object getValue(Object instance, String fieldName) throws NoSuchFieldException, IllegalAccessException {
         Field fld = instance.getClass().getDeclaredField(fieldName);
         fld.setAccessible(true);
         return fld.get(instance);
@@ -49,19 +49,22 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
     public void enterInterrupt(Dim.StackFrame stackFrame, String s, String s1) {
         System.out.println("Breakpoint reached- " + s + " Line no: " + stackFrame.getLineNumber());
         this.lastContextData = stackFrame.contextData();
-        for(int i= 0; i<this.lastContextData.frameCount(); i++){
+        for (int i = 0; i < this.lastContextData.frameCount(); i++) {
             System.out.println(ScriptableUtils.toString((Scriptable) this.lastContextData.getFrame(i).scope()));
         }
+
 
         Context cx = Context.getCurrentContext();
         try {
             Object lastFrame = getValue(cx, "lastInterpreterFrame");
             Object parentFrame = getValue(lastFrame, "parentFrame");
-            if(parentFrame != null){
-                Object debuggerFrame = (Object) getValue(parentFrame, "debuggerFrame");
+            if (parentFrame != null) {
+                Object debuggerFrame = getValue(parentFrame, "debuggerFrame");
                 Scriptable scriptable = (Scriptable) getValue(debuggerFrame, "scope");
-                if(debuggerFrame != this.lastContextData)
+                if (debuggerFrame != this.lastContextData) {
+                    System.out.println("print from last frame");
                     System.out.println(ScriptableUtils.toString(scriptable));
+                }
             }
         } catch (NoSuchFieldException e) {
             e.printStackTrace();
@@ -156,33 +159,22 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
     }
 
     private String getVars() {
-//        AA();
-        StringBuilder vars= new StringBuilder();
+        StringBuilder vars = new StringBuilder();
         Dim.ContextData currentContextData = dim.currentContextData();
-        for(int i=0; i< currentContextData.frameCount(); i++){
+        for (int i = 0; i < currentContextData.frameCount(); i++) {
             vars.append("Scope no: ").append(i).append("\n");
             Dim.StackFrame stackFrame = currentContextData.getFrame(i);
             NativeCall scope = (NativeCall) stackFrame.scope();
 
             Object[] objects = ((Scriptable) scope).getIds();
             List<String> arguments = Arrays.stream(objects).map(p -> p.toString()).collect(Collectors.toList()).subList(1, objects.length);
-            for(String arg : arguments){
+            for (String arg : arguments) {
                 Object res = ScriptableObject.getProperty(scope, arg);
-                if(Undefined.instance != res)
+                if (Undefined.instance != res)
                     vars.append(arg).append(" ").append(res).append("\n");
             }
         }
-
-        return "Vars: \n"+ vars;
+        return "Vars: \n" + vars;
     }
 
-    private void AA() {
-        Dim.ContextData currentContextData = dim.currentContextData();
-        int i =0;
-        while (currentContextData == dim.currentContextData()) {
-            currentContextData = currentContextData.getFrame(0).contextData();
-            i++;
-        }
-        System.out.println("");
-    }
 }

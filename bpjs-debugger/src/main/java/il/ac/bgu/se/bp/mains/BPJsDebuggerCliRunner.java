@@ -11,7 +11,6 @@ public class BPJsDebuggerCliRunner {
     public static void main(String[] args) {
         final String filename = "BPJSDebuggerTest.js";
         BPJsDebuggerRunner<FutureTask<String>> bpJsDebuggerRunner = new BPJsDebuggerRunnerImpl(filename);
-
         String cmd = "";
         Scanner sc = new Scanner(System.in);
         while (!cmd.equals("exit")) {
@@ -35,7 +34,6 @@ public class BPJsDebuggerCliRunner {
                     break;
                 case "go":
                     if (!bpJsDebuggerRunner.isStarted()) {
-//                        bpJsDebuggerRunner.start(Collections.emptyMap());
                         bpJsDebuggerRunner.startSync();
                     }
                     else {
