@@ -84,7 +84,7 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
     }
 
     public void startSync() {
-        if (!isSetup) {
+        if (!isSetup()) {
             setup(new HashMap<>());
         }
         setItStarted(true);
