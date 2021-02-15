@@ -152,10 +152,15 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
     }
 
     private String setBreakpoint(int lineNumber, boolean stopOnBreakpoint) {
-        Dim.SourceInfo sourceInfo = dim.sourceInfo(this.filename);
-        sourceInfo.breakpoint(lineNumber, stopOnBreakpoint);
-        return "after set breakpoint -" + " line " + lineNumber + " changed to " + stopOnBreakpoint;
+        try {
+            Dim.SourceInfo sourceInfo = dim.sourceInfo(this.filename);
+            sourceInfo.breakpoint(lineNumber, stopOnBreakpoint);
+            return "after set breakpoint -" + " line " + lineNumber + " changed to " + stopOnBreakpoint;
 //        return getDebuggerStatus();
+        } catch (Exception e) {
+            logger.error("cannot assign breakpoint on line {0}", lineNumber);
+            return null;
+        }
     }
 
     private String getVars() {
