@@ -5,7 +5,6 @@ import il.ac.bgu.se.bp.execution.RunnerState;
 import il.ac.bgu.se.bp.logger.Logger;
 import org.mozilla.javascript.*;
 import org.mozilla.javascript.tools.debugger.Dim;
-
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -21,6 +20,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
     private final String filename;
     private Dim.ContextData lastContextData = null;
     private RunnerState state;
+
     public DebuggerEngineImpl(String filename, RunnerState state) {
         this.filename = filename;
         this.state = state;
@@ -202,6 +202,10 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
                     key += debuggerFrame.frameCount();
                     parentFrame = getValue(parentFrame, "parentFrame");
                 }
+                else{
+                    parentFrame = null;
+                }
+
             }
         } catch (NoSuchFieldException e) {
             e.printStackTrace();
