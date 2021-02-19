@@ -19,6 +19,8 @@ import il.ac.bgu.se.bp.logger.Logger;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static java.util.Collections.reverseOrder;
+
 /**
  * Runs a {@link BProgram} in debug mode.
  */
@@ -35,7 +37,6 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
     public BPJsDebuggerRunnerImpl(String filename) {
         debuggerEngineImpl = new DebuggerEngineImpl(filename);
         bProg = new ResourceBProgram(filename);
-
     }
 
     @Override
@@ -91,6 +92,7 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
         new Thread(() -> {
             try {
                 this.syncSnapshot = this.syncSnapshot.start(execSvc);
+                this.bProg.enqueueExternalEvent(new BEvent("e"));
                 System.out.println("GOT NEW SYNC STATE - First sync state");
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -102,12 +104,21 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
         new Thread(() -> {
             EventSelectionStrategy eventSelectionStrategy = this.bProg.getEventSelectionStrategy();
             Set<BEvent> events = eventSelectionStrategy.selectableEvents(this.syncSnapshot);
+            System.out.println(events);
             try {
                 Optional<EventSelectionResult> eventOptional = eventSelectionStrategy.select(this.syncSnapshot, events);
                 if(eventOptional.isPresent())
                 {
-                    BEvent event = eventSelectionStrategy.select(this.syncSnapshot, events).get().getEvent();
+                    EventSelectionResult esr = eventOptional.get();
+                    BEvent event = esr.getEvent();
                     System.out.println(event);
+                    if ( ! esr.getIndicesToRemove().isEmpty() ) {
+                        // the event selection affected the external event queue.
+                        List<BEvent> updatedExternals = new ArrayList<>(this.syncSnapshot.getExternalEvents());
+                        esr.getIndicesToRemove().stream().sorted(reverseOrder())
+                                .forEach( idxObj -> updatedExternals.remove(idxObj.intValue()) );
+                        this.syncSnapshot = this.syncSnapshot.copyWith(updatedExternals);
+                    }
                     this.syncSnapshot = this.syncSnapshot.triggerEvent(event, execSvc, new ArrayList<>());
                     System.out.println("GOT NEW SYNC STATE");
                 }
