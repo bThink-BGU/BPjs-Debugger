@@ -136,6 +136,9 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
         this.syncSnapshot = this.syncSnapshot.copyWith(updatedExternals);
     }
 
+
+
+
     public FutureTask<String> setBreakpoint(int lineNumber) {
         if (!isSetup()) {
             return createResolvedFuture("setup is needed");
@@ -196,11 +199,33 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
     }
 
     public FutureTask<String> addExternalEvent(String externalEvent){
-        if (!isSetup()) {
-            return createResolvedFuture("setup is needed");
-        }
         this.bProg.enqueueExternalEvent(new BEvent(externalEvent));
         return createResolvedFuture("Added external event: "+ externalEvent );
+    }
+
+
+    @Override
+    public FutureTask<String> removeExternalEvent(String externalEvent) {
+        List<BEvent> updatedExternals = new ArrayList<>(this.syncSnapshot.getExternalEvents());
+        int indexToRemove = -1;
+
+        for(int i =0; i<updatedExternals.size(); i++) {
+            if(updatedExternals.get(i).getName() == externalEvent) {
+                indexToRemove = i;
+            }
+        }
+        if(indexToRemove > 0){
+            updatedExternals.remove(indexToRemove);
+        }
+
+        this.syncSnapshot = this.syncSnapshot.copyWith(updatedExternals);
+        return createResolvedFuture("Removed external event: "+ externalEvent );
+    }
+
+    @Override
+    public FutureTask<String> setWaitForExternalEvents(boolean shouldWait) {
+        this.bProg.setWaitForExternalEvents(shouldWait);
+        return createResolvedFuture("Wait For External events is set for:" + shouldWait);
     }
 
     private FutureTask<String> createResolvedFuture(String result) {
