@@ -14,7 +14,7 @@ public class BPJsDebuggerCliRunner {
         String cmd = "";
         Scanner sc = new Scanner(System.in);
         while (!cmd.equals("exit")) {
-            System.out.println("Enter command: b / rb / go / si / sov / sou / get / n / e / h");
+            System.out.println("Enter command: b / rb / go / si / sov / sou / get / n / e / re / we /h");
             cmd = sc.nextLine();
             String[] splat = cmd.split(" ");
             switch (splat[0]) {
@@ -64,6 +64,23 @@ public class BPJsDebuggerCliRunner {
                         break;
                     }
                     awaitForResponse(bpJsDebuggerRunner.addExternalEvent(splat[1]));
+                    break;
+                }
+                case "re": {
+                    if(splat.length != 2) {
+                        System.out.println("must enter event");
+                        break;
+                    }
+                    awaitForResponse(bpJsDebuggerRunner.removeExternalEvent(splat[1]));
+                    break;
+                }
+                case "we": {
+                    if(splat.length != 2) {
+                        System.out.println("must enter event");
+                        break;
+                    }
+                    boolean shouldWait = Integer.parseInt(splat[1]) > 0;
+                    awaitForResponse(bpJsDebuggerRunner.setWaitForExternalEvents(shouldWait));
                     break;
                 }
                 case "h": {
