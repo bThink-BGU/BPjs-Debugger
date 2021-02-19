@@ -210,11 +210,11 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
         int indexToRemove = -1;
 
         for(int i =0; i<updatedExternals.size(); i++) {
-            if(updatedExternals.get(i).getName() == externalEvent) {
+            if(updatedExternals.get(i).getName().equals(externalEvent)) {
                 indexToRemove = i;
             }
         }
-        if(indexToRemove > 0){
+        if(indexToRemove >= 0){
             updatedExternals.remove(indexToRemove);
         }
 
