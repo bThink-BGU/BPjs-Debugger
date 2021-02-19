@@ -15,7 +15,7 @@ public class BPJsDebuggerCliRunner {
         String cmd = "";
         Scanner sc = new Scanner(System.in);
         while (!cmd.equals("exit")) {
-            System.out.println("Enter command: b / rb / go / si / sov / sou / get / n / stop");
+            System.out.println("Enter command: b / rb / go / si / sov / sou / get / n / e / re / we /h / stop");
             cmd = sc.nextLine();
             String[] splat = cmd.split(" ");
             switch (splat[0]) {
@@ -35,7 +35,7 @@ public class BPJsDebuggerCliRunner {
                     break;
                 case "go":
                     if (!bpJsDebuggerRunner.isStarted()) {
-                        bpJsDebuggerRunner.startSync();
+                        awaitForResponse(bpJsDebuggerRunner.startSync());
                     }
                     else {
                         awaitForResponse(bpJsDebuggerRunner.continueRun());
@@ -57,11 +57,44 @@ public class BPJsDebuggerCliRunner {
                     awaitForResponse(bpJsDebuggerRunner.exit());
                     break;
                 case "n":
-                    bpJsDebuggerRunner.nextSync();
+                    awaitForResponse(bpJsDebuggerRunner.nextSync());
                     break;
+                case "e": {
+                    if(splat.length != 2) {
+                        System.out.println("must enter event");
+                        break;
+                    }
+                    awaitForResponse(bpJsDebuggerRunner.addExternalEvent(splat[1]));
+                    break;
+                }
+                case "re": {
+                    if(splat.length != 2) {
+                        System.out.println("must enter event");
+                        break;
+                    }
+                    awaitForResponse(bpJsDebuggerRunner.removeExternalEvent(splat[1]));
+                    break;
+                }
                 case "stop":
                     bpJsDebuggerRunner.stop();
                     break;
+                case "we": {
+                    if(splat.length != 2) {
+                        System.out.println("must enter event");
+                        break;
+                    }
+                    boolean shouldWait = Integer.parseInt(splat[1]) > 0;
+                    awaitForResponse(bpJsDebuggerRunner.setWaitForExternalEvents(shouldWait));
+                    break;
+                }
+                case "h": {
+                    System.out.println("go - start the program \n" +
+                                        "n - next sync state \n" +
+                                        "e <event name>- add external event+ " +
+                            "re <event name> - remove external event" +
+                            "we <0/1>- wait for external events " +
+                            "");
+                }
 
             }
         }
