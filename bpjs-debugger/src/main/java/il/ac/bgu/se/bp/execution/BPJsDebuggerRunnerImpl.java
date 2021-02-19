@@ -92,7 +92,6 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
         new Thread(() -> {
             try {
                 this.syncSnapshot = this.syncSnapshot.start(execSvc);
-                this.bProg.enqueueExternalEvent(new BEvent("e"));
                 System.out.println("GOT NEW SYNC STATE - First sync state");
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -188,6 +187,14 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
             return createResolvedFuture("The program has ended");
         else
             return debuggerEngineImpl.addCommand(new DebuggerCommand(DebuggerOperations.EXIT));
+    }
+
+    public FutureTask<String> addExternalEvent(String externalEvent){
+        if (!isSetup()) {
+            return createResolvedFuture("setup is needed");
+        }
+        this.bProg.enqueueExternalEvent(new BEvent(externalEvent));
+        return createResolvedFuture("Added external event: "+ externalEvent );
     }
 
     private FutureTask<String> createResolvedFuture(String result) {
