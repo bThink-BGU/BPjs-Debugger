@@ -92,12 +92,6 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
             case EXIT:
                 callback = this::exit;
                 break;
-            case SET_BREAKPOINT:
-                callback = () -> this.setBreakpoint((Integer) command.getArgs()[0], true);
-                break;
-            case REMOVE_BREAKPOINT:
-                callback = () -> this.setBreakpoint((Integer) command.getArgs()[0], false);
-                break;
             case GET_VARS:
                 callback = this::getVars;
                 break;
