@@ -199,6 +199,9 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, St
                     key += debuggerFrame.frameCount();
                     parentFrame = getValue(parentFrame, "parentFrame");
                 }
+                else {
+                    parentFrame = null;
+                }
             }
         } catch (NoSuchFieldException e) {
             e.printStackTrace();
