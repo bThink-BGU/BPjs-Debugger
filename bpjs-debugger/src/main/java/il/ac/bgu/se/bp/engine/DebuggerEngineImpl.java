@@ -51,8 +51,6 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, St
         // Update service -> we on breakpoint! (apply callback)
     }
 
-
-
     @Override
     public boolean isGuiEventThread() {
         return true;
@@ -163,6 +161,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, St
         }
         return "Vars: \n" + vars;
     }
+
     private Object getValue(Object instance, String fieldName) throws NoSuchFieldException, IllegalAccessException {
         Field fld = instance.getClass().getDeclaredField(fieldName);
         fld.setAccessible(true);
@@ -177,6 +176,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, St
         }
         return myEnv;
     }
+
     private Map<Integer, Map<String, String>> getEnv() {
         Map<Integer, Map<String, String>> env = new HashMap<>();
         for (int i = 0; i < this.lastContextData.frameCount(); i++) {
