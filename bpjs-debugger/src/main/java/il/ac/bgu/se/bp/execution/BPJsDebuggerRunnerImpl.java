@@ -96,6 +96,7 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
         new Thread(() -> {
             try {
                 this.syncSnapshot = this.syncSnapshot.start(execSvc);
+                this.state.setDebuggerState(RunnerState.State.SYNC_STATE);
                 System.out.println("GOT NEW SYNC STATE - First sync state");
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -105,18 +106,25 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
     }
 
     public FutureTask<String> nextSync() {
-        if(!isStarted() || this.state.getDebuggerState() == RunnerState.State.Running || this.state.getDebuggerState() == RunnerState.State.JSDebug)
-            return createResolvedFuture("Cant do next sync");
+        if(this.state.getDebuggerState() == RunnerState.State.WAITING_FOR_EXTERNAL_EVENT)
+            return createResolvedFuture("Waiting for external event");
+        else if(this.state.getDebuggerState() == RunnerState.State.JS_DEBUG)
+            return createResolvedFuture("Cant move next sync while in JS debug");
+        else if(this.state.getDebuggerState() == RunnerState.State.RUNNING)
+            return createResolvedFuture("bprog already in running state");
+        else if(!isStarted())
+            return createResolvedFuture("bprog not started yet");
+
         new Thread(() -> {
-            this.state.setDebuggerState(RunnerState.State.Running);
+            this.state.setDebuggerState(RunnerState.State.RUNNING);
             EventSelectionStrategy eventSelectionStrategy = this.bProg.getEventSelectionStrategy();
             Set<BEvent> possibleEvents = eventSelectionStrategy.selectableEvents(this.syncSnapshot);
             if (possibleEvents.isEmpty()) {
                 if (this.bProg.isWaitForExternalEvents()) {
                     try{
-                        setItStarted(false);
+                        this.state.setDebuggerState(RunnerState.State.WAITING_FOR_EXTERNAL_EVENT);
                         BEvent next = this.bProg.takeExternalEvent(); // and now we wait for external event
-                        setItStarted(true);
+                        this.state.setDebuggerState(RunnerState.State.RUNNING);
                         if (next == null) {
                             return;
                         } else {
@@ -132,8 +140,8 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
                 }
             }
 
-            System.out.println("all events:" + possibleEvents);
-            System.out.println("External events:" +this.syncSnapshot.getExternalEvents());
+            System.out.println("all events: " + possibleEvents);
+            System.out.println("External events: " +this.syncSnapshot.getExternalEvents());
             try {
                 Optional<EventSelectionResult> eventOptional = eventSelectionStrategy.select(this.syncSnapshot, possibleEvents);
                 if(eventOptional.isPresent())
@@ -145,9 +153,8 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
                     if ( ! esr.getIndicesToRemove().isEmpty() ) {
                         removeExternalEvents(esr);
                     }
-
                     this.syncSnapshot = this.syncSnapshot.triggerEvent(event, execSvc, new ArrayList<>());
-                    this.state.setDebuggerState(RunnerState.State.Stopped);
+                    this.state.setDebuggerState(RunnerState.State.SYNC_STATE);
                     System.out.println("GOT NEW SYNC STATE");
                 }
                 else{
@@ -187,7 +194,7 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
     public FutureTask<String> continueRun() {
         if (!isSetup())
             return createResolvedFuture("setup is needed");
-        if(this.state.getDebuggerState() != RunnerState.State.JSDebug)
+        if(this.state.getDebuggerState() != RunnerState.State.JS_DEBUG)
             return createResolvedFuture("Not in js debug");
         return debuggerEngineImpl.addCommand(new DebuggerCommand(DebuggerOperations.CONTINUE));
     }
@@ -195,7 +202,7 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
     public FutureTask<String> stepInto() {
         if (!isSetup())
             return createResolvedFuture("setup is needed");
-        if(this.state.getDebuggerState() != RunnerState.State.JSDebug)
+        if(this.state.getDebuggerState() != RunnerState.State.JS_DEBUG)
             return createResolvedFuture("Not in js debug");
         return debuggerEngineImpl.addCommand(new DebuggerCommand(DebuggerOperations.STEP_INTO));
     }
@@ -203,7 +210,7 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
     public FutureTask<String> stepOver() {
         if (!isSetup())
             return createResolvedFuture("setup is needed");
-        if(this.state.getDebuggerState() != RunnerState.State.JSDebug)
+        if(this.state.getDebuggerState() != RunnerState.State.JS_DEBUG)
             return createResolvedFuture("Not in js debug");
         return debuggerEngineImpl.addCommand(new DebuggerCommand(DebuggerOperations.STEP_OVER));
     }
@@ -211,7 +218,7 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
     public FutureTask<String> stepOut() {
         if (!isSetup())
             return createResolvedFuture("setup is needed");
-        if(this.state.getDebuggerState() != RunnerState.State.JSDebug)
+        if(this.state.getDebuggerState() != RunnerState.State.JS_DEBUG)
             return createResolvedFuture("Not in js debug");
         return debuggerEngineImpl.addCommand(new DebuggerCommand(DebuggerOperations.STEP_OUT));
     }

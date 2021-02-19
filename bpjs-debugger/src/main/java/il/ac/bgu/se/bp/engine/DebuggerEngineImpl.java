@@ -1,6 +1,5 @@
 package il.ac.bgu.se.bp.engine;
 
-import il.ac.bgu.cs.bp.bpjs.internal.ScriptableUtils;
 import il.ac.bgu.se.bp.debugger.DebuggerCommand;
 import il.ac.bgu.se.bp.execution.RunnerState;
 import il.ac.bgu.se.bp.logger.Logger;
@@ -8,9 +7,7 @@ import org.mozilla.javascript.*;
 import org.mozilla.javascript.tools.debugger.Dim;
 
 import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -41,39 +38,19 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
     public void updateSourceText(Dim.SourceInfo sourceInfo) {
     }
 
-    private Object getValue(Object instance, String fieldName) throws NoSuchFieldException, IllegalAccessException {
-        Field fld = instance.getClass().getDeclaredField(fieldName);
-        fld.setAccessible(true);
-        return fld.get(instance);
-    }
-
     @Override
     public void enterInterrupt(Dim.StackFrame stackFrame, String s, String s1) {
-        this.state.setDebuggerState(RunnerState.State.JSDebug);
+        this.state.setDebuggerState(RunnerState.State.JS_DEBUG);
         System.out.println("Breakpoint reached- " + s + " Line no: " + stackFrame.getLineNumber());
         this.lastContextData = stackFrame.contextData();
-        for (int i = 0; i < this.lastContextData.frameCount(); i++) {
-            System.out.println(ScriptableUtils.toString((Scriptable) this.lastContextData.getFrame(i).scope()));
-        }
-        Context cx = Context.getCurrentContext();
-        try {
-            Object lastFrame = getValue(cx, "lastInterpreterFrame");
-            Object parentFrame = getValue(lastFrame, "parentFrame");
-            if (parentFrame != null) {
-                Object debuggerFrame = getValue(parentFrame, "debuggerFrame");
-                Scriptable scriptable = (Scriptable) getValue(debuggerFrame, "scope");
-                if (debuggerFrame != this.lastContextData) {
-                    System.out.println("print from last frame");
-                    System.out.println(ScriptableUtils.toString(scriptable));
-                }
-            }
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
+        Map<Integer, Map<String, String>> env = getEnv();
+        for(Map.Entry e : env.entrySet()){
+            System.out.println(e.getKey()+ ":" + e.getValue());
         }
         // Update service -> we on breakpoint! (apply callback)
     }
+
+
 
     @Override
     public boolean isGuiEventThread() {
@@ -87,7 +64,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
 
     public FutureTask<String> addCommand(DebuggerCommand command) {
         FutureTask<String> futureTask;
-        if(this.state.getDebuggerState() == RunnerState.State.JSDebug){
+        if(this.state.getDebuggerState() == RunnerState.State.JS_DEBUG){
             futureTask = debuggerCommandToCallback(command);
             queue.add(futureTask);
             return futureTask;
@@ -189,5 +166,48 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
         }
         return "Vars: \n" + vars;
     }
+    private Object getValue(Object instance, String fieldName) throws NoSuchFieldException, IllegalAccessException {
+        Field fld = instance.getClass().getDeclaredField(fieldName);
+        fld.setAccessible(true);
+        return fld.get(instance);
+    }
 
+    private Map<String, String> getScope(ScriptableObject scope){
+        Map<String, String> myEnv = new HashMap<>();
+        Object[] ids = Arrays.stream(scope.getIds()).skip(1).toArray();
+        for(Object id: ids){
+            myEnv.put(id.toString(), Objects.toString(scope.get(id)));
+        }
+        return myEnv;
+    }
+    private Map<Integer, Map<String, String>> getEnv() {
+        Map<Integer, Map<String, String>> env = new HashMap<>();
+        for (int i = 0; i < this.lastContextData.frameCount(); i++) {
+            ScriptableObject scope = (ScriptableObject) this.lastContextData.getFrame(i).scope();
+            env.put(i, getScope(scope));
+        }
+        Integer key = this.lastContextData.frameCount();
+        // get from continuation frames
+        Context cx = Context.getCurrentContext();
+        try {
+            Object lastFrame = getValue(cx, "lastInterpreterFrame");
+            Object parentFrame = getValue(lastFrame, "parentFrame");
+            while(parentFrame != null) {
+                Dim.ContextData debuggerFrame = ((Dim.StackFrame) getValue(parentFrame, "debuggerFrame")).contextData();
+                if (debuggerFrame != this.lastContextData) {
+                    for (int i = 0; i < debuggerFrame.frameCount(); i++) {
+                        ScriptableObject scope = (ScriptableObject) debuggerFrame.getFrame(i).scope();
+                        env.put(key, getScope(scope));
+                    }
+                    key += debuggerFrame.frameCount();
+                    parentFrame = getValue(parentFrame, "parentFrame");
+                }
+            }
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+        return env;
+    }
 }

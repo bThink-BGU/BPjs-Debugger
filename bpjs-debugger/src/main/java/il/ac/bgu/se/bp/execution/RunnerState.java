@@ -2,10 +2,11 @@ package il.ac.bgu.se.bp.execution;
 
 public class RunnerState {
     public enum State {
-        Stopped,
-        Running,
-        SyncState,
-        JSDebug
+        STOPPED,
+        RUNNING,
+        SYNC_STATE,
+        WAITING_FOR_EXTERNAL_EVENT,
+        JS_DEBUG
     }
     private State debuggerState;
 
@@ -15,7 +16,7 @@ public class RunnerState {
         }
     }
     public RunnerState() {
-        this.debuggerState = State.Stopped;
+        this.debuggerState = State.STOPPED;
     }
 
     public synchronized State getDebuggerState() {

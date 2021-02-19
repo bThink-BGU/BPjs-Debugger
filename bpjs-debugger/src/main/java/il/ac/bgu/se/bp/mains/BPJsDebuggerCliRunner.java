@@ -10,8 +10,6 @@ public class BPJsDebuggerCliRunner {
 
     public static void main(String[] args) {
         final String filename = "BPJSDebuggerTest.js";
-        System.out.println(Thread.activeCount());
-
         BPJsDebuggerRunner<FutureTask<String>> bpJsDebuggerRunner = new BPJsDebuggerRunnerImpl(filename);
         String cmd = "";
         Scanner sc = new Scanner(System.in);
@@ -88,7 +86,10 @@ public class BPJsDebuggerCliRunner {
                 case "h": {
                     System.out.println("go - start the program \n" +
                                         "n - next sync state \n" +
-                                        "e - add external events");
+                                        "e <event name>- add external event+ " +
+                            "re <event name> - remove external event" +
+                            "we <0/1>- wait for external events " +
+                            "");
                 }
 
             }
