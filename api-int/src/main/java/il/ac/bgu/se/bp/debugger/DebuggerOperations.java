@@ -8,5 +8,6 @@ public enum DebuggerOperations {
     SET_BREAKPOINT,
     REMOVE_BREAKPOINT,
     EXIT,
+    STOP,
     GET_VARS
 }

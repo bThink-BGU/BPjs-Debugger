@@ -24,6 +24,7 @@
         <spring.boot.version>2.3.2.RELEASE</spring.boot.version>
         <spring.version>5.2.8.RELEASE</spring.version>
         <jackson.mapper.version>1.9.13</jackson.mapper.version>
+        <rhino.version>1.7.13</rhino.version>
     </properties>
 
     <modules>
@@ -64,6 +65,12 @@
                 <groupId>org.codehaus.jackson</groupId>
                 <artifactId>jackson-mapper-asl</artifactId>
                 <version>${jackson.mapper.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.mozilla</groupId>
+                <artifactId>rhino</artifactId>
+                <version>${rhino.version}</version>
             </dependency>
 
 

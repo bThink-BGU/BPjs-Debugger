@@ -9,12 +9,13 @@ import java.util.concurrent.FutureTask;
 public class BPJsDebuggerCliRunner {
 
     public static void main(String[] args) {
-        final String filename = "BPJSDebuggerTest.js";
+//        final String filename = "BPJSDebuggerTest.js";
+        final String filename = "BPJSDebuggerRecTest.js";
         BPJsDebuggerRunner<FutureTask<String>> bpJsDebuggerRunner = new BPJsDebuggerRunnerImpl(filename);
         String cmd = "";
         Scanner sc = new Scanner(System.in);
         while (!cmd.equals("exit")) {
-            System.out.println("Enter command: b / rb / go / si / sov / sou / get / n");
+            System.out.println("Enter command: b / rb / go / si / sov / sou / get / n / stop");
             cmd = sc.nextLine();
             String[] splat = cmd.split(" ");
             switch (splat[0]) {
@@ -57,6 +58,9 @@ public class BPJsDebuggerCliRunner {
                     break;
                 case "n":
                     bpJsDebuggerRunner.nextSync();
+                    break;
+                case "stop":
+                    bpJsDebuggerRunner.stop();
                     break;
 
             }

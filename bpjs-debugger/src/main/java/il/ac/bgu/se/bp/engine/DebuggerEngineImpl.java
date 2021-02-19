@@ -2,6 +2,7 @@ package il.ac.bgu.se.bp.engine;
 
 import il.ac.bgu.cs.bp.bpjs.internal.ScriptableUtils;
 import il.ac.bgu.se.bp.debugger.DebuggerCommand;
+import il.ac.bgu.se.bp.debugger.DebuggerEngine;
 import il.ac.bgu.se.bp.logger.Logger;
 import org.mozilla.javascript.*;
 import org.mozilla.javascript.tools.debugger.Dim;
@@ -16,12 +17,13 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 import java.util.stream.Collectors;
 
-public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
+public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, String> {
     private final Logger logger = new Logger(DebuggerEngineImpl.class);
-    private final Dim dim;
+    private Dim dim;
     private final BlockingQueue<FutureTask<String>> queue;
     private final String filename;
     private Dim.ContextData lastContextData = null;
+    private volatile boolean isRunning;
 
     public DebuggerEngineImpl(String filename) {
         this.filename = filename;
@@ -36,8 +38,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
     }
 
     @Override
-    public void updateSourceText(Dim.SourceInfo sourceInfo) {
-    }
+    public void updateSourceText(Dim.SourceInfo sourceInfo) {}
 
     private Object getValue(Object instance, String fieldName) throws NoSuchFieldException, IllegalAccessException {
         Field fld = instance.getClass().getDeclaredField(fieldName);
@@ -66,9 +67,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
                     System.out.println(ScriptableUtils.toString(scriptable));
                 }
             }
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
+        } catch (NoSuchFieldException | IllegalAccessException e) {
             e.printStackTrace();
         }
         // Update service -> we on breakpoint! (apply callback)
@@ -84,74 +83,71 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
         queue.take().run();
     }
 
-    public FutureTask<String> addCommand(DebuggerCommand command) {
+    public FutureTask<String> addCommand(DebuggerCommand<FutureTask<String>, String> command) {
         FutureTask<String> futureTask = debuggerCommandToCallback(command);
         queue.add(futureTask);
         return futureTask;
     }
 
-    public FutureTask<String> debuggerCommandToCallback(DebuggerCommand command) {
-        Callable<String> callback = null;
-        switch (command.getDebuggerOperation()) {
-            case CONTINUE:
-                callback = this::continueRun;
-                break;
-            case STEP_INTO:
-                callback = this::stepInto;
-                break;
-            case STEP_OVER:
-                callback = this::stepOver;
-                break;
-            case STEP_OUT:
-                callback = this::stepOut;
-                break;
-            case EXIT:
-                callback = this::exit;
-                break;
-            case SET_BREAKPOINT:
-                callback = () -> this.setBreakpoint((Integer) command.getArgs()[0], true);
-                break;
-            case REMOVE_BREAKPOINT:
-                callback = () -> this.setBreakpoint((Integer) command.getArgs()[0], false);
-                break;
-            case GET_VARS:
-                callback = this::getVars;
-                break;
-        }
-        return new FutureTask<>(callback);
+    public FutureTask<String> debuggerCommandToCallback(DebuggerCommand<FutureTask<String>, String> command) {
+//        if (!isRunning()) {
+//            FutureTask<String> futureTask = new FutureTask<>(() -> "not running");
+//            futureTask.run();
+//            return futureTask;
+//        }
+
+        return command.applyCommand(this);
     }
 
-    private String stepOut() {
+    public void run() {
+        setIsRunning(true);
+    }
+
+    private synchronized boolean isRunning() {
+        return isRunning;
+    }
+
+    private synchronized void setIsRunning(boolean isRunning) {
+        this.isRunning = isRunning;
+    }
+
+    public String stop() {
+        dim = null;
+        setIsRunning(false);
+        return "stopped";
+    }
+
+    public String stepOut() {
         dim.setReturnValue(Dim.STEP_OUT);
         return "step into";
         //        return getDebuggerStatus();
     }
 
-    private String stepInto() {
+    public String stepInto() {
         dim.setReturnValue(Dim.STEP_INTO);
         return "step into";
         //        return getDebuggerStatus();
     }
 
-    private String stepOver() {
+    public String stepOver() {
         dim.setReturnValue(Dim.STEP_OVER);
         return "step over";
         //        return getDebuggerStatus();
     }
 
-    private String exit() {
+    public String exit() {
         dim.setReturnValue(Dim.EXIT);
         return "exit";
         //        return getDebuggerStatus();
     }
 
-    private String continueRun() {
+    public String continueRun() {
         this.dim.go();
         return "continue run";
 //        return getDebuggerStatus();
     }
 
-    private String setBreakpoint(int lineNumber, boolean stopOnBreakpoint) {
+    public String setBreakpoint(int lineNumber, boolean stopOnBreakpoint) {
         try {
             Dim.SourceInfo sourceInfo = dim.sourceInfo(this.filename);
             sourceInfo.breakpoint(lineNumber, stopOnBreakpoint);
@@ -163,7 +159,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
         }
     }
 
-    private String getVars() {
+    public String getVars() {
         StringBuilder vars = new StringBuilder();
         Dim.ContextData currentContextData = dim.currentContextData();
         for (int i = 0; i < currentContextData.frameCount(); i++) {
@@ -172,7 +168,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
             NativeCall scope = (NativeCall) stackFrame.scope();
 
             Object[] objects = ((Scriptable) scope).getIds();
-            List<String> arguments = Arrays.stream(objects).map(p -> p.toString()).collect(Collectors.toList()).subList(1, objects.length);
+            List<String> arguments = Arrays.stream(objects).map(Object::toString).collect(Collectors.toList()).subList(1, objects.length);
             for (String arg : arguments) {
                 Object res = ScriptableObject.getProperty(scope, arg);
                 if (Undefined.instance != res)

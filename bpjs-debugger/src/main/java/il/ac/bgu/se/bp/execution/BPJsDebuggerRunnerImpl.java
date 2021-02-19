@@ -13,6 +13,7 @@ import il.ac.bgu.cs.bp.bpjs.model.eventselection.EventSelectionStrategy;
 import il.ac.bgu.se.bp.debugger.BPJsDebuggerRunner;
 import il.ac.bgu.se.bp.debugger.DebuggerCommand;
 import il.ac.bgu.se.bp.debugger.DebuggerOperations;
+import il.ac.bgu.se.bp.debugger.commands.*;
 import il.ac.bgu.se.bp.engine.DebuggerEngineImpl;
 import il.ac.bgu.se.bp.logger.Logger;
 
@@ -35,7 +36,6 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
     public BPJsDebuggerRunnerImpl(String filename) {
         debuggerEngineImpl = new DebuggerEngineImpl(filename);
         bProg = new ResourceBProgram(filename);
-
     }
 
     @Override
@@ -121,62 +121,50 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
     }
 
     public FutureTask<String> setBreakpoint(int lineNumber) {
-        if (!isSetup()) {
-            return createResolvedFuture("setup is needed");
-        }
-        return debuggerEngineImpl.addCommand(new DebuggerCommand(DebuggerOperations.SET_BREAKPOINT, lineNumber));
+        return !isSetup() ? createResolvedFuture("setup is needed") :
+            debuggerEngineImpl.addCommand(new SetBreakpoint(lineNumber, true));
     }
 
     public FutureTask<String> removeBreakpoint(int lineNumber) {
-        if (!isSetup()) {
-            return createResolvedFuture("setup is needed");
-        }
-        return debuggerEngineImpl.addCommand(new DebuggerCommand(DebuggerOperations.REMOVE_BREAKPOINT, lineNumber));
+        return !isSetup() ? createResolvedFuture("setup is needed") :
+            debuggerEngineImpl.addCommand(new SetBreakpoint(lineNumber, false));
     }
 
     public FutureTask<String> continueRun() {
-        if (!isSetup()) {
-            return createResolvedFuture("setup is needed");
-        }
-        return debuggerEngineImpl.addCommand(new DebuggerCommand(DebuggerOperations.CONTINUE));
+        return !isSetup() ? createResolvedFuture("setup is needed") :
+            debuggerEngineImpl.addCommand(new Continue());
     }
 
     public FutureTask<String> stepInto() {
-        if (!isSetup()) {
-            return createResolvedFuture("setup is needed");
-        }
-        return debuggerEngineImpl.addCommand(new DebuggerCommand(DebuggerOperations.STEP_INTO));
+        return !isSetup() ? createResolvedFuture("setup is needed") :
+            debuggerEngineImpl.addCommand(new StepInto());
     }
 
     public FutureTask<String> stepOver() {
-        if (!isSetup()) {
-            return createResolvedFuture("setup is needed");
-        }
-        return debuggerEngineImpl.addCommand(new DebuggerCommand(DebuggerOperations.STEP_OVER));
+        return !isSetup() ? createResolvedFuture("setup is needed") :
+            debuggerEngineImpl.addCommand(new StepOver());
     }
 
     public FutureTask<String> stepOut() {
-        if (!isSetup()) {
-            return createResolvedFuture("setup is needed");
-        }
-        return debuggerEngineImpl.addCommand(new DebuggerCommand(DebuggerOperations.STEP_OUT));
+        return !isSetup() ? createResolvedFuture("setup is needed") :
+            debuggerEngineImpl.addCommand(new StepOut());
     }
 
     public FutureTask<String> getVars() {
-        if (!isSetup()) {
-            return createResolvedFuture("setup is needed");
-        }
-        return debuggerEngineImpl.addCommand(new DebuggerCommand(DebuggerOperations.GET_VARS));
+        return !isSetup() ? createResolvedFuture("setup is needed") :
+            debuggerEngineImpl.addCommand(new GetVars());
     }
 
     public FutureTask<String> exit() {
-        if (!isSetup()) {
-            return createResolvedFuture("setup is needed");
-        }
-        else if (!isStarted())
-            return createResolvedFuture("The program has ended");
-        else
-            return debuggerEngineImpl.addCommand(new DebuggerCommand(DebuggerOperations.EXIT));
+        return  !isSetup() ? createResolvedFuture("setup is needed") :
+                !isStarted() ? createResolvedFuture("The program has ended") :
+                debuggerEngineImpl.addCommand(new Exit());
+    }
+
+    @Override
+    public FutureTask<String> stop() {
+        return  !isSetup() ? createResolvedFuture("setup is needed") :
+            debuggerEngineImpl.addCommand(new Stop());
     }
 
     private FutureTask<String> createResolvedFuture(String result) {
