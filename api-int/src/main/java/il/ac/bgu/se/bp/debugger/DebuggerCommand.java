@@ -27,7 +27,7 @@ public class DebuggerCommand {
         DebuggerCommand that = (DebuggerCommand) o;
         return debuggerOperation == that.debuggerOperation && Objects.equals(args, that.args);
     }
-
+    //comment
     @Override
     public int hashCode() {
         return Objects.hash(debuggerOperation, args);
