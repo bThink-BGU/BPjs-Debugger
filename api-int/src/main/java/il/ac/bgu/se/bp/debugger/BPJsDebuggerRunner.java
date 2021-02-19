@@ -17,7 +17,10 @@ public interface BPJsDebuggerRunner<T> {
     T stepOut();
     T getVars();
     T exit();
-    void startSync();
-    void nextSync();
+    T addExternalEvent(String externalEvent);
+    T removeExternalEvent(String externalEvent);
+    T setWaitForExternalEvents(boolean shouldWait);
+    T startSync();
+    T nextSync();
 
 }
