@@ -3,3 +3,8 @@
 /.idea/misc.xml
 /.idea/vcs.xml
 /.idea/workspace.xml
+/bpjs-develop/target/classes/il/ac/bgu/cs/bp/bpjs/model/eventselection/AbstractEventSelectionStrategy.class
+*.class
+*.xml
+*.iml
+*.js
