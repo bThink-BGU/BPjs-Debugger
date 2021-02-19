@@ -11,8 +11,6 @@ import il.ac.bgu.cs.bp.bpjs.model.ResourceBProgram;
 import il.ac.bgu.cs.bp.bpjs.model.eventselection.EventSelectionResult;
 import il.ac.bgu.cs.bp.bpjs.model.eventselection.EventSelectionStrategy;
 import il.ac.bgu.se.bp.debugger.BPJsDebuggerRunner;
-import il.ac.bgu.se.bp.debugger.DebuggerCommand;
-import il.ac.bgu.se.bp.debugger.DebuggerOperations;
 import il.ac.bgu.se.bp.debugger.commands.*;
 import il.ac.bgu.se.bp.engine.DebuggerEngineImpl;
 import il.ac.bgu.se.bp.logger.Logger;
