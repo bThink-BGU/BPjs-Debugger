@@ -24,14 +24,14 @@ public class BPJsDebuggerCliRunner {
                         bpJsDebuggerRunner.setup(Collections.singletonMap(Integer.parseInt(splat[1]), true));
                     }
                     else
-                        awaitForResponse(bpJsDebuggerRunner.setBreakpoint(Integer.parseInt(splat[1])));
+                        awaitForResponse(bpJsDebuggerRunner.setBreakpoint(Integer.parseInt(splat[1]), true));
                     break;
                 case "rb":
                     if (!bpJsDebuggerRunner.isSetup() || !bpJsDebuggerRunner.isStarted()) {
                         bpJsDebuggerRunner.setup(Collections.singletonMap(Integer.parseInt(splat[1]), false));
                     }
                     else
-                        awaitForResponse(bpJsDebuggerRunner.removeBreakpoint(Integer.parseInt(splat[1])));
+                        awaitForResponse(bpJsDebuggerRunner.setBreakpoint(Integer.parseInt(splat[1]), false));
                     break;
                 case "go":
                     if (!bpJsDebuggerRunner.isStarted()) {

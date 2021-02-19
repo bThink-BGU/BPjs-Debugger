@@ -120,16 +120,6 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
         }).start();
     }
 
-    public FutureTask<String> setBreakpoint(int lineNumber) {
-        return !isSetup() ? createResolvedFuture("setup is needed") :
-            debuggerEngineImpl.addCommand(new SetBreakpoint(lineNumber, true));
-    }
-
-    public FutureTask<String> removeBreakpoint(int lineNumber) {
-        return !isSetup() ? createResolvedFuture("setup is needed") :
-            debuggerEngineImpl.addCommand(new SetBreakpoint(lineNumber, false));
-    }
-
     public FutureTask<String> continueRun() {
         return !isSetup() ? createResolvedFuture("setup is needed") :
             debuggerEngineImpl.addCommand(new Continue());
@@ -148,6 +138,12 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
     public FutureTask<String> stepOut() {
         return !isSetup() ? createResolvedFuture("setup is needed") :
             debuggerEngineImpl.addCommand(new StepOut());
+    }
+
+    @Override
+    public FutureTask<String> setBreakpoint(int lineNumber, boolean stopOnBreakpoint) {
+        return !isSetup() ? createResolvedFuture("setup is needed") :
+                debuggerEngineImpl.addCommand(new SetBreakpoint(lineNumber, true));
     }
 
     public FutureTask<String> getVars() {

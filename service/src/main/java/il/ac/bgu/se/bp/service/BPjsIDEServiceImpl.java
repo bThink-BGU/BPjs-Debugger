@@ -57,17 +57,37 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
     }
 
     @Override
-    public ExecuteBPjsResponse setBreakpoint(int lineNumber) {
-        return null;
+    public ExecuteBPjsResponse addBreakpoint(int lineNumber) {
+        return setBreakpoint(lineNumber, true);
     }
 
     @Override
     public ExecuteBPjsResponse removeBreakpoint(int lineNumber) {
-        return null;
+        return setBreakpoint(lineNumber, false);
     }
 
     @Override
     public ExecuteBPjsResponse continueRun() {
+        return null;
+    }
+
+    @Override
+    public ExecuteBPjsResponse setBreakpoint(int lineNumber, boolean stopOnBreakpoint) {
+        return null;
+    }
+
+    @Override
+    public ExecuteBPjsResponse getVars() {
+        return null;
+    }
+
+    @Override
+    public ExecuteBPjsResponse stop() {
+        return null;
+    }
+
+    @Override
+    public ExecuteBPjsResponse stepOut() {
         return null;
     }
 
@@ -78,6 +98,11 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
 
     @Override
     public ExecuteBPjsResponse stepOver() {
+        return null;
+    }
+
+    @Override
+    public ExecuteBPjsResponse exit() {
         return null;
     }
 }
