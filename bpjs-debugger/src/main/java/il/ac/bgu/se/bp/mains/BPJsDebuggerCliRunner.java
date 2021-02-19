@@ -10,6 +10,8 @@ public class BPJsDebuggerCliRunner {
 
     public static void main(String[] args) {
         final String filename = "BPJSDebuggerTest.js";
+        System.out.println(Thread.activeCount());
+
         BPJsDebuggerRunner<FutureTask<String>> bpJsDebuggerRunner = new BPJsDebuggerRunnerImpl(filename);
         String cmd = "";
         Scanner sc = new Scanner(System.in);
@@ -34,7 +36,7 @@ public class BPJsDebuggerCliRunner {
                     break;
                 case "go":
                     if (!bpJsDebuggerRunner.isStarted()) {
-                        bpJsDebuggerRunner.startSync();
+                        awaitForResponse(bpJsDebuggerRunner.startSync());
                     }
                     else {
                         awaitForResponse(bpJsDebuggerRunner.continueRun());
@@ -56,7 +58,7 @@ public class BPJsDebuggerCliRunner {
                     awaitForResponse(bpJsDebuggerRunner.exit());
                     break;
                 case "n":
-                    bpJsDebuggerRunner.nextSync();
+                    awaitForResponse(bpJsDebuggerRunner.nextSync());
                     break;
                 case "e": {
                     if(splat.length != 2) {

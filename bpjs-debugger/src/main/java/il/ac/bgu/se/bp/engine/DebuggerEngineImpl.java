@@ -2,6 +2,7 @@ package il.ac.bgu.se.bp.engine;
 
 import il.ac.bgu.cs.bp.bpjs.internal.ScriptableUtils;
 import il.ac.bgu.se.bp.debugger.DebuggerCommand;
+import il.ac.bgu.se.bp.execution.RunnerState;
 import il.ac.bgu.se.bp.logger.Logger;
 import org.mozilla.javascript.*;
 import org.mozilla.javascript.tools.debugger.Dim;
@@ -22,9 +23,10 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
     private final BlockingQueue<FutureTask<String>> queue;
     private final String filename;
     private Dim.ContextData lastContextData = null;
-
-    public DebuggerEngineImpl(String filename) {
+    private RunnerState state;
+    public DebuggerEngineImpl(String filename, RunnerState state) {
         this.filename = filename;
+        this.state = state;
         queue = new ArrayBlockingQueue<>(1);
         dim = new Dim();
         dim.setGuiCallback(this);
@@ -47,13 +49,12 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
 
     @Override
     public void enterInterrupt(Dim.StackFrame stackFrame, String s, String s1) {
+        this.state.setDebuggerState(RunnerState.State.JSDebug);
         System.out.println("Breakpoint reached- " + s + " Line no: " + stackFrame.getLineNumber());
         this.lastContextData = stackFrame.contextData();
         for (int i = 0; i < this.lastContextData.frameCount(); i++) {
             System.out.println(ScriptableUtils.toString((Scriptable) this.lastContextData.getFrame(i).scope()));
         }
-
-
         Context cx = Context.getCurrentContext();
         try {
             Object lastFrame = getValue(cx, "lastInterpreterFrame");
@@ -85,8 +86,14 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
     }
 
     public FutureTask<String> addCommand(DebuggerCommand command) {
-        FutureTask<String> futureTask = debuggerCommandToCallback(command);
-        queue.add(futureTask);
+        FutureTask<String> futureTask;
+        if(this.state.getDebuggerState() == RunnerState.State.JSDebug){
+            futureTask = debuggerCommandToCallback(command);
+            queue.add(futureTask);
+            return futureTask;
+        }
+        futureTask = new FutureTask<>(() -> "Must be in js debug in order to execute this command");
+        futureTask.run();
         return futureTask;
     }
 
@@ -123,6 +130,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
 
     private String stepOut() {
         dim.setReturnValue(Dim.STEP_OUT);
+
         return "step into";
         //        return getDebuggerStatus();
     }
@@ -151,7 +159,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
 //        return getDebuggerStatus();
     }
 
-    private String setBreakpoint(int lineNumber, boolean stopOnBreakpoint) {
+    public String setBreakpoint(int lineNumber, boolean stopOnBreakpoint) {
         try {
             Dim.SourceInfo sourceInfo = dim.sourceInfo(this.filename);
             sourceInfo.breakpoint(lineNumber, stopOnBreakpoint);
