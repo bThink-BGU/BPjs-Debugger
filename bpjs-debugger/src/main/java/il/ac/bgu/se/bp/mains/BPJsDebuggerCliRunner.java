@@ -15,7 +15,7 @@ public class BPJsDebuggerCliRunner {
         String cmd = "";
         Scanner sc = new Scanner(System.in);
         while (!cmd.equals("exit")) {
-            System.out.println("Enter command: b / rb / go / si / sov / sou / get / n / e / re / we /h / stop");
+            System.out.println("Enter command: b / rb / go / si / sov / sou / get / n / e / re / we / h / tmb / stop");
             cmd = sc.nextLine();
             String[] splat = cmd.split(" ");
             switch (splat[0]) {
@@ -53,11 +53,14 @@ public class BPJsDebuggerCliRunner {
                 case "get":
                     awaitForResponse(bpJsDebuggerRunner.getVars());
                     break;
+                case "tmb":
+                    awaitForResponse(bpJsDebuggerRunner.toggleMuteBreakpoints());
+                    break;
                 case "exit":
                     awaitForResponse(bpJsDebuggerRunner.exit());
                     break;
                 case "n":
-                    awaitForResponse(bpJsDebuggerRunner.nextSync());
+                    bpJsDebuggerRunner.nextSync();
                     break;
                 case "e": {
                     if(splat.length != 2) {
@@ -75,9 +78,6 @@ public class BPJsDebuggerCliRunner {
                     awaitForResponse(bpJsDebuggerRunner.removeExternalEvent(splat[1]));
                     break;
                 }
-                case "stop":
-                    bpJsDebuggerRunner.stop();
-                    break;
                 case "we": {
                     if(splat.length != 2) {
                         System.out.println("must enter event");
@@ -89,13 +89,15 @@ public class BPJsDebuggerCliRunner {
                 }
                 case "h": {
                     System.out.println("go - start the program \n" +
-                                        "n - next sync state \n" +
-                                        "e <event name>- add external event+ " +
+                            "n - next sync state \n" +
+                            "e <event name>- add external event+ " +
                             "re <event name> - remove external event" +
                             "we <0/1>- wait for external events " +
                             "");
                 }
-
+                case "stop":
+                    awaitForResponse(bpJsDebuggerRunner.stop());
+                    break;
             }
         }
     }

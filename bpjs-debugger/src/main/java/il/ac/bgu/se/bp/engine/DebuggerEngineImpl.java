@@ -22,6 +22,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, St
     private Dim.ContextData lastContextData = null;
     private volatile boolean isRunning;
     private RunnerState state;
+    private volatile boolean areBreakpointsMuted = false;
 
     public DebuggerEngineImpl(String filename, RunnerState state) {
         this.filename = filename;
@@ -30,6 +31,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, St
         dim = new Dim();
         dim.setGuiCallback(this);
         dim.attachTo(ContextFactory.getGlobal());
+        setIsRunning(true);
     }
 
     public void setupBreakpoint(Map<Integer, Boolean> breakpoints) {
@@ -42,6 +44,11 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, St
     @Override
     public void enterInterrupt(Dim.StackFrame stackFrame, String s, String s1) {
         this.state.setDebuggerState(RunnerState.State.JS_DEBUG);
+        if (this.areBreakpointsMuted) {
+            continueRun();
+            return;
+        }
+
         System.out.println("Breakpoint reached- " + s + " Line no: " + stackFrame.getLineNumber());
         this.lastContextData = stackFrame.contextData();
         Map<Integer, Map<String, String>> env = getEnv();
@@ -74,11 +81,11 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, St
     }
 
     public FutureTask<String> debuggerCommandToCallback(DebuggerCommand<FutureTask<String>, String> command) {
-//        if (!isRunning()) {
-//            FutureTask<String> futureTask = new FutureTask<>(() -> "not running");
-//            futureTask.run();
-//            return futureTask;
-//        }
+        if (!isRunning()) {
+            FutureTask<String> futureTask = new FutureTask<>(() -> "not running");
+            futureTask.run();
+            return futureTask;
+        }
 
         return command.applyCommand(this);
     }
@@ -95,10 +102,19 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, St
         this.isRunning = isRunning;
     }
 
+    private synchronized void setAreBreakpointsMuted(boolean areBreakpointsMuted) {
+        this.areBreakpointsMuted = areBreakpointsMuted;
+    }
+
     public String stop() {
         dim = null;
         setIsRunning(false);
         return "stopped";
+    }
+
+    public String toggleMuteBreakpoints() {
+        setAreBreakpointsMuted(!this.areBreakpointsMuted);
+        return "breakpoints muted toggled to " + this.areBreakpointsMuted;
     }
 
     public String stepOut() {
@@ -203,9 +219,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, St
                     parentFrame = null;
                 }
             }
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
+        } catch (NoSuchFieldException | IllegalAccessException e) {
             e.printStackTrace();
         }
         return env;

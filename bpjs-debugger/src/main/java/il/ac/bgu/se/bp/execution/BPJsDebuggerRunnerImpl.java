@@ -217,12 +217,17 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
             debuggerEngineImpl.addCommand(new Stop());
     }
 
+    @Override
+    public FutureTask<String> toggleMuteBreakpoints() {
+        return !isSetup() ? createResolvedFuture("setup is needed")
+                : createResolvedFuture(debuggerEngineImpl.toggleMuteBreakpoints());
+    }
+
     public FutureTask<String> addExternalEvent(String externalEvent){
         this.bProg.enqueueExternalEvent(new BEvent(externalEvent));
 
         return createResolvedFuture("Added external event: "+ externalEvent );
     }
-
 
     @Override
     public FutureTask<String> removeExternalEvent(String externalEvent) {
