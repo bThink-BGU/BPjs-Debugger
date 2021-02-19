@@ -23,6 +23,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, St
     private final String filename;
     private Dim.ContextData lastContextData = null;
     private volatile boolean isRunning;
+    private volatile boolean areBreakpointsMuted = false;
 
     public DebuggerEngineImpl(String filename) {
         this.filename = filename;
@@ -47,6 +48,11 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, St
 
     @Override
     public void enterInterrupt(Dim.StackFrame stackFrame, String s, String s1) {
+        if (this.areBreakpointsMuted) {
+            continueRun();
+            return;
+        }
+
         System.out.println("Breakpoint reached- " + s + " Line no: " + stackFrame.getLineNumber());
         this.lastContextData = stackFrame.contextData();
         for (int i = 0; i < this.lastContextData.frameCount(); i++) {
@@ -110,10 +116,19 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, St
         this.isRunning = isRunning;
     }
 
+    private synchronized void setAreBreakpointsMuted(boolean areBreakpointsMuted) {
+        this.areBreakpointsMuted = areBreakpointsMuted;
+    }
+
     public String stop() {
         dim = null;
         setIsRunning(false);
         return "stopped";
+    }
+
+    public String toggleMuteBreakpoints() {
+        setAreBreakpointsMuted(!this.areBreakpointsMuted);
+        return "breakpoints muted toggled to " + this.areBreakpointsMuted;
     }
 
     public String stepOut() {

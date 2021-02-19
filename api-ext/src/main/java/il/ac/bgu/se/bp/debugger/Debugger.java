@@ -9,4 +9,5 @@ public interface Debugger<T> {
     T stepOver();
     T exit();
     T continueRun();
+    T toggleMuteBreakpoints();
 }

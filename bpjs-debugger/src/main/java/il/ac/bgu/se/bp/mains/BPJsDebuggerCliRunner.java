@@ -15,7 +15,7 @@ public class BPJsDebuggerCliRunner {
         String cmd = "";
         Scanner sc = new Scanner(System.in);
         while (!cmd.equals("exit")) {
-            System.out.println("Enter command: b / rb / go / si / sov / sou / get / n / stop");
+            System.out.println("Enter command: b / rb / go / si / sov / sou / get / n / tmb / stop");
             cmd = sc.nextLine();
             String[] splat = cmd.split(" ");
             switch (splat[0]) {
@@ -53,6 +53,9 @@ public class BPJsDebuggerCliRunner {
                 case "get":
                     awaitForResponse(bpJsDebuggerRunner.getVars());
                     break;
+                case "tmb":
+                    awaitForResponse(bpJsDebuggerRunner.toggleMuteBreakpoints());
+                    break;
                 case "exit":
                     awaitForResponse(bpJsDebuggerRunner.exit());
                     break;
@@ -60,7 +63,7 @@ public class BPJsDebuggerCliRunner {
                     bpJsDebuggerRunner.nextSync();
                     break;
                 case "stop":
-                    bpJsDebuggerRunner.stop();
+                    awaitForResponse(bpJsDebuggerRunner.stop());
                     break;
 
             }

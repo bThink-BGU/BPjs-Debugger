@@ -118,6 +118,7 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
         }).start();
     }
 
+
     public FutureTask<String> continueRun() {
         return !isSetup() ? createResolvedFuture("setup is needed") :
             debuggerEngineImpl.addCommand(new Continue());
@@ -159,6 +160,12 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
     public FutureTask<String> stop() {
         return  !isSetup() ? createResolvedFuture("setup is needed") :
             debuggerEngineImpl.addCommand(new Stop());
+    }
+
+    @Override
+    public FutureTask<String> toggleMuteBreakpoints() {
+        return !isSetup() ? createResolvedFuture("setup is needed")
+                : createResolvedFuture(debuggerEngineImpl.toggleMuteBreakpoints());
     }
 
     private FutureTask<String> createResolvedFuture(String result) {
