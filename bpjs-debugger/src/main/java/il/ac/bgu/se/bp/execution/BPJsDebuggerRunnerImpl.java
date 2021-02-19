@@ -30,7 +30,6 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
     private final DebuggerEngineImpl debuggerEngineImpl;
     private final ExecutorService execSvc = ExecutorServiceMaker.makeWithName("BPJsDebuggerRunner-" + 1);
     private BProgramSyncSnapshot syncSnapshot = null;
-    private boolean waitOnSync;
     private volatile boolean isSetup = false;
     private volatile boolean isStarted = false;
 
@@ -41,12 +40,13 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
 
     @Override
     public void setup(Map<Integer, Boolean> breakpoints) {
-        if(this.syncSnapshot == null)
-            this.syncSnapshot = bProg.setup();
+        this.syncSnapshot = bProg.setup();
         debuggerEngineImpl.setupBreakpoint(breakpoints);
         setIsSetup(true);
+        this.bProg.setWaitForExternalEvents(true);
     }
 
+    //OLD METHOD TO RUN BPROG - JUST FOR REFERENCE
     @Override
     public void start(Map<Integer, Boolean> breakpoints) {
         if (!isSetup) {
@@ -84,6 +84,9 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
         return isStarted;
     }
 
+    /**
+     * Start the bprog and get the first syncsnapshot.
+     */
     public void startSync() {
         if (!isSetup()) {
             setup(new HashMap<>());
@@ -102,15 +105,35 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
     public void nextSync() {
         new Thread(() -> {
             EventSelectionStrategy eventSelectionStrategy = this.bProg.getEventSelectionStrategy();
-            Set<BEvent> events = eventSelectionStrategy.selectableEvents(this.syncSnapshot);
-            System.out.println(events);
+            Set<BEvent> possibleEvents = eventSelectionStrategy.selectableEvents(this.syncSnapshot);
+            if (possibleEvents.isEmpty()) {
+                if (this.bProg.isWaitForExternalEvents()) {
+                    try{
+                        BEvent next = this.bProg.takeExternalEvent(); // and now we wait for external event
+                        if (next == null) {
+                            return;
+                        } else {
+                            this.syncSnapshot.getExternalEvents().add(next);
+                            possibleEvents = eventSelectionStrategy.selectableEvents(this.syncSnapshot);
+                        }
+                    }
+                    catch (Exception e){
+                        return;
+                    }
+                } else {
+                    System.out.println("Not events wait for external events. termination?");
+                }
+            }
+
+            System.out.println("all events:" + possibleEvents);
+            System.out.println("External events:" +this.syncSnapshot.getExternalEvents());
             try {
-                Optional<EventSelectionResult> eventOptional = eventSelectionStrategy.select(this.syncSnapshot, events);
+                Optional<EventSelectionResult> eventOptional = eventSelectionStrategy.select(this.syncSnapshot, possibleEvents);
                 if(eventOptional.isPresent())
                 {
                     EventSelectionResult esr = eventOptional.get();
                     BEvent event = esr.getEvent();
-                    System.out.println(event);
+                    System.out.println("Selected event: "+ event);
 
                     if ( ! esr.getIndicesToRemove().isEmpty() ) {
                         removeExternalEvents(esr);
@@ -120,6 +143,7 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
                     System.out.println("GOT NEW SYNC STATE");
                 }
                 else{
+
                     System.out.println("Events queue is empty");
                 }
             } catch (InterruptedException e) {
@@ -200,6 +224,7 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
             return createResolvedFuture("setup is needed");
         }
         this.bProg.enqueueExternalEvent(new BEvent(externalEvent));
+
         return createResolvedFuture("Added external event: "+ externalEvent );
     }
 
