@@ -112,13 +112,11 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
                     EventSelectionResult esr = eventOptional.get();
                     BEvent event = esr.getEvent();
                     System.out.println(event);
+
                     if ( ! esr.getIndicesToRemove().isEmpty() ) {
-                        // the event selection affected the external event queue.
-                        List<BEvent> updatedExternals = new ArrayList<>(this.syncSnapshot.getExternalEvents());
-                        esr.getIndicesToRemove().stream().sorted(reverseOrder())
-                                .forEach( idxObj -> updatedExternals.remove(idxObj.intValue()) );
-                        this.syncSnapshot = this.syncSnapshot.copyWith(updatedExternals);
+                        removeExternalEvents(esr);
                     }
+
                     this.syncSnapshot = this.syncSnapshot.triggerEvent(event, execSvc, new ArrayList<>());
                     System.out.println("GOT NEW SYNC STATE");
                 }
@@ -129,6 +127,14 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
                 e.printStackTrace();
             }
         }).start();
+    }
+
+    private void removeExternalEvents(EventSelectionResult esr) {
+        // the event selection affected the external event queue.
+        List<BEvent> updatedExternals = new ArrayList<>(this.syncSnapshot.getExternalEvents());
+        esr.getIndicesToRemove().stream().sorted(reverseOrder())
+                .forEach( idxObj -> updatedExternals.remove(idxObj.intValue()) );
+        this.syncSnapshot = this.syncSnapshot.copyWith(updatedExternals);
     }
 
     public FutureTask<String> setBreakpoint(int lineNumber) {
