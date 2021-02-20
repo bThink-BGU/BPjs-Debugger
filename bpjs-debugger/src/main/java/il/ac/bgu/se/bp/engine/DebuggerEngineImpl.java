@@ -43,18 +43,15 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, St
 
     @Override
     public void enterInterrupt(Dim.StackFrame stackFrame, String s, String s1) {
-        this.state.setDebuggerState(RunnerState.State.JS_DEBUG);
-        if (this.areBreakpointsMuted) {
+        state.setDebuggerState(RunnerState.State.JS_DEBUG);
+        if (areBreakpointsMuted) {
             continueRun();
             return;
         }
 
         System.out.println("Breakpoint reached- " + s + " Line no: " + stackFrame.getLineNumber());
-        this.lastContextData = stackFrame.contextData();
-        Map<Integer, Map<String, String>> env = getEnv();
-        for(Map.Entry e : env.entrySet()){
-            System.out.println(e.getKey()+ ":" + e.getValue());
-        }
+        lastContextData = stackFrame.contextData();
+//        printEnv();
         // Update service -> we on breakpoint! (apply callback)
     }
 
@@ -191,6 +188,13 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, St
             myEnv.put(id.toString(), Objects.toString(scope.get(id)));
         }
         return myEnv;
+    }
+
+    private void printEnv() {
+        Map<Integer, Map<String, String>> env = getEnv();
+        for(Map.Entry e : env.entrySet()){
+            System.out.println(e.getKey()+ ":" + e.getValue());
+        }
     }
 
     private Map<Integer, Map<String, String>> getEnv() {

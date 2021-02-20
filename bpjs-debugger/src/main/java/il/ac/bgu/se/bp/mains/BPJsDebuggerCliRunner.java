@@ -10,11 +10,14 @@ public class BPJsDebuggerCliRunner {
 
     public static void main(String[] args) {
 //        final String filename = "BPJSDebuggerTest.js";
+        printActiveThreads();
         final String filename = "BPJSDebuggerRecTest.js";
         BPJsDebuggerRunner<FutureTask<String>> bpJsDebuggerRunner = new BPJsDebuggerRunnerImpl(filename);
+        printActiveThreads();
         String cmd = "";
         Scanner sc = new Scanner(System.in);
-        while (!cmd.equals("exit")) {
+        while (!cmd.equals("exit") && !cmd.equals("stop")) {
+            printActiveThreads();
             System.out.println("Enter command: b / rb / go / si / sov / sou / get / n / e / re / we / h / tmb / stop");
             cmd = sc.nextLine();
             String[] splat = cmd.split(" ");
@@ -97,9 +100,17 @@ public class BPJsDebuggerCliRunner {
                 }
                 case "stop":
                     awaitForResponse(bpJsDebuggerRunner.stop());
+                    bpJsDebuggerRunner = null;
+//                    System.exit(0);
                     break;
             }
         }
+        printActiveThreads();
+        System.out.println("finished...");
+    }
+
+    private static void printActiveThreads() {
+        System.out.println("threads count: " + Thread.activeCount());
     }
 
     private static void awaitForResponse(FutureTask<String> future) {

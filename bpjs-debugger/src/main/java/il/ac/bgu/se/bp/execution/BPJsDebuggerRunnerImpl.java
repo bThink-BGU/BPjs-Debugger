@@ -17,6 +17,7 @@ import il.ac.bgu.se.bp.logger.Logger;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.Collections.reverseOrder;
 
@@ -24,16 +25,19 @@ import static java.util.Collections.reverseOrder;
  * Runs a {@link BProgram} in debug mode.
  */
 public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<String>> {
+    private final static AtomicInteger debuggerId = new AtomicInteger(0);
     private final Logger logger = new Logger(BPJsDebuggerRunnerImpl.class);
     private final BProgram bProg;
     private final DebuggerEngineImpl debuggerEngineImpl;
-    private final ExecutorService execSvc = ExecutorServiceMaker.makeWithName("BPJsDebuggerRunner-" + 1);
+    private final ExecutorService execSvc = ExecutorServiceMaker.makeWithName("BPJsDebuggerRunner-" + debuggerId.incrementAndGet());
     private BProgramSyncSnapshot syncSnapshot = null;
     private volatile boolean isSetup = false;
     private volatile boolean isStarted = false;
     private RunnerState state = new RunnerState();
+    private LinkedList<Thread> runningThreads;
 
     public BPJsDebuggerRunnerImpl(String filename) {
+        runningThreads = new LinkedList<>();
         debuggerEngineImpl = new DebuggerEngineImpl(filename, state);
         bProg = new ResourceBProgram(filename);
     }
@@ -92,7 +96,7 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
             setup(new HashMap<>());
         }
         setItStarted(true);
-        new Thread(() -> {
+        Thread startSyncThread = new Thread(() -> {
             try {
                 this.syncSnapshot = this.syncSnapshot.start(execSvc);
                 this.state.setDebuggerState(RunnerState.State.SYNC_STATE);
@@ -100,7 +104,9 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-        }).start();
+        });
+        runningThreads.add(startSyncThread);
+        startSyncThread.start();
         return createResolvedFuture("Started");
     }
 
@@ -114,7 +120,7 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
         else if(!isStarted())
             return createResolvedFuture("bprog not started yet");
 
-        new Thread(() -> {
+        Thread nextSyncThread = new Thread(() -> {
             this.state.setDebuggerState(RunnerState.State.RUNNING);
             EventSelectionStrategy eventSelectionStrategy = this.bProg.getEventSelectionStrategy();
             Set<BEvent> possibleEvents = eventSelectionStrategy.selectableEvents(this.syncSnapshot);
@@ -162,7 +168,9 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-        }).start();
+        });
+        nextSyncThread.start();
+        runningThreads.add(nextSyncThread);
         return createResolvedFuture("Executed next sync");
     }
 
@@ -175,51 +183,51 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
     }
 
     public FutureTask<String> continueRun() {
-        return !isSetup() ? createResolvedFuture("setup is needed") :
+        return !isSetup() ? createResolvedFuture("setup required") :
             debuggerEngineImpl.addCommand(new Continue());
     }
 
     public FutureTask<String> stepInto() {
-        return !isSetup() ? createResolvedFuture("setup is needed") :
+        return !isSetup() ? createResolvedFuture("setup required") :
             debuggerEngineImpl.addCommand(new StepInto());
     }
 
     public FutureTask<String> stepOver() {
-        return !isSetup() ? createResolvedFuture("setup is needed") :
+        return !isSetup() ? createResolvedFuture("setup required") :
             debuggerEngineImpl.addCommand(new StepOver());
     }
 
     public FutureTask<String> stepOut() {
-        return !isSetup() ? createResolvedFuture("setup is needed") :
+        return !isSetup() ? createResolvedFuture("setup required") :
             debuggerEngineImpl.addCommand(new StepOut());
     }
 
     @Override
     public FutureTask<String> setBreakpoint(int lineNumber, boolean stopOnBreakpoint) {
-        return !isSetup() ? createResolvedFuture("setup is needed") :
+        return !isSetup() ? createResolvedFuture("setup required") :
                 debuggerEngineImpl.addCommand(new SetBreakpoint(lineNumber, true));
     }
 
     public FutureTask<String> getVars() {
-        return !isSetup() ? createResolvedFuture("setup is needed") :
+        return !isSetup() ? createResolvedFuture("setup required") :
             debuggerEngineImpl.addCommand(new GetVars());
     }
 
     public FutureTask<String> exit() {
-        return  !isSetup() ? createResolvedFuture("setup is needed") :
+        return  !isSetup() ? createResolvedFuture("setup required") :
                 !isStarted() ? createResolvedFuture("The program has ended") :
                 debuggerEngineImpl.addCommand(new Exit());
     }
 
     @Override
     public FutureTask<String> stop() {
-        return  !isSetup() ? createResolvedFuture("setup is needed") :
+        return  !isSetup() ? createResolvedFuture("setup required") :
             debuggerEngineImpl.addCommand(new Stop());
     }
 
     @Override
     public FutureTask<String> toggleMuteBreakpoints() {
-        return !isSetup() ? createResolvedFuture("setup is needed")
+        return !isSetup() ? createResolvedFuture("setup required")
                 : createResolvedFuture(debuggerEngineImpl.toggleMuteBreakpoints());
     }
 
