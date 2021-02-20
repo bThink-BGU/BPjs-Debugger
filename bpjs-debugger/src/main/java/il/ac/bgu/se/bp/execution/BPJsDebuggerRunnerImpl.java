@@ -19,8 +19,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static il.ac.bgu.se.bp.mains.BPJsDebuggerCliRunner.printActiveThreads;
-import static java.lang.Thread.sleep;
 import static java.util.Collections.reverseOrder;
 
 /**
@@ -37,8 +35,10 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
     private volatile boolean isStarted = false;
     private RunnerState state = new RunnerState();
     private LinkedList<Thread> runningThreads;
+    private final Callable onExitInterrupt;
 
-    public BPJsDebuggerRunnerImpl(String filename) {
+    public BPJsDebuggerRunnerImpl(String filename, Callable onExitInterrupt) {
+        this.onExitInterrupt = onExitInterrupt;
         runningThreads = new LinkedList<>();
         debuggerEngineImpl = new DebuggerEngineImpl(filename, state);
         bProg = new ResourceBProgram(filename);
@@ -49,7 +49,7 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
         this.syncSnapshot = bProg.setup();
         debuggerEngineImpl.setupBreakpoint(breakpoints);
         setIsSetup(true);
-        this.bProg.setWaitForExternalEvents(true);
+//        this.bProg.setWaitForExternalEvents(true);        //todo: add wait for external event toggle
     }
 
     //OLD METHOD TO RUN BPROG - JUST FOR REFERENCE
@@ -144,6 +144,9 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
                     }
                 } else {
                     System.out.println("Not events wait for external events. termination?");
+                    printBPS();
+                    onExit();
+                    return;
                 }
             }
 
@@ -168,12 +171,26 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
                     System.out.println("Events queue is empty");
                 }
             } catch (InterruptedException e) {
-                logger.warning("got InterruptedException in startSync");
+                logger.warning("got InterruptedException in nextSync");
             }
         });
+        nextSyncThread.setName("nextSyncThread");
         runningThreads.add(nextSyncThread);
         nextSyncThread.start();
         return createResolvedFuture("Executed next sync");
+    }
+
+    private void onExit() {
+        try {
+            System.out.println("process finished");
+            onExitInterrupt.call();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void printBPS() {
+        System.out.println("BPSYNC COUNT: " + (syncSnapshot == null ? "null" : syncSnapshot.getBThreadSnapshots().size()));
     }
 
     private void removeExternalEvents(EventSelectionResult esr) {
@@ -225,10 +242,19 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
     public FutureTask<String> stop() {
         if (!isSetup())
             return createResolvedFuture("setup required");
-        printActiveThreads();
-        runningThreads.forEach(Thread::interrupt);
-        execSvc.shutdownNow();
-        printActiveThreads();
+        while (!execSvc.isTerminated()) {
+            runningThreads.forEach(Thread::interrupt);
+            execSvc.shutdownNow();
+            try {
+                execSvc.awaitTermination(1500, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+              e.printStackTrace();
+            }
+            if (!execSvc.isTerminated()) {
+                logger.info("not yet terminated");
+//                continueRun().run();
+            }
+        }
         return resolveFuture(new Stop().applyCommand(debuggerEngineImpl));
     }
 
