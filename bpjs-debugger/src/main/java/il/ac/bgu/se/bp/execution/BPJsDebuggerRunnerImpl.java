@@ -19,6 +19,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static il.ac.bgu.se.bp.mains.BPJsDebuggerCliRunner.printActiveThreads;
+import static java.lang.Thread.sleep;
 import static java.util.Collections.reverseOrder;
 
 /**
@@ -102,7 +104,7 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
                 this.state.setDebuggerState(RunnerState.State.SYNC_STATE);
                 System.out.println("GOT NEW SYNC STATE - First sync state");
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                logger.warning("got InterruptedException in startSync");
             }
         });
         runningThreads.add(startSyncThread);
@@ -166,11 +168,11 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
                     System.out.println("Events queue is empty");
                 }
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                logger.warning("got InterruptedException in startSync");
             }
         });
-        nextSyncThread.start();
         runningThreads.add(nextSyncThread);
+        nextSyncThread.start();
         return createResolvedFuture("Executed next sync");
     }
 
@@ -205,7 +207,7 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
     @Override
     public FutureTask<String> setBreakpoint(int lineNumber, boolean stopOnBreakpoint) {
         return !isSetup() ? createResolvedFuture("setup required") :
-                debuggerEngineImpl.addCommand(new SetBreakpoint(lineNumber, true));
+            resolveFuture(new SetBreakpoint(lineNumber, true).applyCommand(debuggerEngineImpl));
     }
 
     public FutureTask<String> getVars() {
@@ -221,8 +223,13 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
 
     @Override
     public FutureTask<String> stop() {
-        return  !isSetup() ? createResolvedFuture("setup required") :
-            debuggerEngineImpl.addCommand(new Stop());
+        if (!isSetup())
+            return createResolvedFuture("setup required");
+        printActiveThreads();
+        runningThreads.forEach(Thread::interrupt);
+        execSvc.shutdownNow();
+        printActiveThreads();
+        return resolveFuture(new Stop().applyCommand(debuggerEngineImpl));
     }
 
     @Override
@@ -263,6 +270,11 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
 
     private FutureTask<String> createResolvedFuture(String result) {
         FutureTask<String> futureTask = new FutureTask<>(() -> result);
+        futureTask.run();
+        return futureTask;
+    }
+
+    private FutureTask<String> resolveFuture(FutureTask<String> futureTask) {
         futureTask.run();
         return futureTask;
     }

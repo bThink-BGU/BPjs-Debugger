@@ -1,4 +1,5 @@
 bp.registerBThread("bt-world",function(){
+    var tt = 15;
     bp.sync({waitFor:bp.Event("hello")});
     bp.sync({request:bp.Event("aba")});
     var x = 10;

@@ -2,6 +2,7 @@ package il.ac.bgu.se.bp.mains;
 import il.ac.bgu.se.bp.debugger.BPJsDebuggerRunner;
 import il.ac.bgu.se.bp.execution.BPJsDebuggerRunnerImpl;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
@@ -109,7 +110,8 @@ public class BPJsDebuggerCliRunner {
         System.out.println("finished...");
     }
 
-    private static void printActiveThreads() {
+    public static void printActiveThreads() {
+        Map<Thread, StackTraceElement[]> stackTraces = Thread.getAllStackTraces();
         System.out.println("threads count: " + Thread.activeCount());
     }
 
