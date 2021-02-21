@@ -6,5 +6,6 @@ public enum DebuggerOperations {
     STEP_OVER,
     STEP_OUT,
     EXIT,
+    STOP,
     GET_VARS
 }

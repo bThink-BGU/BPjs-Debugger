@@ -1,6 +1,7 @@
 package il.ac.bgu.se.bp.engine;
 
 import il.ac.bgu.se.bp.debugger.DebuggerCommand;
+import il.ac.bgu.se.bp.debugger.DebuggerEngine;
 import il.ac.bgu.se.bp.execution.RunnerState;
 import il.ac.bgu.se.bp.logger.Logger;
 import org.mozilla.javascript.*;
@@ -10,17 +11,19 @@ import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 import java.util.stream.Collectors;
 
-public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
+public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, String> {
     private final Logger logger = new Logger(DebuggerEngineImpl.class);
-    private final Dim dim;
+    private Dim dim;
     private final BlockingQueue<FutureTask<String>> queue;
     private final String filename;
     private Dim.ContextData lastContextData = null;
+    private volatile boolean isRunning;
     private RunnerState state;
+    private volatile boolean areBreakpointsMuted = false;
+
     public DebuggerEngineImpl(String filename, RunnerState state) {
         this.filename = filename;
         this.state = state;
@@ -28,6 +31,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
         dim = new Dim();
         dim.setGuiCallback(this);
         dim.attachTo(ContextFactory.getGlobal());
+        setIsRunning(true);
     }
 
     public void setupBreakpoint(Map<Integer, Boolean> breakpoints) {
@@ -35,22 +39,21 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
     }
 
     @Override
-    public void updateSourceText(Dim.SourceInfo sourceInfo) {
-    }
+    public void updateSourceText(Dim.SourceInfo sourceInfo) {}
 
     @Override
     public void enterInterrupt(Dim.StackFrame stackFrame, String s, String s1) {
-        this.state.setDebuggerState(RunnerState.State.JS_DEBUG);
-        System.out.println("Breakpoint reached- " + s + " Line no: " + stackFrame.getLineNumber());
-        this.lastContextData = stackFrame.contextData();
-        Map<Integer, Map<String, String>> env = getEnv();
-        for(Map.Entry e : env.entrySet()){
-            System.out.println(e.getKey()+ ":" + e.getValue());
+        state.setDebuggerState(RunnerState.State.JS_DEBUG);
+        if (areBreakpointsMuted) {
+            continueRun();
+            return;
         }
+
+        System.out.println("Breakpoint reached- " + s + " Line no: " + stackFrame.getLineNumber());
+        lastContextData = stackFrame.contextData();
+//        printEnv();
         // Update service -> we on breakpoint! (apply callback)
     }
-
-
 
     @Override
     public boolean isGuiEventThread() {
@@ -62,7 +65,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
         queue.take().run();
     }
 
-    public FutureTask<String> addCommand(DebuggerCommand command) {
+    public FutureTask<String> addCommand(DebuggerCommand<FutureTask<String>, String> command) {
         FutureTask<String> futureTask;
         if(this.state.getDebuggerState() == RunnerState.State.JS_DEBUG){
             futureTask = debuggerCommandToCallback(command);
@@ -74,57 +77,68 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
         return futureTask;
     }
 
-    public FutureTask<String> debuggerCommandToCallback(DebuggerCommand command) {
-        Callable<String> callback = null;
-        switch (command.getDebuggerOperation()) {
-            case CONTINUE:
-                callback = this::continueRun;
-                break;
-            case STEP_INTO:
-                callback = this::stepInto;
-                break;
-            case STEP_OVER:
-                callback = this::stepOver;
-                break;
-            case STEP_OUT:
-                callback = this::stepOut;
-                break;
-            case EXIT:
-                callback = this::exit;
-                break;
-            case GET_VARS:
-                callback = this::getVars;
-                break;
+    public FutureTask<String> debuggerCommandToCallback(DebuggerCommand<FutureTask<String>, String> command) {
+        if (!isRunning()) {
+            FutureTask<String> futureTask = new FutureTask<>(() -> "not running");
+            futureTask.run();
+            return futureTask;
         }
-        return new FutureTask<>(callback);
+
+        return command.applyCommand(this);
     }
 
-    private String stepOut() {
-        dim.setReturnValue(Dim.STEP_OUT);
+    public void run() {
+        setIsRunning(true);
+    }
 
+    private synchronized boolean isRunning() {
+        return isRunning;
+    }
+
+    private synchronized void setIsRunning(boolean isRunning) {
+        this.isRunning = isRunning;
+    }
+
+    private synchronized void setAreBreakpointsMuted(boolean areBreakpointsMuted) {
+        this.areBreakpointsMuted = areBreakpointsMuted;
+    }
+
+    public String stop() {
+        dim = null;
+        setIsRunning(false);
+        return "stopped";
+    }
+
+    public String toggleMuteBreakpoints() {
+        setAreBreakpointsMuted(!this.areBreakpointsMuted);
+        return "breakpoints muted toggled to " + this.areBreakpointsMuted;
+    }
+
+    public String stepOut() {
+        dim.setReturnValue(Dim.STEP_OUT);
         return "step into";
         //        return getDebuggerStatus();
     }
 
-    private String stepInto() {
+    public String stepInto() {
         dim.setReturnValue(Dim.STEP_INTO);
         return "step into";
         //        return getDebuggerStatus();
     }
 
-    private String stepOver() {
+    public String stepOver() {
         dim.setReturnValue(Dim.STEP_OVER);
         return "step over";
         //        return getDebuggerStatus();
     }
 
-    private String exit() {
+    public String exit() {
         dim.setReturnValue(Dim.EXIT);
         return "exit";
         //        return getDebuggerStatus();
     }
 
-    private String continueRun() {
+    public String continueRun() {
         this.dim.go();
         return "continue run";
 //        return getDebuggerStatus();
@@ -142,7 +156,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
         }
     }
 
-    private String getVars() {
+    public String getVars() {
         StringBuilder vars = new StringBuilder();
         Dim.ContextData currentContextData = dim.currentContextData();
         for (int i = 0; i < currentContextData.frameCount(); i++) {
@@ -151,7 +165,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
             NativeCall scope = (NativeCall) stackFrame.scope();
 
             Object[] objects = ((Scriptable) scope).getIds();
-            List<String> arguments = Arrays.stream(objects).map(p -> p.toString()).collect(Collectors.toList()).subList(1, objects.length);
+            List<String> arguments = Arrays.stream(objects).map(Object::toString).collect(Collectors.toList()).subList(1, objects.length);
             for (String arg : arguments) {
                 Object res = ScriptableObject.getProperty(scope, arg);
                 if (Undefined.instance != res)
@@ -160,6 +174,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
         }
         return "Vars: \n" + vars;
     }
+
     private Object getValue(Object instance, String fieldName) throws NoSuchFieldException, IllegalAccessException {
         Field fld = instance.getClass().getDeclaredField(fieldName);
         fld.setAccessible(true);
@@ -174,6 +189,14 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
         }
         return myEnv;
     }
+
+    private void printEnv() {
+        Map<Integer, Map<String, String>> env = getEnv();
+        for(Map.Entry e : env.entrySet()){
+            System.out.println(e.getKey()+ ":" + e.getValue());
+        }
+    }
+
     private Map<Integer, Map<String, String>> getEnv() {
         Map<Integer, Map<String, String>> env = new HashMap<>();
         for (int i = 0; i < this.lastContextData.frameCount(); i++) {
@@ -196,10 +219,11 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>> {
                     key += debuggerFrame.frameCount();
                     parentFrame = getValue(parentFrame, "parentFrame");
                 }
+                else {
+                    parentFrame = null;
+                }
             }
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
+        } catch (NoSuchFieldException | IllegalAccessException e) {
             e.printStackTrace();
         }
         return env;
