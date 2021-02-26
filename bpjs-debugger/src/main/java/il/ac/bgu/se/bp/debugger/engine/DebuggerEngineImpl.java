@@ -1,7 +1,6 @@
-package il.ac.bgu.se.bp.engine;
+package il.ac.bgu.se.bp.debugger.engine;
 
-import il.ac.bgu.se.bp.debugger.DebuggerCommand;
-import il.ac.bgu.se.bp.debugger.DebuggerEngine;
+import il.ac.bgu.se.bp.debugger.commands.DebuggerCommand;
 import il.ac.bgu.se.bp.execution.RunnerState;
 import il.ac.bgu.se.bp.logger.Logger;
 import org.mozilla.javascript.*;
@@ -109,8 +108,8 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, St
         return "stopped";
     }
 
-    public String toggleMuteBreakpoints() {
-        setAreBreakpointsMuted(!this.areBreakpointsMuted);
+    public String toggleMuteBreakpoints(boolean toggleBreakPointStatus) {
+        setAreBreakpointsMuted(toggleBreakPointStatus);
         return "breakpoints muted toggled to " + this.areBreakpointsMuted;
     }
 

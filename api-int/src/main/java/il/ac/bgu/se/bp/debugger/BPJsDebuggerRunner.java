@@ -4,7 +4,7 @@ import java.util.Map;
 
 public interface BPJsDebuggerRunner<T> extends Debugger<T> {
 
-    void setup(Map<Integer, Boolean> breakpoints);
+    void setup(Map<Integer, Boolean> breakpoints, boolean isSkipSyncPoints);
     boolean isSetup();
 
     void start(Map<Integer, Boolean> breakpoints);
@@ -13,6 +13,9 @@ public interface BPJsDebuggerRunner<T> extends Debugger<T> {
     T addExternalEvent(String externalEvent);
     T removeExternalEvent(String externalEvent);
     T setWaitForExternalEvents(boolean shouldWait);
-    T startSync();
+    T startSync(boolean isSkipSyncPoints);
     T nextSync();
+    T setIsSkipSyncPoints(boolean isSkipSyncPoints);
+    T getSyncSnapshotsHistory();
+    T setSyncSnapshots(long snapShotTime);
 }
