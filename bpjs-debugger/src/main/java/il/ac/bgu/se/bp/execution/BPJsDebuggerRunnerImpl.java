@@ -12,7 +12,9 @@ import il.ac.bgu.cs.bp.bpjs.model.eventselection.EventSelectionResult;
 import il.ac.bgu.cs.bp.bpjs.model.eventselection.EventSelectionStrategy;
 import il.ac.bgu.se.bp.debugger.BPJsDebuggerRunner;
 import il.ac.bgu.se.bp.debugger.commands.*;
-import il.ac.bgu.se.bp.engine.DebuggerEngineImpl;
+import il.ac.bgu.se.bp.debugger.engine.DebuggerEngineImpl;
+import il.ac.bgu.se.bp.debugger.engine.SyncSnapshotHolder;
+import il.ac.bgu.se.bp.debugger.engine.SyncSnapshotHolderImpl;
 import il.ac.bgu.se.bp.logger.Logger;
 
 import java.util.*;
@@ -33,20 +35,24 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
     private BProgramSyncSnapshot syncSnapshot = null;
     private volatile boolean isSetup = false;
     private volatile boolean isStarted = false;
+    private volatile boolean isSkipSyncPoints = false;
     private RunnerState state = new RunnerState();
     private LinkedList<Thread> runningThreads;
     private final Callable onExitInterrupt;
+    private final SyncSnapshotHolder<BProgramSyncSnapshot, BEvent> syncSnapshotHolder;
 
     public BPJsDebuggerRunnerImpl(String filename, Callable onExitInterrupt) {
         this.onExitInterrupt = onExitInterrupt;
         runningThreads = new LinkedList<>();
         debuggerEngineImpl = new DebuggerEngineImpl(filename, state);
         bProg = new ResourceBProgram(filename);
+        syncSnapshotHolder = new SyncSnapshotHolderImpl();
     }
 
     @Override
-    public void setup(Map<Integer, Boolean> breakpoints) {
-        this.syncSnapshot = bProg.setup();
+    public void setup(Map<Integer, Boolean> breakpoints, boolean isSkipSyncPoints) {
+        syncSnapshot = bProg.setup();
+        setIsSkipSyncPoints(isSkipSyncPoints);
         debuggerEngineImpl.setupBreakpoint(breakpoints);
         setIsSetup(true);
 //        this.bProg.setWaitForExternalEvents(true);        //todo: add wait for external event toggle
@@ -56,7 +62,7 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
     @Override
     public void start(Map<Integer, Boolean> breakpoints) {
         if (!isSetup) {
-            setup(breakpoints);
+            setup(breakpoints, false);
             return;
         }
         BProgramRunner rnr = new BProgramRunner();
@@ -72,7 +78,30 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
         new Thread(rnr).start();
     }
 
-    private void setItStarted(boolean isStarted) {
+    @Override
+    public synchronized FutureTask<String> setIsSkipSyncPoints(boolean isSkipSyncPoints) {
+        this.isSkipSyncPoints = isSkipSyncPoints;
+        return createResolvedFuture("isSkipSyncPoints set to: " + isSkipSyncPoints);
+    }
+
+    @Override
+    public FutureTask<String> getSyncSnapshotsHistory() {
+        return createResolvedFuture(syncSnapshotHolder.getAllSyncSnapshots().toString());
+    }
+
+    @Override
+    public FutureTask<String> setSyncSnapshots(long snapShotTime) {
+        BProgramSyncSnapshot newSnapshot = syncSnapshotHolder.popKey(snapShotTime);
+        if (newSnapshot == null) {
+            return createResolvedFuture("failed replacing snapshot");
+        }
+
+        syncSnapshot = newSnapshot;
+        nextSync();
+        return createResolvedFuture("replaced snapshot");
+    }
+
+    private synchronized void setItStarted(boolean isStarted) {
         this.isStarted = isStarted;
     }
 
@@ -93,16 +122,20 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
     /**
      * Start the bprog and get the first syncsnapshot.
      */
-    public FutureTask<String> startSync() {
+    public FutureTask<String> startSync(boolean isSkipSyncPoints) {
         if (!isSetup()) {
-            setup(new HashMap<>());
+            setup(new HashMap<>(), isSkipSyncPoints);
         }
         setItStarted(true);
         Thread startSyncThread = new Thread(() -> {
             try {
-                this.syncSnapshot = this.syncSnapshot.start(execSvc);
-                this.state.setDebuggerState(RunnerState.State.SYNC_STATE);
+                syncSnapshot = syncSnapshot.start(execSvc);
+                syncSnapshotHolder.addSyncSnapshot(syncSnapshot, null);
                 System.out.println("GOT NEW SYNC STATE - First sync state");
+                state.setDebuggerState(RunnerState.State.SYNC_STATE);
+                if (isSkipSyncPoints) {
+                    nextSync();
+                }
             } catch (InterruptedException e) {
                 logger.warning("got InterruptedException in startSync");
             }
@@ -135,8 +168,8 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
                         if (next == null) {
                             return;
                         } else {
-                            this.syncSnapshot.getExternalEvents().add(next);
-                            possibleEvents = eventSelectionStrategy.selectableEvents(this.syncSnapshot);
+                            syncSnapshot.getExternalEvents().add(next);
+                            possibleEvents = eventSelectionStrategy.selectableEvents(syncSnapshot);
                         }
                     }
                     catch (Exception e){
@@ -151,9 +184,9 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
             }
 
             System.out.println("all events: " + possibleEvents);
-            System.out.println("External events: " +this.syncSnapshot.getExternalEvents());
+            System.out.println("External events: " + syncSnapshot.getExternalEvents());
             try {
-                Optional<EventSelectionResult> eventOptional = eventSelectionStrategy.select(this.syncSnapshot, possibleEvents);
+                Optional<EventSelectionResult> eventOptional = eventSelectionStrategy.select(syncSnapshot, possibleEvents);
                 if(eventOptional.isPresent())
                 {
                     EventSelectionResult esr = eventOptional.get();
@@ -163,9 +196,12 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
                     if ( ! esr.getIndicesToRemove().isEmpty() ) {
                         removeExternalEvents(esr);
                     }
-                    this.syncSnapshot = this.syncSnapshot.triggerEvent(event, execSvc, new ArrayList<>());
-                    this.state.setDebuggerState(RunnerState.State.SYNC_STATE);
+                    syncSnapshot = syncSnapshot.triggerEvent(event, execSvc, new ArrayList<>());
+                    syncSnapshotHolder.addSyncSnapshot(syncSnapshot, event);
+                    state.setDebuggerState(RunnerState.State.SYNC_STATE);
                     System.out.println("GOT NEW SYNC STATE");
+                    if (isSkipSyncPoints)
+                        nextSync();
                 }
                 else {
                     System.out.println("Events queue is empty");
@@ -259,9 +295,9 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
     }
 
     @Override
-    public FutureTask<String> toggleMuteBreakpoints() {
+    public FutureTask<String> toggleMuteBreakpoints(boolean toggleBreakPointStatus) {
         return !isSetup() ? createResolvedFuture("setup required")
-                : createResolvedFuture(debuggerEngineImpl.toggleMuteBreakpoints());
+                : createResolvedFuture(debuggerEngineImpl.toggleMuteBreakpoints(toggleBreakPointStatus));
     }
 
     public FutureTask<String> addExternalEvent(String externalEvent){
@@ -284,7 +320,7 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
             updatedExternals.remove(indexToRemove);
         }
 
-        this.syncSnapshot = this.syncSnapshot.copyWith(updatedExternals);
+        syncSnapshot = syncSnapshot.copyWith(updatedExternals);
         return createResolvedFuture("Removed external event: "+ externalEvent );
     }
 

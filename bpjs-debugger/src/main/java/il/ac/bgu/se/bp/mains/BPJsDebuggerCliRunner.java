@@ -17,6 +17,8 @@ public class BPJsDebuggerCliRunner {
     private static boolean isTerminated = false;
     private static BPJsDebuggerRunner<FutureTask<String>> bpJsDebuggerRunner;
     private static Scanner sc = new Scanner(System.in);
+    private static boolean isSkipSyncPoints = false;
+    private static boolean isSkipBreakPoints = false;
 
     private static void runBPJsDebuggerCliRunner() {
         System.out.println("RUNNING!");
@@ -27,7 +29,7 @@ public class BPJsDebuggerCliRunner {
         bpJsDebuggerRunner.stop();
     }
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
         final String filename = "BPJSDebuggerTest.js";
 //        final String filename = "BPJSDebuggerRecTest.js";
 
@@ -44,21 +46,21 @@ public class BPJsDebuggerCliRunner {
         switch (cmd) {
             case "b":
                 if (!bpJsDebuggerRunner.isSetup() || !bpJsDebuggerRunner.isStarted()) {
-                    bpJsDebuggerRunner.setup(Collections.singletonMap(Integer.parseInt(splat[1]), true));
+                    bpJsDebuggerRunner.setup(Collections.singletonMap(Integer.parseInt(splat[1]), true), isSkipSyncPoints);
                 }
                 else
                     awaitForResponse(bpJsDebuggerRunner.setBreakpoint(Integer.parseInt(splat[1]), true));
                 break;
             case "rb":
                 if (!bpJsDebuggerRunner.isSetup() || !bpJsDebuggerRunner.isStarted()) {
-                    bpJsDebuggerRunner.setup(Collections.singletonMap(Integer.parseInt(splat[1]), false));
+                    bpJsDebuggerRunner.setup(Collections.singletonMap(Integer.parseInt(splat[1]), false), isSkipSyncPoints);
                 }
                 else
                     awaitForResponse(bpJsDebuggerRunner.setBreakpoint(Integer.parseInt(splat[1]), false));
                 break;
             case "go":
                 if (!bpJsDebuggerRunner.isStarted()) {
-                    awaitForResponse(bpJsDebuggerRunner.startSync());
+                    awaitForResponse(bpJsDebuggerRunner.startSync(isSkipSyncPoints));
                 }
                 else {
                     awaitForResponse(bpJsDebuggerRunner.continueRun());
@@ -73,11 +75,12 @@ public class BPJsDebuggerCliRunner {
             case "sou":
                 awaitForResponse(bpJsDebuggerRunner.stepOut());
                 break;
-            case "get":
+            case "getv":
                 awaitForResponse(bpJsDebuggerRunner.getVars());
                 break;
             case "tmb":
-                awaitForResponse(bpJsDebuggerRunner.toggleMuteBreakpoints());
+                isSkipBreakPoints = !isSkipBreakPoints;
+                awaitForResponse(bpJsDebuggerRunner.toggleMuteBreakpoints(isSkipBreakPoints));
                 break;
             case "n":
                 bpJsDebuggerRunner.nextSync();
@@ -115,6 +118,16 @@ public class BPJsDebuggerCliRunner {
                         "we <0/1>- wait for external events " +
                         "");
             }
+            case "tsp":
+                isSkipSyncPoints = !isSkipSyncPoints;
+                awaitForResponse(bpJsDebuggerRunner.setIsSkipSyncPoints(isSkipSyncPoints));
+                break;
+            case "getss":
+                awaitForResponse(bpJsDebuggerRunner.getSyncSnapshotsHistory());
+                break;
+            case "sss":  // set syncsnapshot
+                awaitForResponse(bpJsDebuggerRunner.setSyncSnapshots(Long.parseLong(splat[1])));
+                break;
             case "stop":
                 awaitForResponse(bpJsDebuggerRunner.stop());
                 break;
@@ -131,7 +144,7 @@ public class BPJsDebuggerCliRunner {
 
     private static String[] getUserInput(Scanner sc) {
         try {
-            System.out.println("Enter command: b / rb / go / si / sov / sou / get / n / e / re / we / h / tmb / stop");
+            System.out.println("Enter command: b / rb / go / si / sov / sou / getv / getss / n / e / re / we / h / tmb / tsp / sss / stop");
             String cmd = sc.nextLine();
             return cmd.split(" ");
         } catch (Exception e) {

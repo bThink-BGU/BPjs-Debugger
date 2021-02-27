@@ -1,5 +1,7 @@
-package il.ac.bgu.se.bp.debugger;
+package il.ac.bgu.se.bp.debugger.engine;
 
+import il.ac.bgu.se.bp.debugger.Debugger;
+import il.ac.bgu.se.bp.debugger.commands.DebuggerCommand;
 import org.mozilla.javascript.tools.debugger.GuiCallback;
 
 import java.util.Map;

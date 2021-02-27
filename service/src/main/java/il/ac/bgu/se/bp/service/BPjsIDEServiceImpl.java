@@ -72,7 +72,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
     }
 
     @Override
-    public ExecuteBPjsResponse toggleMuteBreakpoints() {
+    public ExecuteBPjsResponse toggleMuteBreakpoints(boolean toggleBreakPointStatus) {
         return null;
     }
 
