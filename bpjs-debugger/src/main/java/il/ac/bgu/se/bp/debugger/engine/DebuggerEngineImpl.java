@@ -174,43 +174,113 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, St
         return "Vars: \n" + vars;
     }
 
+    @Override
+    public String getState() {
+        System.out.println();
+        return "get state";
+    }
+
     private Object getValue(Object instance, String fieldName) throws NoSuchFieldException, IllegalAccessException {
         Field fld = instance.getClass().getDeclaredField(fieldName);
         fld.setAccessible(true);
         return fld.get(instance);
     }
+    /**
+     * Take a Javascript value from Rhino, build a Java value for it.
+     * @param jsValue
+     * @return
+     */
+    private Object collectJsValue(Object jsValue) {
+        if ( jsValue == null ) {
+            return null;
 
-    private Map<String, String> getScope(ScriptableObject scope){
+        } else if ( jsValue instanceof NativeFunction ) {
+            return ((NativeFunction)jsValue).getEncodedSource();
+
+        } else if ( jsValue instanceof NativeArray ) {
+            NativeArray jsArr = (NativeArray) jsValue;
+            List<Object> retVal = new ArrayList<>((int)jsArr.getLength());
+            for ( int idx=0; idx<jsArr.getLength(); idx++ ) {
+                retVal.add( collectJsValue(jsArr.get(idx)) );
+            }
+            return retVal;
+
+        } else if ( jsValue instanceof ScriptableObject ) {
+            ScriptableObject jsObj = (ScriptableObject) jsValue;
+            Map<Object, Object> retVal = new HashMap<>();
+            for ( Object key:jsObj.getIds() ) {
+                retVal.put(key, collectJsValue(jsObj.get(key)) );
+            }
+            return retVal;
+
+        } else if ( jsValue instanceof ConsString ) {
+            return ((ConsString)jsValue).toString();
+
+        } else if ( jsValue instanceof NativeJavaObject ) {
+            NativeJavaObject jsJavaObj = (NativeJavaObject) jsValue;
+            Object obj = jsJavaObj.unwrap();
+            return obj;
+
+        } else {
+            return jsValue;
+        }
+
+    }
+    public Map<String, String> getScope(ScriptableObject scope){
         Map<String, String> myEnv = new HashMap<>();
         Object[] ids = Arrays.stream(scope.getIds()).skip(1).toArray();
+        try {
+            Object function =   getValue(scope, "function");
+            Object interpeterData =   getValue(function, "idata");
+            String itsName = (String) getValue(interpeterData, "itsName");
+            myEnv.put("FUNCNAME", itsName != null ? itsName: "BTMain");
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+
         for(Object id: ids){
-            myEnv.put(id.toString(), Objects.toString(scope.get(id)));
+            myEnv.put(id.toString(), Objects.toString(collectJsValue(scope.get(id))));
         }
         return myEnv;
     }
 
     private void printEnv() {
-        Map<Integer, Map<String, String>> env = getEnv();
+        Map<Integer, Map<String, String>> env = getEnv(this.lastContextData, null);
         for(Map.Entry e : env.entrySet()){
             System.out.println(e.getKey()+ ":" + e.getValue());
         }
     }
 
-    private Map<Integer, Map<String, String>> getEnv() {
+    public Map<Integer, Map<String, String>> getEnv(Dim.ContextData contextData, Object interpreterCallFrame) {
         Map<Integer, Map<String, String>> env = new HashMap<>();
-        for (int i = 0; i < this.lastContextData.frameCount(); i++) {
-            ScriptableObject scope = (ScriptableObject) this.lastContextData.getFrame(i).scope();
+        for (int i = 0; i < contextData.frameCount(); i++) {
+            ScriptableObject scope = (ScriptableObject) contextData.getFrame(i).scope();
             env.put(i, getScope(scope));
         }
-        Integer key = this.lastContextData.frameCount();
+
         // get from continuation frames
         Context cx = Context.getCurrentContext();
+
+        Integer key = (cx==null)? 1: contextData.frameCount();
         try {
-            Object lastFrame = getValue(cx, "lastInterpreterFrame");
+
+            Object lastFrame = cx != null? getValue(cx, "lastInterpreterFrame") : interpreterCallFrame;
+            if(cx == null){
+                ScriptableObject scope = (ScriptableObject) getValue(lastFrame, "scope");
+                env.put(0, getScope(scope));
+            }
             Object parentFrame = getValue(lastFrame, "parentFrame");
             while(parentFrame != null) {
                 Dim.ContextData debuggerFrame = ((Dim.StackFrame) getValue(parentFrame, "debuggerFrame")).contextData();
-                if (debuggerFrame != this.lastContextData) {
+                if(cx == null){ // continuations mode
+                    ScriptableObject scope = (ScriptableObject) getValue(parentFrame, "scope");
+                    env.put(key, getScope(scope));
+                    key += 1;
+                    parentFrame = getValue(parentFrame, "parentFrame");
+                }
+                else if ( debuggerFrame != contextData) { // js debug mode
                     for (int i = 0; i < debuggerFrame.frameCount(); i++) {
                         ScriptableObject scope = (ScriptableObject) debuggerFrame.getFrame(i).scope();
                         env.put(key, getScope(scope));

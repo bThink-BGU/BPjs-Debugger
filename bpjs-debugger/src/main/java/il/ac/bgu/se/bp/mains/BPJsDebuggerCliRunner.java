@@ -131,6 +131,9 @@ public class BPJsDebuggerCliRunner {
             case "stop":
                 awaitForResponse(bpJsDebuggerRunner.stop());
                 break;
+            case "gets":
+                awaitForResponse(bpJsDebuggerRunner.getState());
+                break;
         }
         return !cmd.equals("stop");
     }

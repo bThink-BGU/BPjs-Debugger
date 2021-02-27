@@ -4,22 +4,25 @@ import il.ac.bgu.cs.bp.bpjs.execution.BProgramRunner;
 import il.ac.bgu.cs.bp.bpjs.execution.listeners.BProgramRunnerListenerAdapter;
 import il.ac.bgu.cs.bp.bpjs.execution.listeners.PrintBProgramRunnerListener;
 import il.ac.bgu.cs.bp.bpjs.internal.ExecutorServiceMaker;
-import il.ac.bgu.cs.bp.bpjs.model.BEvent;
-import il.ac.bgu.cs.bp.bpjs.model.BProgram;
-import il.ac.bgu.cs.bp.bpjs.model.BProgramSyncSnapshot;
-import il.ac.bgu.cs.bp.bpjs.model.ResourceBProgram;
+import il.ac.bgu.cs.bp.bpjs.model.*;
 import il.ac.bgu.cs.bp.bpjs.model.eventselection.EventSelectionResult;
 import il.ac.bgu.cs.bp.bpjs.model.eventselection.EventSelectionStrategy;
+import il.ac.bgu.cs.bp.bpjs.model.eventsets.EventSet;
 import il.ac.bgu.se.bp.debugger.BPJsDebuggerRunner;
 import il.ac.bgu.se.bp.debugger.commands.*;
 import il.ac.bgu.se.bp.debugger.engine.DebuggerEngineImpl;
 import il.ac.bgu.se.bp.debugger.engine.SyncSnapshotHolder;
 import il.ac.bgu.se.bp.debugger.engine.SyncSnapshotHolderImpl;
 import il.ac.bgu.se.bp.logger.Logger;
+import org.mozilla.javascript.*;
+import org.mozilla.javascript.tools.debugger.Dim;
 
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import static java.util.Collections.reverseOrder;
 
@@ -295,6 +298,99 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
         return resolveFuture(new Stop().applyCommand(debuggerEngineImpl));
     }
 
+    @Override
+    public FutureTask<String> getState(){
+
+        Set<BThreadSyncSnapshot> bThreadSyncSnapshot = syncSnapshot.getBThreadSnapshots();
+        for(BThreadSyncSnapshot b: bThreadSyncSnapshot) {
+
+            System.out.println(b.getName());
+//            Map<Object, Object> s = b.getContinuationProgramState().getVisibleVariables();
+//            for (Map.Entry e : s.entrySet()) {
+//                System.out.println(e.getKey().toString());
+//                System.out.println(e.getValue().toString());
+//
+//            }
+
+            ScriptableObject scope = (ScriptableObject) b.getScope();
+            try {
+
+                Object implementation = getValue(scope, "implementation");
+                Dim.StackFrame debuggerFrame = (Dim.StackFrame) getValue(implementation, "debuggerFrame");
+                Map<Integer, Map<String, String>> env = debuggerEngineImpl.getEnv(debuggerFrame.contextData(), implementation);
+                for (Map.Entry e : env.entrySet()) {
+                    System.out.println(e.getKey() + ":" + e.getValue());
+                }
+            } catch (NoSuchFieldException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+
+            EventSet wait = b.getSyncStatement().getWaitFor();
+            EventSet blocked =b.getSyncStatement().getBlock();
+            List<BEvent> requested = b.getSyncStatement().getRequest().stream().collect(Collectors.toList());
+            System.out.println(wait);
+            System.out.println(blocked);
+            System.out.println(requested);
+//
+//            Map<Object, Object> globalVariables = new HashMap<>();
+//            NativeContinuation nc = ((NativeContinuation)b.getContinuation());
+//            Map<Object, Object> variables = b.getContinuationProgramState().getVisibleVariables();
+//            System.out.println(variables.toString());
+//            getGlobalValues(nc, variables, globalVariables);
+//            Map<Object, Object> localVariables = new HashMap<>();
+//            for(Object var: variables.keySet())
+//                if(!globalVariables.containsKey(var))
+//                    localVariables.put(var, variables.get(var));
+//            for (Map.Entry e : globalVariables.entrySet()) {
+//                System.out.println(e);
+//            }
+//            for (Map.Entry e : localVariables.entrySet()) {
+//                System.out.println(e);
+//            }
+//
+//            System.out.println();
+//        }
+        }
+        return resolveFuture(new GetState().applyCommand(debuggerEngineImpl));
+
+    }
+
+
+
+    private Object getValue(Object instance, String fieldName) throws NoSuchFieldException, IllegalAccessException {
+        Field fld = instance.getClass().getDeclaredField(fieldName);
+        fld.setAccessible(true);
+        return fld.get(instance);
+    }
+    private void getGlobalValues(NativeContinuation nc,  Map<Object, Object> variables, Map<Object, Object> globalVariables) {
+        ScriptableObject current = nc;
+        ScriptableObject currentScope = nc;
+        try {
+            Context.enter();
+            while (current != null) {
+                for(Object o: current.getIds())
+                    addVar(current, globalVariables, o, variables.get(o));
+                if (current.getPrototype() != null)
+                    current = (ScriptableObject) current.getPrototype();
+                else { // go to the next
+                    current = (ScriptableObject) currentScope.getParentScope();
+                    currentScope = current;
+                }
+            }
+        } finally {
+            Context.exit();
+        }
+    }
+
+    private void addVar(ScriptableObject current, Map<Object, Object> variables, Object var, Object val) {
+        if (!variables.containsKey(var) && !var.equals("bp")) {
+            Object variableContent = current.get(var);
+            if (variableContent instanceof Undefined) return;
+            variables.put(var, val);
+        }
+    }
     @Override
     public FutureTask<String> toggleMuteBreakpoints(boolean toggleBreakPointStatus) {
         return !isSetup() ? createResolvedFuture("setup required")

@@ -1,21 +1,25 @@
 bp.registerBThread("bt-world",function(){
+    var tal = [5,3];
+    foo();
+    var xxxworld = 10;
+    var yyyworld = 20;
     bp.sync({waitFor:bp.Event("hello")});
     bp.sync({request:bp.Event("aba")});
-    var x = 10;
-    var y = 20;
     foo()
     bp.sync({request:bp.Event("world12121")});
 })
 
 bp.registerBThread("bt-hello", function(){
+    var zzzhello = 11;
+    var yyyhello = 40;
     bp.sync({request:bp.Event("hello")});
-    var z = 11;
-    var y = 40;
     foo()
     bp.sync({request:bp.Event("hello12312312")});
 })
 
 function foo() {
+    var foovar = 30;
+    bp.sync({request:bp.Event("aba")});
     var m = 50;
     var n = 100;
     goo();
@@ -26,4 +30,5 @@ function foo() {
 function goo() {
     var tt = 123;
     var qqq = 111;
+    bp.sync({request:bp.Event("bbbb")});
 }
