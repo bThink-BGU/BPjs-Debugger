@@ -41,6 +41,7 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
     private final Callable onExitInterrupt;
     private final SyncSnapshotHolder<BProgramSyncSnapshot, BEvent> syncSnapshotHolder;
 
+
     public BPJsDebuggerRunnerImpl(String filename, Callable onExitInterrupt) {
         this.onExitInterrupt = onExitInterrupt;
         runningThreads = new LinkedList<>();
