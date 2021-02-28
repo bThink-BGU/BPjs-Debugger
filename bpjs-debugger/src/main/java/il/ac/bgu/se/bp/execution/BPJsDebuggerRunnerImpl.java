@@ -58,6 +58,7 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
         syncSnapshot = bProg.setup();
         setIsSkipSyncPoints(isSkipSyncPoints);
         debuggerEngineImpl.setupBreakpoint(breakpoints);
+        debuggerEngineImpl.setSyncSnapshot(syncSnapshot);
         setIsSetup(true);
 //        this.bProg.setWaitForExternalEvents(true);        //todo: add wait for external event toggle
     }
@@ -134,6 +135,7 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
         Thread startSyncThread = new Thread(() -> {
             try {
                 syncSnapshot = syncSnapshot.start(execSvc);
+                this.debuggerEngineImpl.setSyncSnapshot(syncSnapshot);
                 syncSnapshotHolder.addSyncSnapshot(syncSnapshot, null);
                 System.out.println("GOT NEW SYNC STATE - First sync state");
                 state.setDebuggerState(RunnerState.State.SYNC_STATE);
@@ -144,6 +146,7 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
                 logger.warning("got InterruptedException in startSync");
             }
         });
+        startSyncThread.setName("startSyncThread");
         runningThreads.add(startSyncThread);
         startSyncThread.start();
         return createResolvedFuture("Started");
@@ -201,6 +204,7 @@ public class BPJsDebuggerRunnerImpl implements BPJsDebuggerRunner<FutureTask<Str
                         removeExternalEvents(esr);
                     }
                     syncSnapshot = syncSnapshot.triggerEvent(event, execSvc, new ArrayList<>());
+                    this.debuggerEngineImpl.setSyncSnapshot(syncSnapshot);
                     syncSnapshotHolder.addSyncSnapshot(syncSnapshot, event);
                     state.setDebuggerState(RunnerState.State.SYNC_STATE);
                     System.out.println("GOT NEW SYNC STATE");

@@ -1,26 +1,29 @@
 bp.registerBThread("bt-world",function(){
+    var beforefirstsync = 10;
+    bp.sync({request:bp.Event("aba")});
     var tal = [5,3];
-    foo();
+    foo(10);
     var xxxworld = 10;
     var yyyworld = 20;
     bp.sync({waitFor:bp.Event("hello")});
     bp.sync({request:bp.Event("aba")});
-    foo()
+    foo(20)
     bp.sync({request:bp.Event("world12121")});
 })
 
 bp.registerBThread("bt-hello", function(){
+    bp.sync({request:bp.Event("ima")});
     var zzzhello = 11;
     var yyyhello = 40;
     bp.sync({request:bp.Event("hello")});
-    foo()
+    foo(30)
     bp.sync({request:bp.Event("hello12312312")});
 })
 
-function foo() {
-    var foovar = 30;
-    bp.sync({request:bp.Event("aba")});
+function foo(fooparam) {
+    var foovar = 1 +fooparam;
     var m = 50;
+    bp.sync({request:bp.Event("OKINFOO")});
     var n = 100;
     goo();
     var p = m+n;
@@ -30,5 +33,4 @@ function foo() {
 function goo() {
     var tt = 123;
     var qqq = 111;
-    bp.sync({request:bp.Event("bbbb")});
 }

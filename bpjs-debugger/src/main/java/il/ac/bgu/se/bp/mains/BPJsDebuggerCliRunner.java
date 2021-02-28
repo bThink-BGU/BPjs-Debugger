@@ -83,7 +83,7 @@ public class BPJsDebuggerCliRunner {
                 awaitForResponse(bpJsDebuggerRunner.toggleMuteBreakpoints(isSkipBreakPoints));
                 break;
             case "n":
-                bpJsDebuggerRunner.nextSync();
+                awaitForResponse(bpJsDebuggerRunner.nextSync());
                 break;
             case "e": {
                 if (splat.length != 2) {
