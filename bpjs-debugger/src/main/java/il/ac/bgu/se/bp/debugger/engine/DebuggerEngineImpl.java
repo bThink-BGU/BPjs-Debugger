@@ -39,7 +39,6 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, St
         setIsRunning(true);
     }
 
-
     public void setupBreakpoint(Map<Integer, Boolean> breakpoints) {
         breakpoints.forEach(this::setBreakpoint);
     }
@@ -54,16 +53,15 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, St
         state.setDebuggerState(RunnerState.State.JS_DEBUG);
         lastContextData = stackFrame.contextData();
         BPDebuggerState bpDebuggerState = generateDebuggerState();
-        System.out.println(bpDebuggerState.toString());
+        logger.debug("Get state from enterInterrupt");
+
+//        System.out.println(bpDebuggerState.toString());
         //send state via socket
         if (areBreakpointsMuted) {
             continueRun();
             return;
         }
-
-
 //        printEnv();
-        // Update service -> we on breakpoint! (apply callback)
     }
 
     @Override
@@ -73,6 +71,8 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, St
 
     @Override
     public void dispatchNextGuiEvent() throws InterruptedException {
+        logger.debug("Get state from dispatchNextGuiEvent");
+
         BPDebuggerState bpDebuggerState = generateDebuggerState();
         //send state via socket
         queue.take().run();
@@ -96,12 +96,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, St
             futureTask.run();
             return futureTask;
         }
-
         return command.applyCommand(this);
-    }
-
-    public void run() {
-        setIsRunning(true);
     }
 
     private synchronized boolean isRunning() {
@@ -163,13 +158,15 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, St
             Dim.SourceInfo sourceInfo = dim.sourceInfo(this.filename);
             sourceInfo.breakpoint(lineNumber, stopOnBreakpoint);
             return "after set breakpoint -" + " line " + lineNumber + " changed to " + stopOnBreakpoint;
-//        return getDebuggerStatus();
         } catch (Exception e) {
             logger.error("cannot assign breakpoint on line {0}", lineNumber);
             return null;
         }
     }
 
+    /*
+    old code just for reference
+     */
     public String getVars() {
         StringBuilder vars = new StringBuilder();
         Dim.ContextData currentContextData = dim.currentContextData();
@@ -245,20 +242,19 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, St
 
     public Map<String, String> getScope(ScriptableObject scope) {
         Map<String, String> myEnv = new HashMap<>();
-        Object[] ids = Arrays.stream(scope.getIds()).skip(1).toArray();
         try {
             Object function = getValue(scope, "function");
             Object interpeterData = getValue(function, "idata");
             String itsName = (String) getValue(interpeterData, "itsName");
             myEnv.put("FUNCNAME", itsName != null ? itsName : "BTMain");
+            Object[] ids = Arrays.stream(scope.getIds()).filter((p) -> !p.toString().equals("arguments") && !p.toString().equals(itsName+"param")).toArray();
+            for (Object id : ids) {
+                myEnv.put(id.toString(), Objects.toString(collectJsValue(scope.get(id))));
+            }
         } catch (NoSuchFieldException e) {
             e.printStackTrace();
         } catch (IllegalAccessException e) {
             e.printStackTrace();
-        }
-
-        for (Object id : ids) {
-            myEnv.put(id.toString(), Objects.toString(collectJsValue(scope.get(id))));
         }
         return myEnv;
     }
@@ -314,43 +310,24 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, St
         return env;
     }
 
-
     public Map<Integer, Map<String, String>> getEnv(Dim.ContextData contextData, Object interpreterCallFrame) {
         Map<Integer, Map<String, String>> env = new HashMap<>();
         for (int i = 0; i < contextData.frameCount(); i++) {
             ScriptableObject scope = (ScriptableObject) contextData.getFrame(i).scope();
             env.put(i, getScope(scope));
         }
-
-        // get from continuation frames
-        Context cx = Context.getCurrentContext();
-
-        Integer key = (cx == null) ? 1 : contextData.frameCount();
+        Integer key =  1;
         try {
-
-            Object lastFrame = cx != null ? getValue(cx, "lastInterpreterFrame") : interpreterCallFrame;
-            if (cx == null) {
-                ScriptableObject scope = (ScriptableObject) getValue(lastFrame, "scope");
-                env.put(0, getScope(scope));
-            }
+            Object lastFrame = interpreterCallFrame;
+            ScriptableObject scope = (ScriptableObject) getValue(lastFrame, "scope");
+            env.put(0, getScope(scope));
             Object parentFrame = getValue(lastFrame, "parentFrame");
             while (parentFrame != null) {
                 Dim.ContextData debuggerFrame = ((Dim.StackFrame) getValue(parentFrame, "debuggerFrame")).contextData();
-                if (cx == null) { // continuations mode
-                    ScriptableObject scope = (ScriptableObject) getValue(parentFrame, "scope");
-                    env.put(key, getScope(scope));
-                    key += 1;
-                    parentFrame = getValue(parentFrame, "parentFrame");
-                } else if (debuggerFrame != contextData) { // js debug mode
-                    for (int i = 0; i < debuggerFrame.frameCount(); i++) {
-                        ScriptableObject scope = (ScriptableObject) debuggerFrame.getFrame(i).scope();
-                        env.put(key, getScope(scope));
-                    }
-                    key += debuggerFrame.frameCount();
-                    parentFrame = getValue(parentFrame, "parentFrame");
-                } else {
-                    parentFrame = null;
-                }
+                scope = (ScriptableObject) getValue(parentFrame, "scope");
+                env.put(key, getScope(scope));
+                key += 1;
+                parentFrame = getValue(parentFrame, "parentFrame");
             }
         } catch (NoSuchFieldException | IllegalAccessException e) {
             e.printStackTrace();
@@ -363,13 +340,12 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, St
     }
 
     private BThreadInfo createBThreadInfo(BThreadSyncSnapshot bThreadSS) {
-        Map<Integer, Map<String, String>> env = null;
+        Map<Integer, Map<String, String>> env;
         ScriptableObject scope = (ScriptableObject) bThreadSS.getScope();
         try {
             Object implementation = getValue(scope, "implementation");
             Dim.StackFrame debuggerFrame = (Dim.StackFrame) getValue(implementation, "debuggerFrame");
-            System.out.println(bThreadSS.getName());
-            env = getEnvDebug(debuggerFrame.contextData(), implementation);
+            env = state.getDebuggerState() == RunnerState.State.JS_DEBUG? getEnvDebug(debuggerFrame.contextData(), implementation) : getEnv(debuggerFrame.contextData(), implementation);
             EventSet wait = bThreadSS.getSyncStatement().getWaitFor();
             EventSet blocked = bThreadSS.getSyncStatement().getBlock();
             List<BEvent> requested = new ArrayList<>(bThreadSS.getSyncStatement().getRequest());
@@ -382,7 +358,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, St
         return null;
     }
 
-    private BPDebuggerState generateDebuggerState() {
+    public BPDebuggerState generateDebuggerState() {
         List<BThreadInfo> bThreadInfoList = new ArrayList<>();
         Set<BThreadSyncSnapshot> bThreadSyncSnapshot = syncSnapshot.getBThreadSnapshots();
         for (BThreadSyncSnapshot bThreadSS : bThreadSyncSnapshot) {
