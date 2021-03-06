@@ -5,11 +5,11 @@ import java.util.Set;
 public class BThreadInfo {
     String name;
     Map<Integer, Map<String, String>> env;
-    Set<String> wait;
-    Set<String> blocked;
-    Set<String> requested; //todo: fix
+    EventInfo wait;
+    EventInfo blocked;
+    Set<EventInfo> requested;
 
-    public BThreadInfo(String name, Map<Integer, Map<String, String>> env, Set<String> wait, Set<String> blocked, Set<String> requested) {
+    public BThreadInfo(String name, Map<Integer, Map<String, String>> env, EventInfo wait, EventInfo blocked, Set<EventInfo> requested) {
         this.name = name;
         this.env = env;
         this.wait = wait;
