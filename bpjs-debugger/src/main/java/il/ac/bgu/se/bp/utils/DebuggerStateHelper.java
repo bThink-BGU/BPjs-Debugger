@@ -29,6 +29,7 @@ public class DebuggerStateHelper {
                 .collect(Collectors.toList());
 
         Set<SyncStatement> statements = syncSnapshot.getStatements();
+
         List<EventSet> wait = statements.stream().map(SyncStatement::getWaitFor).collect(Collectors.toList());
         List<EventSet> blocked = statements.stream().map(SyncStatement::getBlock).collect(Collectors.toList());
         List<BEvent> requested = statements.stream().map(SyncStatement::getRequest).flatMap(Collection::stream).collect(Collectors.toList());
@@ -74,7 +75,8 @@ public class DebuggerStateHelper {
         try {
             Object lastInterpreterFrame = getValue(cx, "lastInterpreterFrame");
             Object parentFrame = getValue(lastInterpreterFrame, "parentFrame");
-            ScriptableObject interruptedScope = (ScriptableObject) getValue(parentFrame, "scope");
+            ScriptableObject interruptedScope = parentFrame != null ? (ScriptableObject) getValue(parentFrame, "scope") :
+                    (ScriptableObject) getValue(lastInterpreterFrame, "scope");
             ScriptableObject paramScope = (ScriptableObject) getValue(interpreterCallFrame, "scope");
             if (paramScope == interruptedScope) { //current running bthread
                 currentBT = true;
