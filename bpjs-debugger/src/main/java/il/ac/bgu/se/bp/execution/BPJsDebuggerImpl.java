@@ -19,7 +19,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static il.ac.bgu.se.bp.utils.FutureHelper.createSuccessResult;
+import static il.ac.bgu.se.bp.utils.ResponseHelper.createErrorResponse;
+import static il.ac.bgu.se.bp.utils.ResponseHelper.createSuccessResponse;
 import static java.util.Collections.reverseOrder;
 
 /**
@@ -60,13 +61,13 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         debuggerEngine.setSyncSnapshot(syncSnapshot);
         setIsSetup(true);
 //        this.bProg.setWaitForExternalEvents(true);        //todo: add wait for external event toggle
-        return createSuccessResult();
+        return createSuccessResponse();
     }
 
     @Override
     public synchronized BooleanResponse setIsSkipSyncPoints(boolean isSkipSyncPoints) {
         this.isSkipSyncPoints = isSkipSyncPoints;
-        return createSuccessResult();
+        return createSuccessResponse();
     }
 
     @Override
@@ -84,7 +85,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
 
         syncSnapshot = newSnapshot;
         nextSync();
-        return createSuccessResult();
+        return createSuccessResponse();
     }
 
     private synchronized void setItStarted(boolean isStarted) {
@@ -130,7 +131,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         startSyncThread.setName("startSyncThread");
         runningThreads.add(startSyncThread);
         startSyncThread.start();
-        return createSuccessResult();
+        return createSuccessResponse();
     }
 
     public BooleanResponse nextSync() {
@@ -147,7 +148,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         nextSyncThread.setName("nextSyncThread");
         runningThreads.add(nextSyncThread);
         nextSyncThread.start();
-        return createSuccessResult();
+        return createSuccessResponse();
     }
 
     private Thread createNextSyncThread() {
@@ -291,7 +292,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
 
     public BooleanResponse addExternalEvent(String externalEvent) {
         this.bProg.enqueueExternalEvent(new BEvent(externalEvent));
-        return createSuccessResult();
+        return createSuccessResponse();
     }
 
     @Override
@@ -309,13 +310,13 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         }
 
         syncSnapshot = syncSnapshot.copyWith(updatedExternals);
-        return createSuccessResult();
+        return createSuccessResponse();
     }
 
     @Override
     public BooleanResponse setWaitForExternalEvents(boolean shouldWait) {
         this.bProg.setWaitForExternalEvents(shouldWait);
-        return createSuccessResult();
+        return createSuccessResponse();
     }
 
     //OLD METHOD TO RUN BPROG - JUST FOR REFERENCE
@@ -345,7 +346,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
 
         try {
             debuggerEngine.addCommand(debuggerCommand);
-            return createSuccessResult();
+            return createSuccessResponse();
         } catch (Exception e) {
             logger.error("failed adding command", e);
             e.printStackTrace();
@@ -353,7 +354,4 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         return createErrorResponse(ErrorCode.FAILED_ADDING_COMMAND);
     }
 
-    private BooleanResponse createErrorResponse(ErrorCode errorCode) {
-        return new BooleanResponse(false, errorCode);
-    }
 }
