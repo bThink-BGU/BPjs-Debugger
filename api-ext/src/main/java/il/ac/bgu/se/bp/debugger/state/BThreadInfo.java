@@ -1,17 +1,15 @@
-package il.ac.bgu.se.bp.debugger.engine;
-import il.ac.bgu.cs.bp.bpjs.model.BEvent;
-import il.ac.bgu.cs.bp.bpjs.model.eventsets.EventSet;
-import java.util.List;
+package il.ac.bgu.se.bp.debugger.state;
 import java.util.Map;
+import java.util.Set;
 
 public class BThreadInfo {
     String name;
     Map<Integer, Map<String, String>> env;
-    EventSet wait;
-    EventSet blocked;
-    List<BEvent> requested;
+    EventInfo wait;
+    EventInfo blocked;
+    Set<EventInfo> requested;
 
-    public BThreadInfo(String name, Map<Integer, Map<String, String>> env, EventSet wait, EventSet blocked, List<BEvent> requested) {
+    public BThreadInfo(String name, Map<Integer, Map<String, String>> env, EventInfo wait, EventInfo blocked, Set<EventInfo> requested) {
         this.name = name;
         this.env = env;
         this.wait = wait;

@@ -4,8 +4,8 @@ import il.ac.bgu.cs.bp.bpjs.execution.BProgramRunner;
 import il.ac.bgu.se.bp.DebugRequest;
 import il.ac.bgu.se.bp.ExecuteBPjsResponse;
 import il.ac.bgu.se.bp.cache.BPjsIDECacheManager;
-import il.ac.bgu.se.bp.debugger.BPJsDebuggerRunner;
-import il.ac.bgu.se.bp.execution.BPJsDebuggerRunnerImpl;
+import il.ac.bgu.se.bp.debugger.BPJsDebugger;
+import il.ac.bgu.se.bp.execution.BPJsDebuggerImpl;
 import il.ac.bgu.se.bp.logger.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -41,7 +41,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
         String newUserId = UUID.randomUUID().toString();
         final String filename = "BPJSDebuggerTest.js";
 
-        BPJsDebuggerRunner bpProgramDebugger = new BPJsDebuggerRunnerImpl(filename);
+        BPJsDebugger bpProgramDebugger = new BPJsDebuggerImpl(filename, () -> true);
 //        bpProgramDebugger.setup(code.getBreakpoints());
 
         bPjsIDECacheManager.addNewDebugExecution(newUserId, bpProgramDebugger);
@@ -77,12 +77,12 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
     }
 
     @Override
-    public ExecuteBPjsResponse setBreakpoint(int lineNumber, boolean stopOnBreakpoint) {
+    public ExecuteBPjsResponse getState() {
         return null;
     }
 
     @Override
-    public ExecuteBPjsResponse getVars() {
+    public ExecuteBPjsResponse setBreakpoint(int lineNumber, boolean stopOnBreakpoint) {
         return null;
     }
 
@@ -103,11 +103,6 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
 
     @Override
     public ExecuteBPjsResponse stepOver() {
-        return null;
-    }
-
-    @Override
-    public ExecuteBPjsResponse exit() {
         return null;
     }
 }
