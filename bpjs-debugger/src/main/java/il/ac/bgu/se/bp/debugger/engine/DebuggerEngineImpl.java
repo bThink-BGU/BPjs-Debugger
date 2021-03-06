@@ -80,8 +80,8 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
     @Override
     public void dispatchNextGuiEvent() throws InterruptedException {
         try {
-            logger.info("Getting state from dispatchNextGuiEvent");
-            onStateChanged();
+//            logger.info("Getting state from dispatchNextGuiEvent");
+//            onStateChanged(); // todo
             queue.take().applyCommand(this);
         } catch (Exception e) {
             logger.error("failed on dispatchNextGuiEvent", e);
@@ -239,7 +239,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
         try {
             Object lastInterpreterFrame = getValue(cx, "lastInterpreterFrame");
             Object parentFrame = getValue(lastInterpreterFrame, "parentFrame");
-            ScriptableObject interruptedScope = (ScriptableObject) getValue(parentFrame, "scope");
+            ScriptableObject interruptedScope = parentFrame != null? (ScriptableObject) getValue(parentFrame, "scope") : (ScriptableObject) getValue(lastInterpreterFrame, "scope");
             ScriptableObject paramScope = (ScriptableObject) getValue(interpreterCallFrame, "scope");
             if (paramScope == interruptedScope) //current running bthread
             {
