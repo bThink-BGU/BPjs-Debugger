@@ -8,6 +8,7 @@ import il.ac.bgu.cs.bp.bpjs.model.eventsets.EventSet;
 import il.ac.bgu.se.bp.debugger.commands.DebuggerCommand;
 import il.ac.bgu.se.bp.debugger.state.BPDebuggerState;
 import il.ac.bgu.se.bp.debugger.state.BThreadInfo;
+import il.ac.bgu.se.bp.debugger.state.EventInfo;
 import il.ac.bgu.se.bp.debugger.state.EventsStatus;
 import il.ac.bgu.se.bp.execution.RunnerState;
 import il.ac.bgu.se.bp.logger.Logger;
@@ -18,8 +19,11 @@ import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.stream.Collector;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static il.ac.bgu.cs.bp.bpjs.model.eventsets.EventSets.none;
 
 public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> {
     private final Logger logger = new Logger(DebuggerEngineImpl.class);
@@ -63,8 +67,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
 
         if (areBreakpointsMuted) {
             continueRun();
-        }
-        else {
+        } else {
             onStateChanged();
         }
     }
@@ -209,7 +212,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
             Object interpeterData = getValue(function, "idata");
             String itsName = (String) getValue(interpeterData, "itsName");
             myEnv.put("FUNCNAME", itsName != null ? itsName : "BTMain");
-            Object[] ids = Arrays.stream(scope.getIds()).filter((p) -> !p.toString().equals("arguments") && !p.toString().equals(itsName+"param")).toArray();
+            Object[] ids = Arrays.stream(scope.getIds()).filter((p) -> !p.toString().equals("arguments") && !p.toString().equals(itsName + "param")).toArray();
             for (Object id : ids) {
                 myEnv.put(id.toString(), Objects.toString(collectJsValue(scope.get(id))));
             }
@@ -238,7 +241,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
             Object parentFrame = getValue(lastInterpreterFrame, "parentFrame");
             ScriptableObject interruptedScope = (ScriptableObject) getValue(parentFrame, "scope");
             ScriptableObject paramScope = (ScriptableObject) getValue(interpreterCallFrame, "scope");
-            if(paramScope == interruptedScope) //current running bthread
+            if (paramScope == interruptedScope) //current running bthread
             {
                 currentBT = true;
                 for (int i = 0; i < lastContextData.frameCount(); i++) {
@@ -249,15 +252,14 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
             }
             parentFrame = interpreterCallFrame;
             while (parentFrame != null) {
-                if(currentBT){
+                if (currentBT) {
                     Dim.ContextData debuggerFrame = ((Dim.StackFrame) getValue(parentFrame, "debuggerFrame")).contextData();
                     for (int i = 0; i < debuggerFrame.frameCount(); i++) {
                         ScriptableObject scope = (ScriptableObject) debuggerFrame.getFrame(i).scope();
                         env.put(key, getScope(scope));
                     }
                     key += debuggerFrame.frameCount();
-                }
-                else{
+                } else {
                     ScriptableObject scope = (ScriptableObject) getValue(parentFrame, "scope");
                     env.put(key, getScope(scope));
                     key += 1;
@@ -265,7 +267,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
                 parentFrame = getValue(parentFrame, "parentFrame");
             }
 
-        }catch (NoSuchFieldException | IllegalAccessException e) {
+        } catch (NoSuchFieldException | IllegalAccessException e) {
             e.printStackTrace();
         }
 
@@ -278,7 +280,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
             ScriptableObject scope = (ScriptableObject) contextData.getFrame(i).scope();
             env.put(i, getScope(scope));
         }
-        Integer key =  1;
+        Integer key = 1;
         try {
             Object lastFrame = interpreterCallFrame;
             ScriptableObject scope = (ScriptableObject) getValue(lastFrame, "scope");
@@ -307,12 +309,13 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
         try {
             Object implementation = getValue(scope, "implementation");
             Dim.StackFrame debuggerFrame = (Dim.StackFrame) getValue(implementation, "debuggerFrame");
-            env = state.getDebuggerState() == RunnerState.State.JS_DEBUG? getEnvDebug(debuggerFrame.contextData(), implementation) : getEnv(debuggerFrame.contextData(), implementation);
-            EventSet wait = bThreadSS.getSyncStatement().getWaitFor();
+            env = state.getDebuggerState() == RunnerState.State.JS_DEBUG ? getEnvDebug(debuggerFrame.contextData(), implementation) : getEnv(debuggerFrame.contextData(), implementation);
+            EventSet waitFor = bThreadSS.getSyncStatement().getWaitFor();
+            EventInfo waitEvent = new EventInfo(waitFor.equals(none) ? "" : ((BEvent) waitFor).getName());
             EventSet blocked = bThreadSS.getSyncStatement().getBlock();
-            List<BEvent> requested = new ArrayList<>(bThreadSS.getSyncStatement().getRequest());
-            //todo: fix wait, blocked, requested
-            return new BThreadInfo(bThreadSS.getName(), env, new HashSet<>(), new HashSet<>(), new HashSet<>());
+            EventInfo blockedEvent = new EventInfo(blocked.equals(none) ? "" : ((BEvent) blocked).getName());
+            Set<EventInfo> requested = new ArrayList<>(bThreadSS.getSyncStatement().getRequest()).stream().map((r) -> new EventInfo(r.getName())).collect(Collectors.toSet());
+            return new BThreadInfo(bThreadSS.getName(), env, waitEvent, blockedEvent, requested);
         } catch (NoSuchFieldException | IllegalAccessException e) {
             e.printStackTrace();
         }
@@ -331,9 +334,11 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
         List<EventSet> wait = statements.stream().map(SyncStatement::getWaitFor).collect(Collectors.toList());
         List<EventSet> blocked = statements.stream().map(SyncStatement::getBlock).collect(Collectors.toList());
         List<BEvent> requested = statements.stream().map(SyncStatement::getRequest).flatMap(Collection::stream).collect(Collectors.toList());
+        Set<EventInfo> waitEvents = wait.stream().map((e) -> new EventInfo(e.equals(none) ? "" : ((BEvent) e).getName())).collect(Collectors.toSet());
+        Set<EventInfo> blockedEvents = blocked.stream().map((e) -> new EventInfo(e.equals(none) ? "" : ((BEvent) e).getName())).collect(Collectors.toSet());
+        Set<EventInfo> requestedEvents = requested.stream().map((e) -> new EventInfo(e.getName())).collect(Collectors.toSet());
 
-        // todo: fix wait, blocked, requested
-        EventsStatus eventsStatus = new EventsStatus(new LinkedList<>(), new LinkedList<>(), new LinkedList<>());
+        EventsStatus eventsStatus = new EventsStatus(waitEvents, blockedEvents, requestedEvents);
         return new BPDebuggerState(bThreadInfoList, eventsStatus);
     }
 
