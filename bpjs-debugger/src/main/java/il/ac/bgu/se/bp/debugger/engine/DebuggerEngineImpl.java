@@ -35,9 +35,9 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
     private final RunnerState state;
     private volatile boolean areBreakpointsMuted = false;
     private BProgramSyncSnapshot syncSnapshot = null;
-    private final Function onStateChangedEvent;
+    private final Function<BPDebuggerState, Void> onStateChangedEvent;
 
-    public DebuggerEngineImpl(String filename, RunnerState state, Function onStateChangedEvent) {
+    public DebuggerEngineImpl(String filename, RunnerState state, Function<BPDebuggerState, Void> onStateChangedEvent) {
         this.onStateChangedEvent = onStateChangedEvent;
         this.filename = filename;
         this.state = state;

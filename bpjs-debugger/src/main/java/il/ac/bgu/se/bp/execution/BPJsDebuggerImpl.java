@@ -10,6 +10,7 @@ import il.ac.bgu.cs.bp.bpjs.model.eventselection.EventSelectionStrategy;
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
 import il.ac.bgu.se.bp.debugger.commands.*;
 import il.ac.bgu.se.bp.debugger.engine.*;
+import il.ac.bgu.se.bp.debugger.state.BPDebuggerState;
 import il.ac.bgu.se.bp.error.ErrorCode;
 import il.ac.bgu.se.bp.logger.Logger;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
@@ -42,7 +43,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     private final Callable onExitInterrupt;
     private final SyncSnapshotHolder<BProgramSyncSnapshot, BEvent> syncSnapshotHolder;
 
-    public BPJsDebuggerImpl(String filename, Callable onExitInterrupt, Function onStateChangedEvent) {
+    public BPJsDebuggerImpl(String filename, Callable onExitInterrupt, Function<BPDebuggerState, Void> onStateChangedEvent) {
         this.onExitInterrupt = onExitInterrupt;
         runningThreads = new LinkedList<>();
         debuggerEngine = new DebuggerEngineImpl(filename, state, onStateChangedEvent);

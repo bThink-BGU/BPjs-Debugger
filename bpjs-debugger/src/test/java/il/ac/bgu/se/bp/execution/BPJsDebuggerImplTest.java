@@ -17,8 +17,7 @@ import java.util.function.Function;
 
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 
 public class BPJsDebuggerImplTest {
@@ -59,7 +58,7 @@ public class BPJsDebuggerImplTest {
 
     @Test
     public void startTest() {
-        setupDebugger();
+//        setupDebugger();
 
     }
 
