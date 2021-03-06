@@ -132,8 +132,8 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
                 state.setDebuggerState(RunnerState.State.SYNC_STATE);
                 debuggerEngine.setSyncSnapshot(syncSnapshot);
                 logger.debug("Generate state from startSync");
-                debuggerEngine.onStateChanged();
                 syncSnapshotHolder.addSyncSnapshot(syncSnapshot, null);
+                debuggerEngine.onStateChanged();
                 logger.info("GOT FIRST SYNC STATE");
                 state.setDebuggerState(RunnerState.State.SYNC_STATE);
                 if (isSkipSyncPoints) {
@@ -169,7 +169,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
 
     private Thread createNextSyncThread() {
         return new Thread(() -> {
-            this.state.setDebuggerState(RunnerState.State.RUNNING);
+            state.setDebuggerState(RunnerState.State.RUNNING);
             EventSelectionStrategy eventSelectionStrategy = this.bProg.getEventSelectionStrategy();
             Set<BEvent> possibleEvents = eventSelectionStrategy.selectableEvents(this.syncSnapshot);
             if (possibleEvents.isEmpty()) {
@@ -185,7 +185,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
                     nextSyncOnChosenEvent(eventOptional.get());
                 }
                 else {
-                    System.out.println("Events queue is empty");
+                    logger.info("Events queue is empty");
                 }
             } catch (InterruptedException e) {
                 logger.warning("got InterruptedException in nextSync");
@@ -212,11 +212,11 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     }
 
     private Set<BEvent> nextSyncOnNoPossibleEvents(EventSelectionStrategy eventSelectionStrategy, Set<BEvent> possibleEvents) {
-        if (this.bProg.isWaitForExternalEvents()) {
+        if (bProg.isWaitForExternalEvents()) {
             try {
-                this.state.setDebuggerState(RunnerState.State.WAITING_FOR_EXTERNAL_EVENT);
-                BEvent next = this.bProg.takeExternalEvent(); // and now we wait for external event
-                this.state.setDebuggerState(RunnerState.State.RUNNING);
+                state.setDebuggerState(RunnerState.State.WAITING_FOR_EXTERNAL_EVENT);
+                BEvent next = bProg.takeExternalEvent(); // and now we wait for external event
+                state.setDebuggerState(RunnerState.State.RUNNING);
                 if (next == null) {
                     return possibleEvents;
                 }
@@ -305,6 +305,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
                 logger.info("not yet terminated");
             }
         }
+        setItStarted(false);
         return new Stop().applyCommand(debuggerEngine);
     }
 

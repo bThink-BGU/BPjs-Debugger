@@ -11,26 +11,29 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.SortedMap;
+import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 
 public class BPJsDebuggerImplTest {
 
-    private final static String TEST_FILENAME = "BPJSDebuggerTest.js";
+    private final static String TEST_FILENAME = "BPJSDebuggerForTesting.js";
     private final static Callable onExitCallback = BPJsDebuggerImplTest::onExitTester;
     private final static Function<BPDebuggerState, Void> onStateChangedCallback = BPJsDebuggerImplTest::onStateChangedTester;
 
     private final static int[] BREAKPOINTS_LINES = new int[]{2, 4};
     private final static Map<Integer, Boolean> breakpoints = new HashMap<>();
+
+    private final static BlockingQueue<BPDebuggerState> onStateChangedQueue = new ArrayBlockingQueue<>(5);
 
     @InjectMocks
     private BPJsDebuggerImpl bpJsDebugger = new BPJsDebuggerImpl(TEST_FILENAME, onExitCallback, onStateChangedCallback);
@@ -41,8 +44,11 @@ public class BPJsDebuggerImplTest {
     @Before
     public void setUp() {
         MockitoAnnotations.initMocks(this);
+        onStateChangedQueue.clear();
         Arrays.stream(BREAKPOINTS_LINES).forEach(lineNumber -> breakpoints.put(lineNumber, true));
         setupDebugger();
+        doAnswer(a -> onStateChangedTester(new BPDebuggerState()))
+                .when(debuggerEngine).onStateChanged();
     }
 
     private void setupDebugger() {
@@ -84,7 +90,7 @@ public class BPJsDebuggerImplTest {
     }
 
     @Test
-    public void getSyncSnapshotsHistoryTest() {
+    public void getSyncSnapshotsHistory_noSnapshotsAddedTest() {
         GetSyncSnapshotsResponse getSyncSnapshotsResponse = bpJsDebugger.getSyncSnapshotsHistory();
         assertNotNull(getSyncSnapshotsResponse);
         SortedMap<Long, BPDebuggerState> syncSnapshotsHistory = getSyncSnapshotsResponse.getSyncSnapShotsHistory();
@@ -93,18 +99,51 @@ public class BPJsDebuggerImplTest {
     }
 
     @Test
-    public void setSyncSnapshotsTest() {
-
+    public void setSyncSnapshots_noSnapshotsAddedTest() {
+        assertErrorResponse(bpJsDebugger.setSyncSnapshots(123123L), ErrorCode.CANNOT_REPLACE_SNAPSHOT);
+        assertErrorResponse(bpJsDebugger.setSyncSnapshots(-1L), ErrorCode.CANNOT_REPLACE_SNAPSHOT);
     }
 
     @Test
-    public void startSyncTest() {
-//        bpJsDebugger.startSync(false);
+    public void startSyncTest() throws InterruptedException {
+        assertSuccessResponse(bpJsDebugger.startSync(false));
+
+        sleepUntil(e -> bpJsDebugger.isStarted(), 3);
+        assertTrue(bpJsDebugger.isStarted());
+
+        assertSuccessResponse(bpJsDebugger.stop());
+        sleepUntil(e -> !bpJsDebugger.isStarted(), 3);
+        assertFalse(bpJsDebugger.isStarted());
     }
 
     @Test
-    public void nextSyncTest() {
+    public void nextSyncTest() throws InterruptedException {
+        assertSuccessResponse(bpJsDebugger.startSync(false));
 
+        sleepUntil(e -> bpJsDebugger.isStarted(), 3);
+        assertTrue(bpJsDebugger.isStarted());
+
+        assertSuccessResponse(bpJsDebugger.nextSync());
+
+        onStateChangedQueue.take();
+
+        GetSyncSnapshotsResponse getSyncSnapshotsResponse = bpJsDebugger.getSyncSnapshotsHistory();
+        assertNotNull(getSyncSnapshotsResponse);
+        SortedMap<Long, BPDebuggerState> syncSnapshotsHistory = getSyncSnapshotsResponse.getSyncSnapShotsHistory();
+        assertNotNull(syncSnapshotsHistory);
+        assertFalse(syncSnapshotsHistory.isEmpty());
+
+        assertSuccessResponse(bpJsDebugger.stop());
+        sleepUntil(e -> !bpJsDebugger.isStarted(), 3);
+        assertFalse(bpJsDebugger.isStarted());
+    }
+
+    private void sleepUntil(Predicate sleepUntil, int maxToTest) throws InterruptedException {
+        int counter = 0;
+        while (!sleepUntil.test(null) && counter < maxToTest) {
+            Thread.sleep(1000);
+            counter ++;
+        }
     }
 
     private void assertSuccessResponse(BooleanResponse booleanResponse) {
@@ -122,7 +161,7 @@ public class BPJsDebuggerImplTest {
     }
 
     private static Void onStateChangedTester(BPDebuggerState debuggerState) {
-        System.out.println("SHOULD NOT HAPPEN");
+        onStateChangedQueue.add(debuggerState);
         return null;
     }
 }

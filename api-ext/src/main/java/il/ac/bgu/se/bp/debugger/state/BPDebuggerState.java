@@ -7,6 +7,9 @@ public class BPDebuggerState {
     private EventsStatus eventsStatus;
     private EventInfo chosenEvent;
 
+    public BPDebuggerState() {
+    }
+
     public BPDebuggerState(List<BThreadInfo> bThreadInfoList, EventsStatus eventsStatus) {
         this.bThreadInfoList = bThreadInfoList;
         this.eventsStatus = eventsStatus;
