@@ -2,9 +2,9 @@ package il.ac.bgu.se.bp.debugger;
 
 import java.util.Map;
 
-public interface BPJsDebuggerRunner<T> extends Debugger<T> {
+public interface BPJsDebugger<T> extends Debugger<T> {
 
-    void setup(Map<Integer, Boolean> breakpoints, boolean isSkipSyncPoints);
+    T setup(Map<Integer, Boolean> breakpoints, boolean isSkipSyncPoints);
     boolean isSetup();
 
     void start(Map<Integer, Boolean> breakpoints);

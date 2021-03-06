@@ -29,6 +29,11 @@ public class Logger {
         loggerPrinter(msg, LOG_LEVELS.ERROR, args);
     }
 
+    public void error(String msg, Throwable e, Object... args) {
+        loggerPrinter(msg, LOG_LEVELS.ERROR, args);
+        e.printStackTrace();
+    }
+
     private void loggerPrinter(String msg, LOG_LEVELS logLevel, Object... args) {
         String additionalInfo = replacePlaceHolders("{0}  {1} {2} --- {3} ", getDate(), logLevel, "Thread" + Thread.currentThread().getId(), className);
         String replacedMsg = replacePlaceHolders(msg, args);

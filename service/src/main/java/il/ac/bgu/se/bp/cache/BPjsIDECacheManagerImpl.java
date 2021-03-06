@@ -1,7 +1,7 @@
 package il.ac.bgu.se.bp.cache;
 
 import il.ac.bgu.cs.bp.bpjs.execution.BProgramRunner;
-import il.ac.bgu.se.bp.debugger.BPJsDebuggerRunner;
+import il.ac.bgu.se.bp.debugger.BPJsDebugger;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -19,7 +19,7 @@ public class BPjsIDECacheManagerImpl implements BPjsIDECacheManager {
     private static final int ONE_HOUR = 60 * 60 * 1000;
     private static final int BP_JS_PROGRAM_TTL = 3;     // hours     // todo: ask gera/achia/michael for threshold
 
-    private final Map<String, BPJsDebuggerRunner> bpDebugProgramsByUsers = new ConcurrentHashMap<>();
+    private final Map<String, BPJsDebugger> bpDebugProgramsByUsers = new ConcurrentHashMap<>();
     private static final Map<String, BProgramRunner> bpRunProgramsByUsers = new ConcurrentHashMap<>();
     private static final Map<String, LocalDateTime> bpUsersLastOperationTime = new ConcurrentHashMap<>();
 
@@ -29,7 +29,7 @@ public class BPjsIDECacheManagerImpl implements BPjsIDECacheManager {
     }
 
     @Override
-    public void addNewDebugExecution(String userId, BPJsDebuggerRunner bpProgramDebugger) {
+    public void addNewDebugExecution(String userId, BPJsDebugger bpProgramDebugger) {
         bpDebugProgramsByUsers.put(userId, bpProgramDebugger);
     }
 

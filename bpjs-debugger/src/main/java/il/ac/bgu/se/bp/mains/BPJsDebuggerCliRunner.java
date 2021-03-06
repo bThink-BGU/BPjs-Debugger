@@ -1,96 +1,95 @@
 package il.ac.bgu.se.bp.mains;
 
-import il.ac.bgu.se.bp.debugger.BPJsDebuggerRunner;
-import il.ac.bgu.se.bp.execution.BPJsDebuggerRunnerImpl;
+import il.ac.bgu.se.bp.debugger.BPJsDebugger;
+import il.ac.bgu.se.bp.execution.BPJsDebuggerImpl;
+import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 
 import java.util.Collections;
-import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.FutureTask;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 public class BPJsDebuggerCliRunner {
 
     private static boolean isTerminated = false;
-    private static BPJsDebuggerRunner<FutureTask<String>> bpJsDebuggerRunner;
+    private static BPJsDebugger<BooleanResponse> bpJsDebugger;
     private static Scanner sc = new Scanner(System.in);
     private static boolean isSkipSyncPoints = false;
     private static boolean isSkipBreakPoints = false;
-
-    private static void runBPJsDebuggerCliRunner() {
-        System.out.println("RUNNING!");
-        while (!isTerminated) {
-            boolean isStop = !userMenuLoop(sc, bpJsDebuggerRunner);
-            isTerminated = isTerminated || isStop;
-        }
-        bpJsDebuggerRunner.stop();
-    }
 
     public static void main(String[] args) {
         final String filename = "BPJSDebuggerTest.js";
 //        final String filename = "BPJSDebuggerRecTest.js";
 
         sc = new Scanner(System.in);
-        bpJsDebuggerRunner = new BPJsDebuggerRunnerImpl(filename, createOnExistCallback(sc));
+        bpJsDebugger = new BPJsDebuggerImpl(filename, createOnExitCallback(sc));
         runBPJsDebuggerCliRunner();
 
         System.out.println("BPJsDebuggerCliRunner exiting..");
     }
 
-    private static boolean userMenuLoop(Scanner sc, BPJsDebuggerRunner<FutureTask<String>> bpJsDebuggerRunner) {
+    private static void runBPJsDebuggerCliRunner() {
+        System.out.println("RUNNING!");
+        while (!isTerminated) {
+            boolean isStop = !userMenuLoop(sc, bpJsDebugger);
+            isTerminated = isTerminated || isStop;
+        }
+        bpJsDebugger.stop();
+    }
+
+    private static boolean userMenuLoop(Scanner sc, BPJsDebugger<BooleanResponse> bpJsDebugger) {
         String[] splat = getUserInput(sc);
         String cmd = splat[0];
         switch (cmd) {
             case "b":
-                if (!bpJsDebuggerRunner.isSetup() || !bpJsDebuggerRunner.isStarted()) {
-                    bpJsDebuggerRunner.setup(Collections.singletonMap(Integer.parseInt(splat[1]), true), isSkipSyncPoints);
+                if (!bpJsDebugger.isSetup() || !bpJsDebugger.isStarted()) {
+                    sendRequest(() -> bpJsDebugger.setup(
+                            Collections.singletonMap(Integer.parseInt(splat[1]), true),
+                            isSkipSyncPoints));
                 }
                 else
-                    awaitForResponse(bpJsDebuggerRunner.setBreakpoint(Integer.parseInt(splat[1]), true));
+                    sendRequest(() -> bpJsDebugger.setBreakpoint(
+                            Integer.parseInt(splat[1]),
+                            true));
                 break;
             case "rb":
-                if (!bpJsDebuggerRunner.isSetup() || !bpJsDebuggerRunner.isStarted()) {
-                    bpJsDebuggerRunner.setup(Collections.singletonMap(Integer.parseInt(splat[1]), false), isSkipSyncPoints);
+                if (!bpJsDebugger.isSetup() || !bpJsDebugger.isStarted()) {
+                    sendRequest(() -> bpJsDebugger.setup(
+                            Collections.singletonMap(Integer.parseInt(splat[1]), false),
+                            isSkipSyncPoints));
                 }
                 else
-                    awaitForResponse(bpJsDebuggerRunner.setBreakpoint(Integer.parseInt(splat[1]), false));
+                    sendRequest(() -> bpJsDebugger.setBreakpoint(Integer.parseInt(splat[1]), false));
                 break;
             case "go":
-                if (!bpJsDebuggerRunner.isStarted()) {
-                    awaitForResponse(bpJsDebuggerRunner.startSync(isSkipSyncPoints));
+                if (!bpJsDebugger.isStarted()) {
+                    sendRequest(() -> bpJsDebugger.startSync(isSkipSyncPoints));
                 }
                 else {
-                    awaitForResponse(bpJsDebuggerRunner.continueRun());
+                    sendRequest(bpJsDebugger::continueRun);
                 }
                 break;
             case "si":
-                awaitForResponse(bpJsDebuggerRunner.stepInto());
+                sendRequest(bpJsDebugger::stepInto);
                 break;
             case "sov":
-                awaitForResponse(bpJsDebuggerRunner.stepOver());
+                sendRequest(bpJsDebugger::stepOver);
                 break;
             case "sou":
-                awaitForResponse(bpJsDebuggerRunner.stepOut());
-                break;
-            case "getv":
-                awaitForResponse(bpJsDebuggerRunner.getVars());
+                sendRequest(bpJsDebugger::stepOut);
                 break;
             case "tmb":
                 isSkipBreakPoints = !isSkipBreakPoints;
-                awaitForResponse(bpJsDebuggerRunner.toggleMuteBreakpoints(isSkipBreakPoints));
+                sendRequest(() -> bpJsDebugger.toggleMuteBreakpoints(isSkipBreakPoints));
                 break;
             case "n":
-                awaitForResponse(bpJsDebuggerRunner.nextSync());
+                sendRequest(bpJsDebugger::nextSync);
                 break;
             case "e": {
                 if (splat.length != 2) {
                     System.out.println("must enter event");
                     break;
                 }
-                awaitForResponse(bpJsDebuggerRunner.addExternalEvent(splat[1]));
+                sendRequest(() -> bpJsDebugger.addExternalEvent(splat[1]));
                 break;
             }
             case "re": {
@@ -98,7 +97,7 @@ public class BPJsDebuggerCliRunner {
                     System.out.println("must enter event");
                     break;
                 }
-                awaitForResponse(bpJsDebuggerRunner.removeExternalEvent(splat[1]));
+                sendRequest(() -> bpJsDebugger.removeExternalEvent(splat[1]));
                 break;
             }
             case "we": {
@@ -107,7 +106,7 @@ public class BPJsDebuggerCliRunner {
                     break;
                 }
                 boolean shouldWait = Integer.parseInt(splat[1]) > 0;
-                awaitForResponse(bpJsDebuggerRunner.setWaitForExternalEvents(shouldWait));
+                sendRequest(() -> bpJsDebugger.setWaitForExternalEvents(shouldWait));
                 break;
             }
             case "h": {
@@ -120,25 +119,39 @@ public class BPJsDebuggerCliRunner {
             }
             case "tsp":
                 isSkipSyncPoints = !isSkipSyncPoints;
-                awaitForResponse(bpJsDebuggerRunner.setIsSkipSyncPoints(isSkipSyncPoints));
+                sendRequest(() -> bpJsDebugger.setIsSkipSyncPoints(isSkipSyncPoints));
                 break;
             case "getss":
-                awaitForResponse(bpJsDebuggerRunner.getSyncSnapshotsHistory());
+                sendRequest(bpJsDebugger::getSyncSnapshotsHistory);
                 break;
             case "sss":  // set syncsnapshot
-                awaitForResponse(bpJsDebuggerRunner.setSyncSnapshots(Long.parseLong(splat[1])));
+                sendRequest(() -> bpJsDebugger.setSyncSnapshots(Long.parseLong(splat[1])));
                 break;
             case "stop":
-                awaitForResponse(bpJsDebuggerRunner.stop());
+                sendRequest(bpJsDebugger::stop);
                 break;
             case "gets":
-                awaitForResponse(bpJsDebuggerRunner.getState());
+                sendRequest(bpJsDebugger::getState);
                 break;
         }
         return !cmd.equals("stop");
     }
 
-    private static Callable<Boolean> createOnExistCallback(Scanner sc) {
+    private static void sendRequest(Callable<BooleanResponse> callable) {
+        try {
+            BooleanResponse booleanResponse = callable.call();
+            if (!booleanResponse.isSuccess()) {
+                System.out.println("booleanResponse.getErrorCode: " + booleanResponse.getErrorCode());
+            }
+            else {
+                System.out.println("request sent successfully");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static Callable<Boolean> createOnExitCallback(Scanner sc) {
         return () -> {
             isTerminated = true;
             return true;
@@ -147,29 +160,11 @@ public class BPJsDebuggerCliRunner {
 
     private static String[] getUserInput(Scanner sc) {
         try {
-            System.out.println("Enter command: b / rb / go / si / sov / sou / getv / getss / n / e / re / we / h / tmb / tsp / sss / stop");
+            System.out.println("Enter command: b / rb / go / si / sov / sou / getss / n / e / re / we / h / tmb / tsp / sss / stop");
             String cmd = sc.nextLine();
             return cmd.split(" ");
         } catch (Exception e) {
             return new String[]{"stop"};
-        }
-    }
-
-    public static void printActiveThreads() {
-        Map<Thread, StackTraceElement[]> stackTraces = Thread.getAllStackTraces();
-        System.out.println("===================");
-        System.out.println("threads count: " + Thread.activeCount());
-        final Predicate<String> isNameOfJavaThreads = name -> !(name.equals("Finalizer") || name.equals("main") || name.equals("Attach Listener")
-                || name.equals("Reference Handler") || name.equals("Monitor Ctrl-Break") || name.equals("Signal Dispatcher"));
-        System.out.println(stackTraces.keySet().stream().map(Thread::getName).filter(isNameOfJavaThreads).collect(Collectors.joining(", ")));
-        System.out.println("===================");
-    }
-
-    private static void awaitForResponse(FutureTask<String> future) {
-        try {
-            System.out.println(future.get());
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
         }
     }
 }

@@ -1,12 +1,15 @@
 package il.ac.bgu.se.bp.debugger.commands;
 
 import il.ac.bgu.se.bp.debugger.engine.DebuggerEngine;
+import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 
-import java.util.concurrent.FutureTask;
+import static il.ac.bgu.se.bp.utils.FutureHelper.createSuccessResult;
 
-public class GetState implements DebuggerCommand<FutureTask<String>, String>{
+public class GetState implements DebuggerCommand {
+
     @Override
-    public FutureTask<String> applyCommand(DebuggerEngine<FutureTask<String>, String> debugger) {
-        return new FutureTask<>(debugger::getState);
+    public BooleanResponse applyCommand(DebuggerEngine debugger) {
+        debugger.getState();
+        return createSuccessResult();
     }
 }

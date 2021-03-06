@@ -5,10 +5,17 @@ import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 
 import static il.ac.bgu.se.bp.utils.FutureHelper.createSuccessResult;
 
-public class StepOut implements DebuggerCommand {
+public class ToggleMuteBreakpoints implements DebuggerCommand {
+
+    private final boolean toggleBreakPointStatus;
+
+    public ToggleMuteBreakpoints(boolean toggleBreakPointStatus) {
+        this.toggleBreakPointStatus = toggleBreakPointStatus;
+    }
+
     @Override
     public BooleanResponse applyCommand(DebuggerEngine debugger) {
-        debugger.stepOut();
+        debugger.toggleMuteBreakpoints(toggleBreakPointStatus);
         return createSuccessResult();
     }
 }

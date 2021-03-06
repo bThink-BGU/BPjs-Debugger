@@ -1,12 +1,15 @@
 package il.ac.bgu.se.bp.debugger.commands;
 
 import il.ac.bgu.se.bp.debugger.engine.DebuggerEngine;
+import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 
-import java.util.concurrent.FutureTask;
+import static il.ac.bgu.se.bp.utils.FutureHelper.createSuccessResult;
 
-public class StepInto implements DebuggerCommand<FutureTask<String>, String> {
+public class StepInto implements DebuggerCommand {
+
     @Override
-    public FutureTask<String> applyCommand(DebuggerEngine<FutureTask<String>, String> debugger) {
-        return new FutureTask<>(debugger::stepInto);
+    public BooleanResponse applyCommand(DebuggerEngine debugger) {
+        debugger.stepInto();
+        return createSuccessResult();
     }
 }

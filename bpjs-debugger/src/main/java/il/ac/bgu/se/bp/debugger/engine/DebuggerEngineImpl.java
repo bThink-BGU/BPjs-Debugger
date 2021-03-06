@@ -6,6 +6,9 @@ import il.ac.bgu.cs.bp.bpjs.model.BThreadSyncSnapshot;
 import il.ac.bgu.cs.bp.bpjs.model.SyncStatement;
 import il.ac.bgu.cs.bp.bpjs.model.eventsets.EventSet;
 import il.ac.bgu.se.bp.debugger.commands.DebuggerCommand;
+import il.ac.bgu.se.bp.debugger.state.BPDebuggerState;
+import il.ac.bgu.se.bp.debugger.state.BThreadInfo;
+import il.ac.bgu.se.bp.debugger.state.EventsStatus;
 import il.ac.bgu.se.bp.execution.RunnerState;
 import il.ac.bgu.se.bp.logger.Logger;
 import org.mozilla.javascript.*;
@@ -15,17 +18,16 @@ import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.FutureTask;
 import java.util.stream.Collectors;
 
-public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, String> {
+public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> {
     private final Logger logger = new Logger(DebuggerEngineImpl.class);
     private Dim dim;
-    private final BlockingQueue<FutureTask<String>> queue;
+    private final BlockingQueue<DebuggerCommand> queue;
     private final String filename;
     private Dim.ContextData lastContextData = null;
     private volatile boolean isRunning;
-    private RunnerState state;
+    private final RunnerState state;
     private volatile boolean areBreakpointsMuted = false;
     private BProgramSyncSnapshot syncSnapshot = null;
 
@@ -39,7 +41,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, St
         setIsRunning(true);
     }
 
-    public void setupBreakpoint(Map<Integer, Boolean> breakpoints) {
+    public void setupBreakpoints(Map<Integer, Boolean> breakpoints) {
         breakpoints.forEach(this::setBreakpoint);
     }
 
@@ -52,16 +54,14 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, St
         System.out.println("Breakpoint reached- " + s + " Line no: " + stackFrame.getLineNumber());
         state.setDebuggerState(RunnerState.State.JS_DEBUG);
         lastContextData = stackFrame.contextData();
-        BPDebuggerState bpDebuggerState = generateDebuggerState();
         logger.debug("Get state from enterInterrupt");
 
-//        System.out.println(bpDebuggerState.toString());
-        //send state via socket
         if (areBreakpointsMuted) {
             continueRun();
-            return;
         }
-//        printEnv();
+        else {
+            onStateChanged();
+        }
     }
 
     @Override
@@ -71,32 +71,17 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, St
 
     @Override
     public void dispatchNextGuiEvent() throws InterruptedException {
-        logger.debug("Get state from dispatchNextGuiEvent");
-
-        BPDebuggerState bpDebuggerState = generateDebuggerState();
-        //send state via socket
-        queue.take().run();
+        try {
+            logger.info("Getting state from dispatchNextGuiEvent");
+            onStateChanged();
+            queue.take().applyCommand(this);
+        } catch (Exception e) {
+            logger.error("failed on dispatchNextGuiEvent", e);
+        }
     }
 
-    public FutureTask<String> addCommand(DebuggerCommand<FutureTask<String>, String> command) {
-        FutureTask<String> futureTask;
-        if (this.state.getDebuggerState() == RunnerState.State.JS_DEBUG) {
-            futureTask = debuggerCommandToCallback(command);
-            queue.add(futureTask);
-            return futureTask;
-        }
-        futureTask = new FutureTask<>(() -> "Must be in js debug in order to execute this command");
-        futureTask.run();
-        return futureTask;
-    }
-
-    public FutureTask<String> debuggerCommandToCallback(DebuggerCommand<FutureTask<String>, String> command) {
-        if (!isRunning()) {
-            FutureTask<String> futureTask = new FutureTask<>(() -> "not running");
-            futureTask.run();
-            return futureTask;
-        }
-        return command.applyCommand(this);
+    public void addCommand(DebuggerCommand command) {
+        queue.add(command);
     }
 
     private synchronized boolean isRunning() {
@@ -111,84 +96,56 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, St
         this.areBreakpointsMuted = areBreakpointsMuted;
     }
 
-    public String stop() {
+    public void stop() {
+        dim.setReturnValue(Dim.EXIT);
         dim = null;
         setIsRunning(false);
-        return "stopped";
     }
 
-    public String toggleMuteBreakpoints(boolean toggleBreakPointStatus) {
+    public void toggleMuteBreakpoints(boolean toggleBreakPointStatus) {
         setAreBreakpointsMuted(toggleBreakPointStatus);
-        return "breakpoints muted toggled to " + this.areBreakpointsMuted;
     }
 
-    public String stepOut() {
+    public void stepOut() {
         dim.setReturnValue(Dim.STEP_OUT);
-        return "step into";
-        //        return getDebuggerStatus();
+        System.out.println("step into");
     }
 
-    public String stepInto() {
+    public void stepInto() {
         dim.setReturnValue(Dim.STEP_INTO);
         //@todo dim.setBreakOnEnter(true); //possible bug because BP
-        return "step into";
-        //        return getDebuggerStatus();
     }
 
-    public String stepOver() {
+    public void stepOver() {
         dim.setReturnValue(Dim.STEP_OVER);
-        return "step over";
-        //        return getDebuggerStatus();
     }
 
-    public String exit() {
-        dim.setReturnValue(Dim.EXIT);
-        return "exit";
-        //        return getDebuggerStatus();
-    }
-
-    public String continueRun() {
+    public void continueRun() {
         this.dim.go();
-        return "continue run";
-//        return getDebuggerStatus();
     }
 
-    public String setBreakpoint(int lineNumber, boolean stopOnBreakpoint) {
+    public boolean isBreakpointAllowed(int lineNumber) {
+        Dim.SourceInfo sourceInfo = dim.sourceInfo(this.filename);
+        return sourceInfo.breakableLine(lineNumber);
+    }
+
+    public void setBreakpoint(int lineNumber, boolean stopOnBreakpoint) {
         try {
             Dim.SourceInfo sourceInfo = dim.sourceInfo(this.filename);
             sourceInfo.breakpoint(lineNumber, stopOnBreakpoint);
-            return "after set breakpoint -" + " line " + lineNumber + " changed to " + stopOnBreakpoint;
+            System.out.println("after set breakpoint -" + " line " + lineNumber + " changed to " + stopOnBreakpoint);
         } catch (Exception e) {
             logger.error("cannot assign breakpoint on line {0}", lineNumber);
-            return null;
         }
     }
 
     /*
     old code just for reference
      */
-    public String getVars() {
-        StringBuilder vars = new StringBuilder();
-        Dim.ContextData currentContextData = dim.currentContextData();
-        for (int i = 0; i < currentContextData.frameCount(); i++) {
-            vars.append("Scope no: ").append(i).append("\n");
-            Dim.StackFrame stackFrame = currentContextData.getFrame(i);
-            NativeCall scope = (NativeCall) stackFrame.scope();
-            Object[] objects = ((Scriptable) scope).getIds();
-            List<String> arguments = Arrays.stream(objects).map(Object::toString).collect(Collectors.toList()).subList(1, objects.length);
-            for (String arg : arguments) {
-                Object res = ScriptableObject.getProperty(scope, arg);
-                if (Undefined.instance != res)
-                    vars.append(arg).append(" ").append(res).append("\n");
-            }
-        }
-        return "Vars: \n" + vars;
-    }
-
     @Override
-    public String getState() {
-        System.out.println();
-        return "get state";
+    public void getState() {
+        //todo: use socket..
+        onStateChanged();
     }
 
     private Object getValue(Object instance, String fieldName) throws NoSuchFieldException, IllegalAccessException {
@@ -349,23 +306,54 @@ public class DebuggerEngineImpl implements DebuggerEngine<FutureTask<String>, St
             EventSet wait = bThreadSS.getSyncStatement().getWaitFor();
             EventSet blocked = bThreadSS.getSyncStatement().getBlock();
             List<BEvent> requested = new ArrayList<>(bThreadSS.getSyncStatement().getRequest());
-            return new BThreadInfo(bThreadSS.getName(), env, wait, blocked, requested);
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
+            //todo: fix wait, blocked, requested
+            return new BThreadInfo(bThreadSS.getName(), env, new HashSet<>(), new HashSet<>(), new HashSet<>());
+        } catch (NoSuchFieldException | IllegalAccessException e) {
             e.printStackTrace();
         }
         return null;
     }
 
-    public BPDebuggerState generateDebuggerState() {
+    private BPDebuggerState generateDebuggerState() {
         List<BThreadInfo> bThreadInfoList = new ArrayList<>();
         Set<BThreadSyncSnapshot> bThreadSyncSnapshot = syncSnapshot.getBThreadSnapshots();
         for (BThreadSyncSnapshot bThreadSS : bThreadSyncSnapshot) {
             bThreadInfoList.add(createBThreadInfo(bThreadSS));
         }
-        EventsStatus eventsStatus = new EventsStatus(syncSnapshot.getStatements());
+
+        Set<SyncStatement> statements = syncSnapshot.getStatements();
+
+        List<EventSet> wait = statements.stream().map(SyncStatement::getWaitFor).collect(Collectors.toList());
+        List<EventSet> blocked = statements.stream().map(SyncStatement::getBlock).collect(Collectors.toList());
+        List<BEvent> requested = statements.stream().map(SyncStatement::getRequest).flatMap(Collection::stream).collect(Collectors.toList());
+
+        // todo: fix wait, blocked, requested
+        EventsStatus eventsStatus = new EventsStatus(new LinkedList<>(), new LinkedList<>(), new LinkedList<>());
         return new BPDebuggerState(bThreadInfoList, eventsStatus);
     }
 
+    @Override
+    public void onStateChanged() {
+        // todo: send state via socket
+        BPDebuggerState bpDebuggerState = generateDebuggerState();
+        System.out.println(bpDebuggerState.toString());
+    }
+
+    public void getVars() {
+        StringBuilder vars = new StringBuilder();
+        Dim.ContextData currentContextData = dim.currentContextData();
+        for (int i = 0; i < currentContextData.frameCount(); i++) {
+            vars.append("Scope no: ").append(i).append("\n");
+            Dim.StackFrame stackFrame = currentContextData.getFrame(i);
+            NativeCall scope = (NativeCall) stackFrame.scope();
+            Object[] objects = ((Scriptable) scope).getIds();
+            List<String> arguments = Arrays.stream(objects).map(Object::toString).collect(Collectors.toList()).subList(1, objects.length);
+            for (String arg : arguments) {
+                Object res = ScriptableObject.getProperty(scope, arg);
+                if (Undefined.instance != res)
+                    vars.append(arg).append(" ").append(res).append("\n");
+            }
+        }
+        System.out.println("Vars: \n" + vars);
+    }
 }

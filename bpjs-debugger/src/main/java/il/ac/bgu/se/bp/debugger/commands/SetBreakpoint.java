@@ -1,10 +1,12 @@
 package il.ac.bgu.se.bp.debugger.commands;
 
 import il.ac.bgu.se.bp.debugger.engine.DebuggerEngine;
+import il.ac.bgu.se.bp.error.ErrorCode;
+import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 
-import java.util.concurrent.FutureTask;
+import static il.ac.bgu.se.bp.utils.FutureHelper.createSuccessResult;
 
-public class SetBreakpoint implements DebuggerCommand<FutureTask<String>, String> {
+public class SetBreakpoint implements DebuggerCommand {
     private final boolean stopOnBreakpoint;
     private final int lineNumber;
 
@@ -14,7 +16,12 @@ public class SetBreakpoint implements DebuggerCommand<FutureTask<String>, String
     }
 
     @Override
-    public FutureTask<String> applyCommand(DebuggerEngine<FutureTask<String>, String> debugger) {
-        return new FutureTask<>(() -> debugger.setBreakpoint(lineNumber, stopOnBreakpoint));
+    public BooleanResponse applyCommand(DebuggerEngine debugger) {
+        if (debugger.isBreakpointAllowed(lineNumber)) {
+            debugger.setBreakpoint(lineNumber, stopOnBreakpoint);
+            return createSuccessResult();
+        }
+
+        return new BooleanResponse(false, ErrorCode.BREAKPOINT_NOT_ALLOWED); //todo: add lineNumber
     }
 }
