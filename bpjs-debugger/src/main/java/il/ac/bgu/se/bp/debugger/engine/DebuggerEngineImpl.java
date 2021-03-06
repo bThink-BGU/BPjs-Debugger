@@ -18,6 +18,7 @@ import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> {
@@ -30,8 +31,10 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
     private final RunnerState state;
     private volatile boolean areBreakpointsMuted = false;
     private BProgramSyncSnapshot syncSnapshot = null;
+    private final Function onStateChangedEvent;
 
-    public DebuggerEngineImpl(String filename, RunnerState state) {
+    public DebuggerEngineImpl(String filename, RunnerState state, Function onStateChangedEvent) {
+        this.onStateChangedEvent = onStateChangedEvent;
         this.filename = filename;
         this.state = state;
         queue = new ArrayBlockingQueue<>(1);
@@ -42,6 +45,8 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
     }
 
     public void setupBreakpoints(Map<Integer, Boolean> breakpoints) {
+        if (breakpoints == null)
+            return;
         breakpoints.forEach(this::setBreakpoint);
     }
 
@@ -334,9 +339,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
 
     @Override
     public void onStateChanged() {
-        // todo: send state via socket
-        BPDebuggerState bpDebuggerState = generateDebuggerState();
-        System.out.println(bpDebuggerState.toString());
+        onStateChangedEvent.apply(generateDebuggerState());
     }
 
     public void getVars() {

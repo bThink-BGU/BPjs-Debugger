@@ -18,6 +18,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 import static il.ac.bgu.se.bp.utils.ResponseHelper.createErrorResponse;
 import static il.ac.bgu.se.bp.utils.ResponseHelper.createSuccessResponse;
@@ -30,7 +31,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     private final static AtomicInteger debuggerId = new AtomicInteger(0);
     private final Logger logger = new Logger(BPJsDebuggerImpl.class);
     private final BProgram bProg;
-    private final DebuggerEngine<BProgramSyncSnapshot> debuggerEngine;
+    private DebuggerEngine<BProgramSyncSnapshot> debuggerEngine;
     private final ExecutorService execSvc = ExecutorServiceMaker.makeWithName("BPJsDebuggerRunner-" + debuggerId.incrementAndGet());
     private BProgramSyncSnapshot syncSnapshot = null;
     private volatile boolean isSetup = false;
@@ -41,10 +42,10 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     private final Callable onExitInterrupt;
     private final SyncSnapshotHolder<BProgramSyncSnapshot, BEvent> syncSnapshotHolder;
 
-    public BPJsDebuggerImpl(String filename, Callable onExitInterrupt) {
+    public BPJsDebuggerImpl(String filename, Callable onExitInterrupt, Function onStateChangedEvent) {
         this.onExitInterrupt = onExitInterrupt;
         runningThreads = new LinkedList<>();
-        debuggerEngine = new DebuggerEngineImpl(filename, state);
+        debuggerEngine = new DebuggerEngineImpl(filename, state, onStateChangedEvent);
         bProg = new ResourceBProgram(filename);
         syncSnapshotHolder = new SyncSnapshotHolderImpl();
     }

@@ -1,12 +1,14 @@
 package il.ac.bgu.se.bp.mains;
 
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
+import il.ac.bgu.se.bp.debugger.state.BPDebuggerState;
 import il.ac.bgu.se.bp.execution.BPJsDebuggerImpl;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 
 import java.util.Collections;
 import java.util.Scanner;
 import java.util.concurrent.Callable;
+import java.util.function.Function;
 
 public class BPJsDebuggerCliRunner {
 
@@ -20,15 +22,20 @@ public class BPJsDebuggerCliRunner {
         final String filename = "BPJSDebuggerTest.js";
 //        final String filename = "BPJSDebuggerRecTest.js";
 
+        Function<BPDebuggerState, Void> onStateChangedEvent = BPJsDebuggerCliRunner::onStateChanged;
         sc = new Scanner(System.in);
-        bpJsDebugger = new BPJsDebuggerImpl(filename, createOnExitCallback(sc));
+        bpJsDebugger = new BPJsDebuggerImpl(filename, createOnExitCallback(sc), onStateChangedEvent);
         runBPJsDebuggerCliRunner();
 
         System.out.println("BPJsDebuggerCliRunner exiting..");
     }
 
+    private static Void onStateChanged(BPDebuggerState state) {
+        System.out.println(state.toString());
+        return null;
+    }
+
     private static void runBPJsDebuggerCliRunner() {
-        System.out.println("RUNNING!");
         while (!isTerminated) {
             boolean isStop = !userMenuLoop(sc, bpJsDebugger);
             isTerminated = isTerminated || isStop;
