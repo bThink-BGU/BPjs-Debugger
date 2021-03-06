@@ -1,15 +1,18 @@
 package il.ac.bgu.se.bp.execution;
 
-import il.ac.bgu.cs.bp.bpjs.execution.BProgramRunner;
-import il.ac.bgu.cs.bp.bpjs.execution.listeners.BProgramRunnerListenerAdapter;
-import il.ac.bgu.cs.bp.bpjs.execution.listeners.PrintBProgramRunnerListener;
 import il.ac.bgu.cs.bp.bpjs.internal.ExecutorServiceMaker;
-import il.ac.bgu.cs.bp.bpjs.model.*;
+import il.ac.bgu.cs.bp.bpjs.model.BEvent;
+import il.ac.bgu.cs.bp.bpjs.model.BProgram;
+import il.ac.bgu.cs.bp.bpjs.model.BProgramSyncSnapshot;
+import il.ac.bgu.cs.bp.bpjs.model.ResourceBProgram;
 import il.ac.bgu.cs.bp.bpjs.model.eventselection.EventSelectionResult;
 import il.ac.bgu.cs.bp.bpjs.model.eventselection.EventSelectionStrategy;
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
 import il.ac.bgu.se.bp.debugger.commands.*;
-import il.ac.bgu.se.bp.debugger.engine.*;
+import il.ac.bgu.se.bp.debugger.engine.DebuggerEngine;
+import il.ac.bgu.se.bp.debugger.engine.DebuggerEngineImpl;
+import il.ac.bgu.se.bp.debugger.engine.SyncSnapshotHolder;
+import il.ac.bgu.se.bp.debugger.engine.SyncSnapshotHolderImpl;
 import il.ac.bgu.se.bp.debugger.state.BPDebuggerState;
 import il.ac.bgu.se.bp.debugger.state.EventInfo;
 import il.ac.bgu.se.bp.error.ErrorCode;
@@ -19,8 +22,9 @@ import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
@@ -311,15 +315,19 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
 
     @Override
     public BooleanResponse getState() {
-        if (this.state.getDebuggerState() == RunnerState.State.JS_DEBUG)
+        if (!isSetup())
+            return createErrorResponse(ErrorCode.SETUP_REQUIRED);
+        else if (state.getDebuggerState() == RunnerState.State.JS_DEBUG)
             return createErrorResponse(ErrorCode.NOT_IN_BP_SYNC_STATE);
-        else if (this.state.getDebuggerState() == RunnerState.State.RUNNING)
+        else if (state.getDebuggerState() == RunnerState.State.RUNNING)
             return createErrorResponse(ErrorCode.ALREADY_RUNNING);
         return new GetState().applyCommand(debuggerEngine);
     }
 
     @Override
     public BooleanResponse toggleMuteBreakpoints(boolean toggleBreakPointStatus) {
+        if (!isSetup())
+            return new BooleanResponse(false, ErrorCode.SETUP_REQUIRED);
         return new ToggleMuteBreakpoints(toggleBreakPointStatus).applyCommand(debuggerEngine);
     }
 
@@ -365,22 +373,22 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     }
 
 
-    //OLD METHOD TO RUN BPROG - JUST FOR REFERENCE
-    public void start(Map<Integer, Boolean> breakpoints) {
-        if (!isSetup) {
-            setup(breakpoints, false);
-            return;
-        }
-        BProgramRunner rnr = new BProgramRunner();
-        rnr.addListener(new PrintBProgramRunnerListener());
-        rnr.addListener(new BProgramRunnerListenerAdapter() {
-            @Override
-            public void ended(BProgram bp) {
-                setItStarted(false);
-            }
-        });
-        rnr.setBProgram(bProg);
-        setItStarted(true);
-        new Thread(rnr).start();
-    }
+//    //OLD METHOD TO RUN BPROG - JUST FOR REFERENCE
+//    public void start(Map<Integer, Boolean> breakpoints) {
+//        if (!isSetup) {
+//            setup(breakpoints, false);
+//            return;
+//        }
+//        BProgramRunner rnr = new BProgramRunner();
+//        rnr.addListener(new PrintBProgramRunnerListener());
+//        rnr.addListener(new BProgramRunnerListenerAdapter() {
+//            @Override
+//            public void ended(BProgram bp) {
+//                setItStarted(false);
+//            }
+//        });
+//        rnr.setBProgram(bProg);
+//        setItStarted(true);
+//        new Thread(rnr).start();
+//    }
 }
