@@ -129,6 +129,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         Thread startSyncThread = new Thread(() -> {
             try {
                 syncSnapshot = syncSnapshot.start(execSvc);
+                state.setDebuggerState(RunnerState.State.SYNC_STATE);
                 debuggerEngine.setSyncSnapshot(syncSnapshot);
                 logger.debug("Generate state from startSync");
                 debuggerEngine.onStateChanged();
@@ -153,7 +154,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         if (this.state.getDebuggerState() == RunnerState.State.WAITING_FOR_EXTERNAL_EVENT)
             return createErrorResponse(ErrorCode.WAITING_FOR_EXTERNAL_EVENT);
         else if (this.state.getDebuggerState() == RunnerState.State.JS_DEBUG)
-            return createErrorResponse(ErrorCode.NOT_IN_BP_JS_DEBUG_STATE);
+            return createErrorResponse(ErrorCode.NOT_IN_BP_SYNC_STATE);
         else if (this.state.getDebuggerState() == RunnerState.State.RUNNING)
             return createErrorResponse(ErrorCode.ALREADY_RUNNING);
         else if (!isStarted())
@@ -257,16 +258,25 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
 
     @Override
     public BooleanResponse stepInto() {
+        if (this.state.getDebuggerState() != RunnerState.State.JS_DEBUG) {
+            return new BooleanResponse(false, ErrorCode.NOT_IN_JS_DEBUG_STATE);
+        }
         return addCommandIfStarted(new StepInto());
     }
 
     @Override
     public BooleanResponse stepOver() {
+        if (this.state.getDebuggerState() != RunnerState.State.JS_DEBUG) {
+            return new BooleanResponse(false, ErrorCode.NOT_IN_JS_DEBUG_STATE);
+        }
         return addCommandIfStarted(new StepOver());
     }
 
     @Override
     public BooleanResponse stepOut() {
+        if (this.state.getDebuggerState() != RunnerState.State.JS_DEBUG) {
+            return new BooleanResponse(false, ErrorCode.NOT_IN_JS_DEBUG_STATE);
+        }
         return addCommandIfStarted(new StepOut());
     }
 
@@ -301,7 +311,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     @Override
     public BooleanResponse getState() {
         if (this.state.getDebuggerState() == RunnerState.State.JS_DEBUG)
-            return createErrorResponse(ErrorCode.NOT_IN_BP_JS_DEBUG_STATE);
+            return createErrorResponse(ErrorCode.NOT_IN_BP_SYNC_STATE);
         else if (this.state.getDebuggerState() == RunnerState.State.RUNNING)
             return createErrorResponse(ErrorCode.ALREADY_RUNNING);
         return new GetState().applyCommand(debuggerEngine);
@@ -320,7 +330,6 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         bProg.enqueueExternalEvent(new BEvent(externalEvent));
         return createSuccessResponse();
     }
-    //        syncSnapshot.getExternalEvents().removeIf(bEvent -> bEvent.getName().equals(externalEvent));
 
     @Override
     public BooleanResponse removeExternalEvent(String externalEvent) {

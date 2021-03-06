@@ -7,7 +7,7 @@ public enum ErrorCode {
     NOT_RUNNING(3),
     ALREADY_RUNNING(4),
     NOT_IN_JS_DEBUG_STATE(5),
-    NOT_IN_BP_JS_DEBUG_STATE(6),
+    NOT_IN_BP_SYNC_STATE(6),
     CANNOT_REPLACE_SNAPSHOT(7),
 
 
