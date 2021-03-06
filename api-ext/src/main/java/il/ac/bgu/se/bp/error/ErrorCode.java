@@ -12,7 +12,7 @@ public enum ErrorCode {
 
 
     WAITING_FOR_EXTERNAL_EVENT(20),
-
+    INVALID_EVENT(21),
 
 
     BREAKPOINT_NOT_ALLOWED(30), // todo: add lineNumber

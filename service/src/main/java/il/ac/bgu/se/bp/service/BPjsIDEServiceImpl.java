@@ -41,7 +41,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
         String newUserId = UUID.randomUUID().toString();
         final String filename = "BPJSDebuggerTest.js";
 
-        BPJsDebugger bpProgramDebugger = new BPJsDebuggerImpl(filename, () -> true);
+        BPJsDebugger bpProgramDebugger = new BPJsDebuggerImpl(filename, () -> true, a -> null);
 //        bpProgramDebugger.setup(code.getBreakpoints());
 
         bPjsIDECacheManager.addNewDebugExecution(newUserId, bpProgramDebugger);
