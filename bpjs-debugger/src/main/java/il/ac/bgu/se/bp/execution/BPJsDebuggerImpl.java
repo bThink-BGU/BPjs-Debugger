@@ -117,6 +117,8 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
             try {
                 syncSnapshot = syncSnapshot.start(execSvc);
                 this.debuggerEngine.setSyncSnapshot(syncSnapshot);
+                logger.debug("Generate state from startSync");
+                debuggerEngine.onStateChanged();
                 syncSnapshotHolder.addSyncSnapshot(syncSnapshot, null);
                 logger.info("GOT FIRST SYNC STATE");
                 state.setDebuggerState(RunnerState.State.SYNC_STATE);

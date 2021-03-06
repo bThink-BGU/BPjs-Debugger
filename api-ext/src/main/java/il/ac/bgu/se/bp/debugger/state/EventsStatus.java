@@ -1,13 +1,13 @@
 package il.ac.bgu.se.bp.debugger.state;
 
-import java.util.List;
+import java.util.Set;
 
 public class EventsStatus {
-    List<String> wait;
-    List<String> blocked;
-    List<String> requested;
+    Set<EventInfo> wait;
+    Set<EventInfo> blocked;
+    Set<EventInfo> requested;
 
-    public EventsStatus(List<String> wait, List<String> blocked, List<String> requested) {
+    public EventsStatus(Set<EventInfo> wait, Set<EventInfo> blocked, Set<EventInfo> requested) {
         this.wait = wait;
         this.blocked = blocked;
         this.requested = requested;
