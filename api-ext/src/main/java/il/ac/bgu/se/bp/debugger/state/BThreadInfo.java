@@ -63,9 +63,13 @@ public class BThreadInfo {
 
     @Override
     public String toString() {
+        StringBuilder envS = new StringBuilder();
+        for (Map.Entry e : env.entrySet()) {
+            envS.append(e.getKey()+ ":"+ e.getValue()).append("\n");
+        }
         return "BThreadInfo{" +
                 "name='" + name + '\'' +
-                ", env=" + env +
+                ", env=" + envS +
                 ", wait=" + wait +
                 ", blocked=" + blocked +
                 ", requested=" + requested +

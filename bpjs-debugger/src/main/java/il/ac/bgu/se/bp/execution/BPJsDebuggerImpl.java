@@ -1,10 +1,7 @@
 package il.ac.bgu.se.bp.execution;
 
 import il.ac.bgu.cs.bp.bpjs.internal.ExecutorServiceMaker;
-import il.ac.bgu.cs.bp.bpjs.model.BEvent;
-import il.ac.bgu.cs.bp.bpjs.model.BProgram;
-import il.ac.bgu.cs.bp.bpjs.model.BProgramSyncSnapshot;
-import il.ac.bgu.cs.bp.bpjs.model.ResourceBProgram;
+import il.ac.bgu.cs.bp.bpjs.model.*;
 import il.ac.bgu.cs.bp.bpjs.model.eventselection.EventSelectionResult;
 import il.ac.bgu.cs.bp.bpjs.model.eventselection.EventSelectionStrategy;
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
@@ -19,6 +16,9 @@ import il.ac.bgu.se.bp.error.ErrorCode;
 import il.ac.bgu.se.bp.logger.Logger;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
+import il.ac.bgu.se.bp.utils.DebuggerStateHelper;
+import il.ac.bgu.se.bp.utils.Pair;
+import org.mozilla.javascript.Interpreter;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
@@ -28,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-import static il.ac.bgu.se.bp.utils.DebuggerStateHelper.generateDebuggerState;
 import static il.ac.bgu.se.bp.utils.ResponseHelper.createErrorResponse;
 import static il.ac.bgu.se.bp.utils.ResponseHelper.createSuccessResponse;
 import static java.util.Collections.reverseOrder;
@@ -50,11 +49,12 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     private List<Thread> runningThreads;
     private final Callable onExitInterrupt;
     private final SyncSnapshotHolder<BProgramSyncSnapshot, BEvent> syncSnapshotHolder;
+    private DebuggerStateHelper debuggerStateHelper = new DebuggerStateHelper();
 
     public BPJsDebuggerImpl(String filename, Callable onExitInterrupt, Function<BPDebuggerState, Void> onStateChangedEvent) {
         this.onExitInterrupt = onExitInterrupt;
         runningThreads = new LinkedList<>();
-        debuggerEngine = new DebuggerEngineImpl(filename, state, onStateChangedEvent);
+        debuggerEngine = new DebuggerEngineImpl(filename, state, onStateChangedEvent, debuggerStateHelper);
         bProg = new ResourceBProgram(filename);
         syncSnapshotHolder = new SyncSnapshotHolderImpl();
     }
@@ -70,6 +70,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         debuggerEngine.setupBreakpoints(breakpoints);
         debuggerEngine.setSyncSnapshot(syncSnapshot);
         setIsSetup(true);
+        state.setDebuggerState(RunnerState.State.STOPPED);
 //        this.bProg.setWaitForExternalEvents(true);        //todo: add wait for external event toggle
         return createSuccessResponse();
     }
@@ -85,7 +86,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         SortedMap<Long, BPDebuggerState> syncSnapshotsHistory = new TreeMap<>();
 
         syncSnapshotHolder.getAllSyncSnapshots().forEach((time, bProgramSyncSnapshotBEventPair) -> {
-            BPDebuggerState bpDebuggerState = generateDebuggerState(bProgramSyncSnapshotBEventPair.getLeft(), null, null);
+            BPDebuggerState bpDebuggerState = debuggerStateHelper.generateDebuggerState(bProgramSyncSnapshotBEventPair.getLeft(), state, null);
             BEvent chosenEvent = bProgramSyncSnapshotBEventPair.getRight();
             bpDebuggerState.setChosenEvent(new EventInfo(chosenEvent == null ? null : chosenEvent.getName()));
             syncSnapshotsHistory.put(time, bpDebuggerState);
@@ -124,6 +125,14 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         return isStarted;
     }
 
+    private void updateRecentlyRegisteredBT(){
+        Set<BThreadSyncSnapshot> recentlyRegisteredBthreads = bProg.getRecentlyRegisteredBthreads();
+        Set<Pair<String, Object>> recentlyRegistered = new HashSet<>();
+        for(BThreadSyncSnapshot b: recentlyRegisteredBthreads){
+            recentlyRegistered.add(new Pair<>(b.getName(), b.getEntryPoint()));
+        }
+        debuggerStateHelper.setRecentlyRegisteredBthreads(recentlyRegistered);
+    }
     @Override
     public BooleanResponse startSync(boolean isSkipSyncPoints) {
         if (!isSetup()) {
@@ -132,6 +141,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         setItStarted(true);
         Thread startSyncThread = new Thread(() -> {
             try {
+                updateRecentlyRegisteredBT();
                 syncSnapshot = syncSnapshot.start(execSvc);
                 state.setDebuggerState(RunnerState.State.SYNC_STATE);
                 debuggerEngine.setSyncSnapshot(syncSnapshot);
@@ -203,7 +213,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
             removeExternalEvents(eventSelectionResult);
         }
         logger.info("Triggering event " + event);
-
+        updateRecentlyRegisteredBT();
         syncSnapshot = syncSnapshot.triggerEvent(event, execSvc, new ArrayList<>());
         debuggerEngine.setSyncSnapshot(syncSnapshot);
         state.setDebuggerState(RunnerState.State.SYNC_STATE);
@@ -270,6 +280,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
 
     @Override
     public BooleanResponse stepOver() {
+        System.out.println("debuggerimpl stepover, state "+ this.state.getDebuggerState());
         if (this.state.getDebuggerState() != RunnerState.State.JS_DEBUG) {
             createErrorResponse(ErrorCode.NOT_IN_JS_DEBUG_STATE);
         }

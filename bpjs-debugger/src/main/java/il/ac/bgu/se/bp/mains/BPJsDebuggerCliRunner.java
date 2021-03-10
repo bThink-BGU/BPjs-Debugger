@@ -49,7 +49,7 @@ public class BPJsDebuggerCliRunner {
         String cmd = splat[0];
         switch (cmd) {
             case "b":
-                if (!bpJsDebugger.isSetup() || !bpJsDebugger.isStarted()) {
+                if (!bpJsDebugger.isSetup()) {
                     sendRequest(() -> bpJsDebugger.setup(
                             Collections.singletonMap(Integer.parseInt(splat[1]), true),
                             isSkipSyncPoints));

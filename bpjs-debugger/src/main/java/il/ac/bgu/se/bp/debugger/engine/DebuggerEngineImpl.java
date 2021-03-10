@@ -5,6 +5,8 @@ import il.ac.bgu.se.bp.debugger.commands.DebuggerCommand;
 import il.ac.bgu.se.bp.debugger.state.BPDebuggerState;
 import il.ac.bgu.se.bp.execution.RunnerState;
 import il.ac.bgu.se.bp.logger.Logger;
+import il.ac.bgu.se.bp.utils.DebuggerStateHelper;
+import il.ac.bgu.se.bp.utils.Pair;
 import org.mozilla.javascript.*;
 import org.mozilla.javascript.tools.debugger.Dim;
 
@@ -13,8 +15,6 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static il.ac.bgu.se.bp.utils.DebuggerStateHelper.generateDebuggerState;
 
 public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> {
     private final Logger logger = new Logger(DebuggerEngineImpl.class);
@@ -27,11 +27,13 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
     private volatile boolean areBreakpointsMuted = false;
     private BProgramSyncSnapshot syncSnapshot = null;
     private final Function<BPDebuggerState, Void> onStateChangedEvent;
+    private DebuggerStateHelper debuggerStateHelper;
 
-    public DebuggerEngineImpl(String filename, RunnerState state, Function<BPDebuggerState, Void> onStateChangedEvent) {
+    public DebuggerEngineImpl(String filename, RunnerState state, Function<BPDebuggerState, Void> onStateChangedEvent, DebuggerStateHelper debuggerStateHelper) {
         this.onStateChangedEvent = onStateChangedEvent;
         this.filename = filename;
         this.state = state;
+        this.debuggerStateHelper = debuggerStateHelper;
         queue = new ArrayBlockingQueue<>(1);
         dim = new Dim();
         dim.setGuiCallback(this);
@@ -55,7 +57,6 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
         state.setDebuggerState(RunnerState.State.JS_DEBUG);
         lastContextData = stackFrame.contextData();
         logger.debug("Get state from enterInterrupt");
-
         if (areBreakpointsMuted) {
             continueRun();
         } else {
@@ -72,7 +73,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
     public void dispatchNextGuiEvent() throws InterruptedException {
         try {
             logger.info("Getting state from dispatchNextGuiEvent");
-            onStateChanged();
+            //onStateChanged(); todo
             queue.take().applyCommand(this);
         } catch (Exception e) {
             logger.error("failed on dispatchNextGuiEvent", e);
@@ -111,7 +112,6 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
     @Override
     public void stepOut() {
         dim.setReturnValue(Dim.STEP_OUT);
-        System.out.println("step into");
     }
 
     @Override
@@ -154,11 +154,8 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
 
     @Override
     public void onStateChanged() {
-        onStateChangedEvent.apply(generateDebuggerState(syncSnapshot, state, lastContextData));
+        onStateChangedEvent.apply(debuggerStateHelper.generateDebuggerState(syncSnapshot, state, lastContextData));
     }
-
-
-
 
     //todo: remove
     public void getVars() {
