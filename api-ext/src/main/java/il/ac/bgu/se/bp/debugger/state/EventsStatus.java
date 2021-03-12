@@ -22,19 +22,19 @@ public class EventsStatus implements Serializable {
         this.requested = requested;
     }
 
-    public Set<EventInfo> getWait() {
+    public List<EventInfo> getWait() {
         return wait;
     }
 
-    public void setWait(Set<EventInfo> wait) {
+    public void setWait(List<EventInfo> wait) {
         this.wait = wait;
     }
 
-    public Set<EventInfo> getBlocked() {
+    public List<EventInfo> getBlocked() {
         return blocked;
     }
 
-    public void setBlocked(Set<EventInfo> blocked) {
+    public void setBlocked(List<EventInfo> blocked) {
         this.blocked = blocked;
     }
 
