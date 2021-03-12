@@ -7,9 +7,7 @@ import il.ac.bgu.cs.bp.bpjs.model.BThreadSyncSnapshot;
 import il.ac.bgu.cs.bp.bpjs.model.ResourceBProgram;
 import il.ac.bgu.se.bp.debugger.commands.StepInto;
 import il.ac.bgu.se.bp.debugger.state.BPDebuggerState;
-import il.ac.bgu.se.bp.error.ErrorCode;
 import il.ac.bgu.se.bp.execution.RunnerState;
-import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.utils.DebuggerStateHelper;
 import il.ac.bgu.se.bp.utils.Pair;
 import org.junit.Before;
@@ -28,8 +26,6 @@ import java.util.function.Function;
 
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
-
-import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -43,12 +39,12 @@ public class DebuggerEngineImplTest {
 
     private final ExecutorService execSvc = ExecutorServiceMaker.makeWithName("TEST_");
     private final static BlockingQueue<BPDebuggerState> onStateChangedQueue = new ArrayBlockingQueue<>(5);
-
+    private RunnerState state = new RunnerState();
     private BPDebuggerState expectedState;
     @Mock
     private DebuggerStateHelper debuggerStateHelper;
     @InjectMocks
-    private DebuggerEngineImpl debuggerEngine = new DebuggerEngineImpl(TEST_FILENAME, new RunnerState(), onStateChangedCallback, debuggerStateHelper);
+    private DebuggerEngineImpl debuggerEngine = new DebuggerEngineImpl(TEST_FILENAME, state, onStateChangedCallback, debuggerStateHelper);
 
     @Before
     public void setUp() {
@@ -107,11 +103,16 @@ public class DebuggerEngineImplTest {
         BProgram bProg = new ResourceBProgram(TEST_FILENAME);
         BProgramSyncSnapshot bProgramSyncSnapshot = bProg.setup();
         debuggerEngine.setSyncSnapshot(bProgramSyncSnapshot);
-        debuggerEngine.setBreakpoint(2, true);
+
+        Arrays.stream(BREAKPOINTS_LINES).forEach(lineNumber -> debuggerEngine.setBreakpoint(lineNumber, true));
+
         doCallRealMethod().when(debuggerStateHelper).setRecentlyRegisteredBthreads(any());
-        Set<BThreadSyncSnapshot> recentlyRegisteredBthreads = bProg.getRecentlyRegisteredBthreads();
+        doCallRealMethod().when(debuggerStateHelper).getLastState();
+        doCallRealMethod().when(debuggerStateHelper).peekNextState(any(),any(),any());
+
+        Set<BThreadSyncSnapshot> recentlyRegisteredBThreads = bProg.getRecentlyRegisteredBthreads();
         Set<Pair<String, Object>> recentlyRegistered = new HashSet<>();
-        for (BThreadSyncSnapshot b : recentlyRegisteredBthreads) {
+        for (BThreadSyncSnapshot b : recentlyRegisteredBThreads) {
             recentlyRegistered.add(new Pair<>(b.getName(), b.getEntryPoint()));
         }
         debuggerStateHelper.setRecentlyRegisteredBthreads(recentlyRegistered);
@@ -126,25 +127,25 @@ public class DebuggerEngineImplTest {
         });
         try {
             bProgramSyncSnapshot = bProgramSyncSnapshot.start(execSvc);
+            doCallRealMethod().when(debuggerStateHelper).generateDebuggerState(any(), any(), any());
+            state.setDebuggerState(RunnerState.State.SYNC_STATE);
+            debuggerEngine.setSyncSnapshot(bProgramSyncSnapshot);
+            debuggerEngine.onStateChanged();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+
         BPDebuggerState state = onStateChangedQueue.take();
         expectedState = ExpectedResults.testEnvChangedInBreakPoints_ENV1();
         assertEquals(state, expectedState);
         state = onStateChangedQueue.take();
         expectedState = ExpectedResults.testEnvChangedInBreakPoints_ENV2();
         assertEquals(state, expectedState);
-    }
-
-    private void assertSuccessResponse(BooleanResponse booleanResponse) {
-        assertTrue(booleanResponse.isSuccess());
-        assertNull(booleanResponse.getErrorCode());
-    }
-
-    private void assertErrorResponse(BooleanResponse booleanResponse, ErrorCode expectedErrorCode) {
-        assertFalse(booleanResponse.isSuccess());
-        assertEquals(expectedErrorCode, booleanResponse.getErrorCode());
+        debuggerEngine.onStateChanged();
+        onStateChangedQueue.take();
+        state = onStateChangedQueue.take();
+        expectedState = ExpectedResults.testEnvChangedInBreakPoints_ENV3();
+        assertEquals(state, expectedState);
     }
 
     private static Void onStateChangedTester(BPDebuggerState debuggerState) {

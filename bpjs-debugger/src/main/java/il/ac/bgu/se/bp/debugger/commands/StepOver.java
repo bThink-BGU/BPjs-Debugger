@@ -12,4 +12,9 @@ public class StepOver implements DebuggerCommand {
         debugger.stepOver();
         return createSuccessResponse();
     }
+
+    @Override
+    public String toString() {
+        return "StepOver";
+    }
 }

@@ -12,4 +12,9 @@ public class Continue implements DebuggerCommand {
         debugger.continueRun();
         return createSuccessResponse();
     }
+
+    @Override
+    public String toString() {
+        return "Continue";
+    }
 }
