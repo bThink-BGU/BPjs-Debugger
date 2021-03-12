@@ -1,0 +1,12 @@
+il/ac/bgu/se/bp/utils/Pair.class
+il/ac/bgu/se/bp/rest/BPjsIDERestController.class
+il/ac/bgu/se/bp/debugger/state/BThreadInfo.class
+il/ac/bgu/se/bp/debugger/state/EventInfo.class
+il/ac/bgu/se/bp/rest/response/GetSyncSnapshotsResponse.class
+il/ac/bgu/se/bp/error/ErrorCode.class
+il/ac/bgu/se/bp/debugger/state/EventsStatus.class
+il/ac/bgu/se/bp/ExecuteBPjsResponse.class
+il/ac/bgu/se/bp/debugger/Debugger.class
+il/ac/bgu/se/bp/rest/response/BooleanResponse.class
+il/ac/bgu/se/bp/DebugRequest.class
+il/ac/bgu/se/bp/debugger/state/BPDebuggerState.class

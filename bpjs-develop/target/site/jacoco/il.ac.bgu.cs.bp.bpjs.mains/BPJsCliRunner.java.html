@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BPJsCliRunner.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">bp-ide-bpjs-bp-framework</a> &gt; <a href="index.source.html" class="el_package">il.ac.bgu.cs.bp.bpjs.mains</a> &gt; <span class="el_source">BPJsCliRunner.java</span></div><h1>BPJsCliRunner.java</h1><pre class="source lang-java linenums">/*
+ * The MIT License
+ *
+ * Copyright 2018 michael.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the &quot;Software&quot;), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+package il.ac.bgu.cs.bp.bpjs.mains;
+
+import il.ac.bgu.cs.bp.bpjs.analysis.BThreadSnapshotVisitedStateStore;
+import il.ac.bgu.cs.bp.bpjs.analysis.DfsBProgramVerifier;
+import il.ac.bgu.cs.bp.bpjs.analysis.ExecutionTraceInspections;
+import il.ac.bgu.cs.bp.bpjs.analysis.HashVisitedStateStore;
+import il.ac.bgu.cs.bp.bpjs.analysis.VerificationResult;
+import il.ac.bgu.cs.bp.bpjs.analysis.listeners.PrintDfsVerifierListener;
+import il.ac.bgu.cs.bp.bpjs.analysis.violations.Violation;
+import il.ac.bgu.cs.bp.bpjs.model.BProgram;
+import il.ac.bgu.cs.bp.bpjs.execution.BProgramRunner;
+import il.ac.bgu.cs.bp.bpjs.execution.listeners.PrintBProgramRunnerListener;
+import il.ac.bgu.cs.bp.bpjs.model.eventselection.EventSelectionStrategy;
+import il.ac.bgu.cs.bp.bpjs.model.eventselection.LoggingEventSelectionStrategyDecorator;
+import il.ac.bgu.cs.bp.bpjs.model.eventselection.SimpleEventSelectionStrategy;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.mozilla.javascript.EvaluatorException;
+import org.mozilla.javascript.Scriptable;
+
+/**
+ * This is a console application for running BPjs files. Source files are passed
+ * as arguments at the command line. Program events and log are printed to
+ * {@link java.lang.System#out}.
+ *
+ *
+ * @author michael
+ */
+<span class="nc" id="L61">public class BPJsCliRunner {</span>
+
+    public static void main(String[] args) throws Exception {
+<span class="nc bnc" id="L64" title="All 2 branches missed.">        if (args.length == 0) {</span>
+<span class="nc" id="L65">            printUsageAndExit();</span>
+        }
+
+<span class="nc" id="L68">        BProgram bpp = new BProgram(&quot;BPjs&quot;) {</span>
+            @Override
+            protected void setupProgramScope(Scriptable scope) {
+<span class="nc bnc" id="L71" title="All 2 branches missed.">                for (String arg : args) {</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">                    if (arg.equals(&quot;-&quot;)) {</span>
+<span class="nc" id="L73">                        println(&quot; [READ] stdin&quot;);</span>
+                        try {
+<span class="nc" id="L75">                            evaluate(System.in, &quot;stdin&quot;);</span>
+<span class="nc" id="L76">                        } catch (EvaluatorException ee) {</span>
+<span class="nc" id="L77">                            logScriptExceptionAndQuit(ee, arg);</span>
+<span class="nc" id="L78">                        }</span>
+                    } else {
+<span class="nc bnc" id="L80" title="All 2 branches missed.">                        if (!arg.startsWith(&quot;-&quot;)) {</span>
+<span class="nc" id="L81">                            Path inFile = Paths.get(arg);</span>
+<span class="nc" id="L82">                            println(&quot; [READ] %s&quot;, inFile.toAbsolutePath().toString());</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">                            if (!Files.exists(inFile)) {</span>
+<span class="nc" id="L84">                                println(&quot;File %s does not exit&quot;, inFile.toAbsolutePath().toString());</span>
+<span class="nc" id="L85">                                System.exit(-2);</span>
+                            }
+<span class="nc" id="L87">                            try (InputStream in = Files.newInputStream(inFile)) {</span>
+<span class="nc" id="L88">                                evaluate(in, arg);</span>
+<span class="nc" id="L89">                            } catch (EvaluatorException ee) {</span>
+<span class="nc" id="L90">                                logScriptExceptionAndQuit(ee, arg);</span>
+<span class="nc" id="L91">                            } catch (IOException ex) {</span>
+<span class="nc" id="L92">                                println(&quot;Exception while processing &quot; + arg + &quot;: &quot; + ex.getMessage());</span>
+<span class="nc" id="L93">                                Logger.getLogger(BPJsCliRunner.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L94">                            }</span>
+                        }
+                    }
+<span class="nc" id="L97">                    println(&quot; [ OK ] %s&quot;, arg);</span>
+                }
+<span class="nc" id="L99">            }</span>
+
+            private void logScriptExceptionAndQuit(EvaluatorException ee, String arg) {
+<span class="nc" id="L102">                println(&quot;Error in source %s:&quot;, arg);</span>
+<span class="nc" id="L103">                println(ee.details());</span>
+<span class="nc" id="L104">                println(&quot;line: &quot; + ee.lineNumber() + &quot;:&quot; + ee.columnNumber());</span>
+<span class="nc" id="L105">                println(&quot;source: &quot; + ee.lineSource());</span>
+<span class="nc" id="L106">                System.exit(-3);</span>
+<span class="nc" id="L107">            }</span>
+        };
+
+<span class="nc" id="L110">        SimpleEventSelectionStrategy sess = new SimpleEventSelectionStrategy();</span>
+        
+<span class="nc bnc" id="L112" title="All 2 branches missed.">        if ( switchPresent(&quot;--verify&quot;, args) ) {</span>
+<span class="nc" id="L113">            bpp.setEventSelectionStrategy(sess);</span>
+<span class="nc" id="L114">            DfsBProgramVerifier vfr = new DfsBProgramVerifier();</span>
+<span class="nc" id="L115">            vfr.setDebugMode( switchPresent(&quot;-v&quot;, args));</span>
+<span class="nc" id="L116">            vfr.setProgressListener(new PrintDfsVerifierListener() );</span>
+            
+<span class="nc bnc" id="L118" title="All 2 branches missed.">            if ( switchPresent(&quot;--full-state-storage&quot;, args) ) {</span>
+<span class="nc" id="L119">                println(&quot;Using full state storage&quot;);</span>
+<span class="nc" id="L120">                vfr.setVisitedStateStore( new BThreadSnapshotVisitedStateStore() );</span>
+            } else {
+<span class="nc" id="L122">                vfr.setVisitedStateStore( new HashVisitedStateStore() );</span>
+            }
+<span class="nc bnc" id="L124" title="All 2 branches missed.">            if ( switchPresent(&quot;--liveness&quot;, args) ) {</span>
+<span class="nc" id="L125">                vfr.addInspection(ExecutionTraceInspections.HOT_SYSTEM);</span>
+<span class="nc" id="L126">                vfr.addInspection(ExecutionTraceInspections.HOT_BTHREADS);</span>
+<span class="nc" id="L127">                vfr.addInspection(ExecutionTraceInspections.HOT_TERMINATIONS);</span>
+            }
+<span class="nc" id="L129">            String maxDepthStr = keyForValue(&quot;--max-trace-length&quot;, args);</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">            if ( maxDepthStr != null ) {</span>
+                try {
+<span class="nc" id="L132">                    long maxDepth = Long.parseLong(maxDepthStr.trim());</span>
+<span class="nc" id="L133">                    vfr.setMaxTraceLength(maxDepth);</span>
+<span class="nc" id="L134">                } catch ( NumberFormatException nfe ) {</span>
+<span class="nc" id="L135">                    println(&quot;Illegal max trace length value: '&quot; + maxDepthStr + &quot;'.&quot;);</span>
+<span class="nc" id="L136">                    System.exit(-5);</span>
+<span class="nc" id="L137">                }</span>
+            }
+<span class="nc" id="L139">            println(&quot;Max trace length: &quot; + vfr.getMaxTraceLength() );</span>
+            
+<span class="nc bnc" id="L141" title="All 2 branches missed.">            if ( vfr.getInspections().isEmpty() ) {</span>
+<span class="nc" id="L142">                ExecutionTraceInspections.DEFAULT_SET.forEach(vfr::addInspection);</span>
+            }
+<span class="nc" id="L144">            println(&quot;Inspections:&quot;);</span>
+<span class="nc" id="L145">            vfr.getInspections().forEach( ins -&gt; println( &quot; * &quot; + ins.title()));</span>
+            
+            try {
+<span class="nc" id="L148">                println(&quot;Starting verification&quot;);</span>
+<span class="nc" id="L149">                VerificationResult res = vfr.verify(bpp);</span>
+<span class="nc" id="L150">                println(&quot;Verification completed.&quot;);</span>
+                
+<span class="nc bnc" id="L152" title="All 2 branches missed.">                if ( res.getViolation().isPresent() ) {</span>
+<span class="nc" id="L153">                    Violation vio = res.getViolation().get();</span>
+<span class="nc" id="L154">                    println(&quot;Found Violation:&quot;);</span>
+<span class="nc" id="L155">                    println(vio.decsribe());</span>
+                    
+<span class="nc" id="L157">                    println(&quot;Counter example trace:&quot;);</span>
+<span class="nc" id="L158">                    vio.getCounterExampleTrace().getNodes().stream()</span>
+<span class="nc" id="L159">                        .map( n -&gt; n.getEvent() )</span>
+<span class="nc" id="L160">                        .filter(Optional::isPresent)</span>
+<span class="nc" id="L161">                        .map(Optional::get)</span>
+<span class="nc" id="L162">                        .forEach(evt -&gt; println(evt.toString()));</span>
+
+<span class="nc" id="L164">                } else {</span>
+<span class="nc" id="L165">                    println(&quot;No violations found&quot;);</span>
+                }
+                
+<span class="nc" id="L168">                println(&quot;General statistics:&quot;);</span>
+<span class="nc" id="L169">                println(String.format(&quot;Time:\t%,d (msec)&quot;, res.getTimeMillies()));</span>
+<span class="nc" id="L170">                println(String.format(&quot;States scanned:\t%,d&quot;, res.getScannedStatesCount()));</span>
+<span class="nc" id="L171">                println(String.format(&quot;Edges scanned:\t%,d&quot;, res.getScannedEdgesCount()));</span>
+                                    
+                
+<span class="nc" id="L174">            } catch ( Exception e ) {</span>
+<span class="nc" id="L175">                println(&quot;!! Exception during verifying the program: &quot; + e.getMessage());</span>
+<span class="nc" id="L176">                println(&quot;!! Stack trace:&quot;);</span>
+<span class="nc" id="L177">                e.printStackTrace(System.out);</span>
+<span class="nc" id="L178">            }</span>
+            
+<span class="nc" id="L180">        } else {</span>
+<span class="nc bnc" id="L181" title="All 2 branches missed.">            EventSelectionStrategy ess = switchPresent(&quot;-v&quot;, args) ? new LoggingEventSelectionStrategyDecorator(sess) : sess;</span>
+
+<span class="nc" id="L183">            bpp.setEventSelectionStrategy(ess);</span>
+
+<span class="nc" id="L185">            BProgramRunner bpr = new BProgramRunner(bpp);</span>
+<span class="nc bnc" id="L186" title="All 2 branches missed.">            if (!switchPresent(&quot;-v&quot;, args)) {</span>
+<span class="nc" id="L187">                bpr.addListener(new PrintBProgramRunnerListener());</span>
+            }
+
+<span class="nc" id="L190">            bpr.run();            </span>
+        }
+<span class="nc" id="L192">    }</span>
+
+    /**
+     * @return {@code true} iff the passed switch is present in args.
+     */
+    private static boolean switchPresent(String aSwitch, String[] args) {
+<span class="nc" id="L198">        return Arrays.stream(args).anyMatch(s -&gt; s.trim().equals(aSwitch));</span>
+    }
+    
+    private static String keyForValue( String aKey, String args[] ) {
+<span class="nc bnc" id="L202" title="All 2 branches missed.">       for ( int idx=0; idx&lt;args.length; idx++ ) {</span>
+<span class="nc bnc" id="L203" title="All 2 branches missed.">           if ( args[idx].startsWith(aKey+&quot;=&quot;) ) {</span>
+<span class="nc" id="L204">               String[] comps = args[idx].split(&quot;=&quot;, 2);</span>
+<span class="nc bnc" id="L205" title="All 2 branches missed.">               return comps.length == 2 ? comps[1] : null;</span>
+           }
+       }
+<span class="nc" id="L208">       return null;</span>
+    }
+    
+    private static void println(String template, String... params) {
+<span class="nc" id="L212">        print(template + &quot;\n&quot;, params);</span>
+<span class="nc" id="L213">    }</span>
+
+    private static void print(String template, String... params) {
+<span class="nc bnc" id="L216" title="All 2 branches missed.">        if (params.length == 0) {</span>
+<span class="nc" id="L217">            System.out.print(template);</span>
+        } else {
+<span class="nc" id="L219">            System.out.printf(template, (Object[]) params);</span>
+        }
+<span class="nc" id="L221">    }</span>
+
+    private static void printUsageAndExit() {
+<span class="nc" id="L224">        try (BufferedReader rdr = new BufferedReader(new InputStreamReader(Thread.currentThread().getContextClassLoader().getResourceAsStream(&quot;RunFile-usage.txt&quot;)))) {</span>
+<span class="nc" id="L225">            rdr.lines().forEach(System.out::println);</span>
+<span class="nc" id="L226">        } catch (IOException ex) {</span>
+<span class="nc" id="L227">            throw new RuntimeException(&quot;Cannot find 'RunFile-usage.txt'&quot;);</span>
+<span class="nc" id="L228">        }</span>
+<span class="nc" id="L229">        System.exit(-1);</span>
+<span class="nc" id="L230">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.6.202009150832</span></div></body></html>

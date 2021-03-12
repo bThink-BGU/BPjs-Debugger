@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GetState.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">bp-ide-bpjs-debugger</a> &gt; <a href="index.source.html" class="el_package">il.ac.bgu.se.bp.debugger.commands</a> &gt; <span class="el_source">GetState.java</span></div><h1>GetState.java</h1><pre class="source lang-java linenums">package il.ac.bgu.se.bp.debugger.commands;
+
+import il.ac.bgu.se.bp.debugger.engine.DebuggerEngine;
+import il.ac.bgu.se.bp.rest.response.BooleanResponse;
+
+import static il.ac.bgu.se.bp.utils.ResponseHelper.createSuccessResponse;
+
+<span class="fc" id="L8">public class GetState implements DebuggerCommand {</span>
+
+    @Override
+    public BooleanResponse applyCommand(DebuggerEngine debugger) {
+<span class="fc" id="L12">        debugger.getState();</span>
+<span class="fc" id="L13">        return createSuccessResponse();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.6.202009150832</span></div></body></html>

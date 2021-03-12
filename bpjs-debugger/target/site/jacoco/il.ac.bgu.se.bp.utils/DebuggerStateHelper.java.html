@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DebuggerStateHelper.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">bp-ide-bpjs-debugger</a> &gt; <a href="index.source.html" class="el_package">il.ac.bgu.se.bp.utils</a> &gt; <span class="el_source">DebuggerStateHelper.java</span></div><h1>DebuggerStateHelper.java</h1><pre class="source lang-java linenums">package il.ac.bgu.se.bp.utils;
+
+import il.ac.bgu.cs.bp.bpjs.model.BEvent;
+import il.ac.bgu.cs.bp.bpjs.model.BProgramSyncSnapshot;
+import il.ac.bgu.cs.bp.bpjs.model.BThreadSyncSnapshot;
+import il.ac.bgu.cs.bp.bpjs.model.SyncStatement;
+import il.ac.bgu.cs.bp.bpjs.model.eventsets.EventSet;
+import il.ac.bgu.se.bp.debugger.state.BPDebuggerState;
+import il.ac.bgu.se.bp.debugger.state.BThreadInfo;
+import il.ac.bgu.se.bp.debugger.state.EventInfo;
+import il.ac.bgu.se.bp.debugger.state.EventsStatus;
+import il.ac.bgu.se.bp.execution.RunnerState;
+import org.mozilla.javascript.*;
+import org.mozilla.javascript.tools.debugger.Dim;
+
+import java.lang.reflect.Field;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static il.ac.bgu.cs.bp.bpjs.model.eventsets.EventSets.none;
+
+
+<span class="fc" id="L23">public class DebuggerStateHelper {</span>
+<span class="fc" id="L24">    private Set&lt;Pair&lt;String, Object&gt;&gt; recentlyRegisteredBT= null;</span>
+<span class="fc" id="L25">    private HashMap&lt;String, Object&gt; newBTInterpeterFrames= new HashMap&lt;&gt;();</span>
+
+    public  BPDebuggerState generateDebuggerState(BProgramSyncSnapshot syncSnapshot, RunnerState state, Dim.ContextData lastContextData) {
+<span class="fc" id="L28">        Set&lt;BThreadSyncSnapshot&gt; bThreadSyncSnapshots = syncSnapshot.getBThreadSnapshots();</span>
+<span class="fc" id="L29">        List&lt;BThreadInfo&gt; bThreadInfoList = bThreadSyncSnapshots</span>
+<span class="fc" id="L30">                .stream()</span>
+<span class="fc" id="L31">                .map(bThreadSyncSnapshot -&gt; createBThreadInfo(bThreadSyncSnapshot, state, lastContextData))</span>
+<span class="fc" id="L32">                .collect(Collectors.toList());</span>
+
+<span class="pc bpc" id="L34" title="1 of 2 branches missed.">        if(state.getDebuggerState() == RunnerState.State.JS_DEBUG){</span>
+<span class="nc" id="L35">            bThreadInfoList.addAll(getRecentlyAddedBTInfo(lastContextData));</span>
+        }
+<span class="fc" id="L37">        Set&lt;SyncStatement&gt; statements = syncSnapshot.getStatements();</span>
+
+<span class="fc" id="L39">        List&lt;EventSet&gt; wait = statements.stream().map(SyncStatement::getWaitFor).collect(Collectors.toList());</span>
+<span class="fc" id="L40">        List&lt;EventSet&gt; blocked = statements.stream().map(SyncStatement::getBlock).collect(Collectors.toList());</span>
+<span class="fc" id="L41">        List&lt;BEvent&gt; requested = statements.stream().map(SyncStatement::getRequest).flatMap(Collection::stream).collect(Collectors.toList());</span>
+<span class="pc bpc" id="L42" title="1 of 2 branches missed.">        Set&lt;EventInfo&gt; waitEvents = wait.stream().map((e) -&gt; new EventInfo(e.equals(none) ? &quot;&quot; : ((BEvent) e).getName())).collect(Collectors.toSet());</span>
+<span class="pc bpc" id="L43" title="1 of 2 branches missed.">        Set&lt;EventInfo&gt; blockedEvents = blocked.stream().map((e) -&gt; new EventInfo(e.equals(none) ? &quot;&quot; : ((BEvent) e).getName())).collect(Collectors.toSet());</span>
+<span class="fc" id="L44">        Set&lt;EventInfo&gt; requestedEvents = requested.stream().map((e) -&gt; new EventInfo(e.getName())).collect(Collectors.toSet());</span>
+
+<span class="fc" id="L46">        EventsStatus eventsStatus = new EventsStatus(waitEvents, blockedEvents, requestedEvents);</span>
+<span class="fc" id="L47">        return new BPDebuggerState(bThreadInfoList, eventsStatus);</span>
+    }
+
+    private List&lt;BThreadInfo&gt; getRecentlyAddedBTInfo(Dim.ContextData lastContextData){
+<span class="nc" id="L51">        List&lt;BThreadInfo&gt; bThreadInfoList = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L52">        Context cx = Context.getCurrentContext();</span>
+        try {
+<span class="nc" id="L54">            Object lastInterpreterFrame = getValue(cx, &quot;lastInterpreterFrame&quot;);</span>
+<span class="nc" id="L55">            Object fnOrScript = getValue(lastInterpreterFrame, &quot;fnOrScript&quot;);</span>
+<span class="nc bnc" id="L56" title="All 2 branches missed.">            for(Pair&lt;String,Object&gt; p: recentlyRegisteredBT){</span>
+<span class="nc" id="L57">                Object o = p.getRight();</span>
+<span class="nc bnc" id="L58" title="All 2 branches missed.">                if(o == fnOrScript){</span>
+<span class="nc" id="L59">                    Map&lt;Integer, Map&lt;String, String&gt;&gt; env =  getEnvDebug(lastInterpreterFrame, lastContextData);</span>
+<span class="nc" id="L60">                    newBTInterpeterFrames.put(p.getLeft(), lastInterpreterFrame);</span>
+<span class="nc" id="L61">                    bThreadInfoList.add(new BThreadInfo(p.getLeft(), env, new EventInfo(&quot;&quot;), new EventInfo(&quot;&quot;), new HashSet()));</span>
+<span class="nc" id="L62">                }</span>
+                else{
+<span class="nc" id="L64">                    Object savedInterpeterFrame = newBTInterpeterFrames.get(p.getLeft());</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">                    bThreadInfoList.add(new BThreadInfo(p.getLeft(), savedInterpeterFrame == null? new HashMap&lt;&gt;():getEnvDebug(savedInterpeterFrame, lastContextData) , new EventInfo(&quot;&quot;), new EventInfo(&quot;&quot;), new HashSet()));</span>
+                }
+<span class="nc" id="L67">            }</span>
+        }
+<span class="nc" id="L69">        catch (Exception e){</span>
+<span class="nc" id="L70">            e.printStackTrace();</span>
+<span class="nc" id="L71">        }</span>
+<span class="nc" id="L72">        return bThreadInfoList;</span>
+    }
+
+
+//return true if none of the bthreads that already registered is the owner of the cx interpeter frame
+    private  boolean isCurrentThreadsFirstRun(Set&lt;BThreadSyncSnapshot&gt; bThreadSyncSnapshots) {
+<span class="nc" id="L78">        Context cx = Context.getCurrentContext();</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">        for(BThreadSyncSnapshot bThreadSS: bThreadSyncSnapshots){</span>
+<span class="nc" id="L80">            ScriptableObject scope = (ScriptableObject) bThreadSS.getScope();</span>
+            try {
+<span class="nc" id="L82">                Object implementation = getValue(scope, &quot;implementation&quot;);</span>
+<span class="nc" id="L83">                Object lastInterpreterFrame = getValue(cx, &quot;lastInterpreterFrame&quot;);</span>
+<span class="nc" id="L84">                Object parentFrame = getValue(lastInterpreterFrame, &quot;parentFrame&quot;);</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">                ScriptableObject interruptedScope = parentFrame != null ? (ScriptableObject) getValue(parentFrame, &quot;scope&quot;) :</span>
+<span class="nc" id="L86">                        (ScriptableObject) getValue(lastInterpreterFrame, &quot;scope&quot;);</span>
+<span class="nc" id="L87">                ScriptableObject paramScope = (ScriptableObject) getValue(implementation, &quot;scope&quot;);</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">                if (paramScope == interruptedScope) return false;</span>
+
+<span class="nc" id="L90">            } catch (NoSuchFieldException | IllegalAccessException e) {</span>
+<span class="nc" id="L91">                e.printStackTrace();</span>
+<span class="nc" id="L92">            }</span>
+
+<span class="nc" id="L94">        }</span>
+<span class="nc" id="L95">        return true;</span>
+    }
+
+
+    private  BThreadInfo createBThreadInfo(BThreadSyncSnapshot bThreadSS, RunnerState state, Dim.ContextData lastContextData) {
+<span class="fc" id="L100">        ScriptableObject scope = (ScriptableObject) bThreadSS.getScope();</span>
+        try {
+<span class="fc" id="L102">            Object implementation = getValue(scope, &quot;implementation&quot;);</span>
+<span class="fc" id="L103">            Dim.StackFrame debuggerFrame = (Dim.StackFrame) getValue(implementation, &quot;debuggerFrame&quot;);</span>
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">            Map&lt;Integer, Map&lt;String, String&gt;&gt; env = state == null ? null :</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">                    state.getDebuggerState() == RunnerState.State.JS_DEBUG ? getEnvDebug(implementation, lastContextData) :</span>
+<span class="fc" id="L106">                            getEnv(debuggerFrame.contextData(), implementation);</span>
+<span class="fc" id="L107">            EventSet waitFor = bThreadSS.getSyncStatement().getWaitFor();</span>
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">            EventInfo waitEvent = new EventInfo(waitFor.equals(none) ? &quot;&quot; : ((BEvent) waitFor).getName());</span>
+<span class="fc" id="L109">            EventSet blocked = bThreadSS.getSyncStatement().getBlock();</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">            EventInfo blockedEvent = new EventInfo(blocked.equals(none) ? &quot;&quot; : ((BEvent) blocked).getName());</span>
+<span class="fc" id="L111">            Set&lt;EventInfo&gt; requested = new ArrayList&lt;&gt;(bThreadSS.getSyncStatement().getRequest()).stream().map((r) -&gt; new EventInfo(r.getName())).collect(Collectors.toSet());</span>
+<span class="fc" id="L112">            return new BThreadInfo(bThreadSS.getName(), env, waitEvent, blockedEvent, requested);</span>
+<span class="nc" id="L113">        } catch (NoSuchFieldException | IllegalAccessException e) {</span>
+<span class="nc" id="L114">            e.printStackTrace();</span>
+        }
+<span class="nc" id="L116">        return null;</span>
+    }
+
+    private  Object getValue(Object instance, String fieldName) throws NoSuchFieldException, IllegalAccessException {
+<span class="fc" id="L120">        Field fld = instance.getClass().getDeclaredField(fieldName);</span>
+<span class="fc" id="L121">        fld.setAccessible(true);</span>
+<span class="fc" id="L122">        return fld.get(instance);</span>
+    }
+
+    private  Map&lt;Integer, Map&lt;String, String&gt;&gt; getEnvDebug(Object interpreterCallFrame, Dim.ContextData lastContextData) {
+<span class="nc" id="L126">        Map&lt;Integer, Map&lt;String, String&gt;&gt; env = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L127">        Integer key = 0;</span>
+<span class="nc" id="L128">        Context cx = Context.getCurrentContext();</span>
+<span class="nc" id="L129">        boolean currentBT = false;</span>
+        try {
+<span class="nc" id="L131">            Object lastInterpreterFrame = getValue(cx, &quot;lastInterpreterFrame&quot;);</span>
+<span class="nc" id="L132">            Object parentFrame = getValue(lastInterpreterFrame, &quot;parentFrame&quot;);</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">            ScriptableObject interruptedScope = parentFrame != null ? (ScriptableObject) getValue(parentFrame, &quot;scope&quot;) :</span>
+<span class="nc" id="L134">                    (ScriptableObject) getValue(lastInterpreterFrame, &quot;scope&quot;);</span>
+<span class="nc" id="L135">            ScriptableObject paramScope = (ScriptableObject) getValue(interpreterCallFrame, &quot;scope&quot;);</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">            if (paramScope == interruptedScope) { //current running bthread</span>
+<span class="nc" id="L137">                currentBT = true;</span>
+<span class="nc bnc" id="L138" title="All 2 branches missed.">                for (int i = 0; i &lt; lastContextData.frameCount(); i++) {</span>
+<span class="nc" id="L139">                    ScriptableObject scope = (ScriptableObject) lastContextData.getFrame(i).scope();</span>
+<span class="nc" id="L140">                    env.put(i, getScope(scope));</span>
+                }
+<span class="nc" id="L142">                key = lastContextData.frameCount();</span>
+            }
+<span class="nc" id="L144">            parentFrame = interpreterCallFrame;</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">            while (parentFrame != null) {</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">                if (currentBT) {</span>
+<span class="nc" id="L147">                    Dim.ContextData debuggerFrame = ((Dim.StackFrame) getValue(parentFrame, &quot;debuggerFrame&quot;)).contextData();</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">                    if(debuggerFrame != lastContextData) {</span>
+<span class="nc bnc" id="L149" title="All 2 branches missed.">                        for (int i = 0; i &lt; debuggerFrame.frameCount(); i++) {</span>
+<span class="nc" id="L150">                            ScriptableObject scope = (ScriptableObject) debuggerFrame.getFrame(i).scope();</span>
+<span class="nc" id="L151">                            env.put(key, getScope(scope));</span>
+                        }
+<span class="nc" id="L153">                        key += debuggerFrame.frameCount();</span>
+                    }
+<span class="nc" id="L155">                } else {</span>
+<span class="nc" id="L156">                    ScriptableObject scope = (ScriptableObject) getValue(parentFrame, &quot;scope&quot;);</span>
+<span class="nc" id="L157">                    env.put(key, getScope(scope));</span>
+<span class="nc" id="L158">                    key += 1;</span>
+                }
+<span class="nc" id="L160">                parentFrame = getValue(parentFrame, &quot;parentFrame&quot;);</span>
+            }
+
+<span class="nc" id="L163">        } catch (NoSuchFieldException | IllegalAccessException e) {</span>
+<span class="nc" id="L164">            e.printStackTrace();</span>
+<span class="nc" id="L165">        }</span>
+
+<span class="nc" id="L167">        return env;</span>
+    }
+
+    private  Map&lt;Integer, Map&lt;String, String&gt;&gt; getEnv(Dim.ContextData contextData, Object interpreterCallFrame) {
+<span class="fc" id="L171">        Map&lt;Integer, Map&lt;String, String&gt;&gt; env = new HashMap&lt;&gt;();</span>
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">        for (int i = 0; i &lt; contextData.frameCount(); i++) {</span>
+<span class="nc" id="L173">            ScriptableObject scope = (ScriptableObject) contextData.getFrame(i).scope();</span>
+<span class="nc" id="L174">            env.put(i, getScope(scope));</span>
+        }
+<span class="fc" id="L176">        Integer key = 1;</span>
+        try {
+<span class="fc" id="L178">            Object lastFrame = interpreterCallFrame;</span>
+<span class="fc" id="L179">            ScriptableObject scope = (ScriptableObject) getValue(lastFrame, &quot;scope&quot;);</span>
+<span class="fc" id="L180">            env.put(0, getScope(scope));</span>
+<span class="fc" id="L181">            Object parentFrame = getValue(lastFrame, &quot;parentFrame&quot;);</span>
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">            while (parentFrame != null) {</span>
+<span class="nc" id="L183">                Dim.ContextData debuggerFrame = ((Dim.StackFrame) getValue(parentFrame, &quot;debuggerFrame&quot;)).contextData();</span>
+<span class="nc" id="L184">                scope = (ScriptableObject) getValue(parentFrame, &quot;scope&quot;);</span>
+<span class="nc" id="L185">                env.put(key, getScope(scope));</span>
+<span class="nc" id="L186">                key += 1;</span>
+<span class="nc" id="L187">                parentFrame = getValue(parentFrame, &quot;parentFrame&quot;);</span>
+<span class="nc" id="L188">            }</span>
+<span class="nc" id="L189">        } catch (NoSuchFieldException | IllegalAccessException e) {</span>
+<span class="nc" id="L190">            e.printStackTrace();</span>
+<span class="fc" id="L191">        }</span>
+<span class="fc" id="L192">        return env;</span>
+    }
+
+    private  Map&lt;String, String&gt; getScope(ScriptableObject scope) {
+<span class="fc" id="L196">        Map&lt;String, String&gt; myEnv = new HashMap&lt;&gt;();</span>
+        try {
+<span class="fc" id="L198">            Object function = getValue(scope, &quot;function&quot;);</span>
+<span class="fc" id="L199">            Object interpeterData = getValue(function, &quot;idata&quot;);</span>
+<span class="fc" id="L200">            String itsName = (String) getValue(interpeterData, &quot;itsName&quot;);</span>
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">            myEnv.put(&quot;FUNCNAME&quot;, itsName != null ? itsName : &quot;BTMain&quot;);</span>
+<span class="pc bpc" id="L202" title="1 of 4 branches missed.">            Object[] ids = Arrays.stream(scope.getIds()).filter((p) -&gt; !p.toString().equals(&quot;arguments&quot;) &amp;&amp; !p.toString().equals(itsName + &quot;param&quot;)).toArray();</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">            for (Object id : ids) {</span>
+<span class="fc" id="L204">                myEnv.put(id.toString(), Objects.toString(collectJsValue(scope.get(id))));</span>
+            }
+<span class="nc" id="L206">        } catch (NoSuchFieldException e) {</span>
+<span class="nc" id="L207">            e.printStackTrace();</span>
+<span class="nc" id="L208">        } catch (IllegalAccessException e) {</span>
+<span class="nc" id="L209">            e.printStackTrace();</span>
+<span class="pc" id="L210">        }</span>
+<span class="fc" id="L211">        return myEnv;</span>
+    }
+
+    /**
+     * Take a Javascript value from Rhino, build a Java value for it.
+     *
+     * @param jsValue
+     * @return
+     */
+    private  Object collectJsValue(Object jsValue) {
+<span class="fc bfc" id="L221" title="All 2 branches covered.">        if (jsValue == null) {</span>
+<span class="fc" id="L222">            return null;</span>
+
+<span class="pc bpc" id="L224" title="1 of 2 branches missed.">        } else if (jsValue instanceof NativeFunction) {</span>
+<span class="nc" id="L225">            return ((NativeFunction) jsValue).getEncodedSource();</span>
+
+<span class="pc bpc" id="L227" title="1 of 2 branches missed.">        } else if (jsValue instanceof NativeArray) {</span>
+<span class="nc" id="L228">            NativeArray jsArr = (NativeArray) jsValue;</span>
+<span class="nc" id="L229">            List&lt;Object&gt; retVal = new ArrayList&lt;&gt;((int) jsArr.getLength());</span>
+<span class="nc bnc" id="L230" title="All 2 branches missed.">            for (int idx = 0; idx &lt; jsArr.getLength(); idx++) {</span>
+<span class="nc" id="L231">                retVal.add(collectJsValue(jsArr.get(idx)));</span>
+            }
+<span class="nc" id="L233">            return retVal;</span>
+
+<span class="pc bpc" id="L235" title="1 of 2 branches missed.">        } else if (jsValue instanceof ScriptableObject) {</span>
+<span class="nc" id="L236">            ScriptableObject jsObj = (ScriptableObject) jsValue;</span>
+<span class="nc" id="L237">            Map&lt;Object, Object&gt; retVal = new HashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L238" title="All 2 branches missed.">            for (Object key : jsObj.getIds()) {</span>
+<span class="nc" id="L239">                retVal.put(key, collectJsValue(jsObj.get(key)));</span>
+            }
+<span class="nc" id="L241">            return retVal;</span>
+
+<span class="pc bpc" id="L243" title="1 of 2 branches missed.">        } else if (jsValue instanceof ConsString) {</span>
+<span class="nc" id="L244">            return ((ConsString) jsValue).toString();</span>
+
+<span class="pc bpc" id="L246" title="1 of 2 branches missed.">        } else if (jsValue instanceof NativeJavaObject) {</span>
+<span class="nc" id="L247">            NativeJavaObject jsJavaObj = (NativeJavaObject) jsValue;</span>
+<span class="nc" id="L248">            Object obj = jsJavaObj.unwrap();</span>
+<span class="nc" id="L249">            return obj;</span>
+
+        } else {
+<span class="fc" id="L252">            return jsValue;</span>
+        }
+
+    }
+
+    public void setRecentlyRegisteredBthreads(Set&lt;Pair&lt;String, Object&gt;&gt; recentlyRegistered) {
+<span class="fc" id="L258">        this.recentlyRegisteredBT = recentlyRegistered;</span>
+<span class="fc" id="L259">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.6.202009150832</span></div></body></html>

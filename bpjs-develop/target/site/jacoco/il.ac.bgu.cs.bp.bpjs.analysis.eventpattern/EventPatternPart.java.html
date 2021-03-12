@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>EventPatternPart.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">bp-ide-bpjs-bp-framework</a> &gt; <a href="index.source.html" class="el_package">il.ac.bgu.cs.bp.bpjs.analysis.eventpattern</a> &gt; <span class="el_source">EventPatternPart.java</span></div><h1>EventPatternPart.java</h1><pre class="source lang-java linenums">package il.ac.bgu.cs.bp.bpjs.analysis.eventpattern;
+
+import il.ac.bgu.cs.bp.bpjs.model.BEvent;
+import il.ac.bgu.cs.bp.bpjs.model.eventsets.EventSet;
+
+/**
+ * Part of an {@link EventPattern}.
+ * 
+ * @author michael
+ */
+public class EventPatternPart  {
+	
+	private final EventSet eventSet;
+	private final int minRepeats;
+	private final Integer maxRepeats;
+	
+
+    public EventPatternPart(EventSet eventSet, int minRepeats, Integer maxRepeats) {
+<span class="fc" id="L19">		super();</span>
+<span class="fc" id="L20">		this.eventSet = eventSet;</span>
+<span class="fc" id="L21">		this.minRepeats = minRepeats;</span>
+<span class="fc" id="L22">		this.maxRepeats = maxRepeats;</span>
+<span class="fc" id="L23">	}</span>
+
+	public boolean matches( BEvent e ) {
+<span class="fc" id="L26">		return eventSet.contains(e);</span>
+	}
+	
+	public int getMinRepeats() {
+<span class="nc" id="L30">		return minRepeats;</span>
+	}
+
+	public Integer getMaxRepeats() {
+<span class="nc" id="L34">		return maxRepeats;</span>
+	}
+
+	public EventSet getEventSet() {
+<span class="nc" id="L38">		return eventSet;</span>
+	}
+	
+	public boolean isMultiChar() {
+<span class="pc bpc" id="L42" title="3 of 6 branches missed.">		return ( minRepeats!=1 || (maxRepeats!=null &amp;&amp; maxRepeats!=1) );</span>
+	}
+
+	@Override
+	public String toString() {
+<span class="nc" id="L47">		return &quot;[EventPatternPart eventSet:&quot; + eventSet + &quot;, minRepeats:&quot;</span>
+				+ minRepeats + &quot;, maxRepeats:&quot; + maxRepeats + &quot;]&quot;;
+	}
+
+	@Override
+	public int hashCode() {
+<span class="nc" id="L53">		final int prime = 31;</span>
+<span class="nc" id="L54">		int result = 1;</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">		result = prime * result</span>
+<span class="nc" id="L56">				+ ((eventSet == null) ? 0 : eventSet.hashCode());</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">		result = prime * result</span>
+<span class="nc" id="L58">				+ ((maxRepeats == null) ? 0 : maxRepeats.hashCode());</span>
+<span class="nc" id="L59">		result = prime * result + minRepeats;</span>
+<span class="nc" id="L60">		return result;</span>
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+<span class="nc bnc" id="L65" title="All 2 branches missed.">		if (this == obj)</span>
+<span class="nc" id="L66">			return true;</span>
+<span class="nc bnc" id="L67" title="All 2 branches missed.">		if (obj == null)</span>
+<span class="nc" id="L68">			return false;</span>
+<span class="nc bnc" id="L69" title="All 2 branches missed.">		if (getClass() != obj.getClass())</span>
+<span class="nc" id="L70">			return false;</span>
+<span class="nc" id="L71">		EventPatternPart other = (EventPatternPart) obj;</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">		if (eventSet == null) {</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">			if (other.eventSet != null)</span>
+<span class="nc" id="L74">				return false;</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">		} else if (!eventSet.equals(other.eventSet))</span>
+<span class="nc" id="L76">			return false;</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">		if (maxRepeats == null) {</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">			if (other.maxRepeats != null)</span>
+<span class="nc" id="L79">				return false;</span>
+<span class="nc bnc" id="L80" title="All 2 branches missed.">		} else if (!maxRepeats.equals(other.maxRepeats))</span>
+<span class="nc" id="L81">			return false;</span>
+<span class="nc bnc" id="L82" title="All 2 branches missed.">		return minRepeats == other.minRepeats;</span>
+	}
+	
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.6.202009150832</span></div></body></html>

@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ScriptableUtils.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">bp-ide-bpjs-bp-framework</a> &gt; <a href="index.source.html" class="el_package">il.ac.bgu.cs.bp.bpjs.internal</a> &gt; <span class="el_source">ScriptableUtils.java</span></div><h1>ScriptableUtils.java</h1><pre class="source lang-java linenums">/*
+ * The MIT License
+ *
+ * Copyright 2018 michael.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the &quot;Software&quot;), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+package il.ac.bgu.cs.bp.bpjs.internal;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
+import static java.util.stream.Collectors.joining;
+import java.util.stream.Stream;
+import org.mozilla.javascript.ConsString;
+import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.ScriptableObject;
+
+/**
+ * Some methods to make working with {@link Scriptable} easier.
+ * @author michael
+ */
+<span class="nc" id="L40">public class ScriptableUtils {</span>
+    
+    public static Scriptable getPenultiamteParent( Scriptable aScope ) {
+<span class="nc" id="L43">        Scriptable penultimateScope = aScope;</span>
+<span class="nc bnc" id="L44" title="All 2 branches missed.">        while ( penultimateScope.getParentScope()!=null &amp;&amp;</span>
+<span class="nc bnc" id="L45" title="All 2 branches missed.">                penultimateScope.getParentScope().getParentScope() != null ) {</span>
+<span class="nc" id="L46">            penultimateScope = penultimateScope.getParentScope();</span>
+        }
+<span class="nc" id="L48">        return penultimateScope;</span>
+    }
+    
+    public static String toString( Scriptable aScope ) {
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">        if ( aScope == null ) return &quot;&lt;null&gt;&quot;;</span>
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">        if ( aScope instanceof ScriptableObject ) {</span>
+<span class="fc" id="L54">            ScriptableObject sob = (ScriptableObject) aScope;</span>
+<span class="fc" id="L55">            return Stream.of(sob.getIds())</span>
+<span class="fc" id="L56">                         .map( k -&gt; k.toString() + &quot;:&quot; + Objects.toString(sob.get(k)) )</span>
+<span class="fc" id="L57">                         .collect( joining(&quot;,&quot;, &quot;{&quot;, &quot;}&quot;) );</span>
+<span class="nc" id="L58">        } else return aScope.toString();</span>
+    }
+    
+    /**
+     * Deep-compare of {@code o1} and {@code o2}. Recurses down these objects,
+     * when needed.
+     *
+     * &lt;em&gt;DOES NOT DEAL WITH CIRCULAR REFERENCES!&lt;/em&gt;
+     *
+     * @param o1 first operand for comparison
+     * @param o2 second operand for comparison
+     * @return {@code true} iff both objects are recursively equal
+     */
+    public static boolean jsEquals(Object o1, Object o2) {
+        
+        // quick breakers
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        if (o1 == o2) return true;</span>
+<span class="pc bpc" id="L75" title="3 of 6 branches missed.">        if (o1 == null ^ o2 == null) return false;</span>
+        
+        // Can we do a by-part comparison?
+<span class="pc bpc" id="L78" title="1 of 4 branches missed.">        if (o1 instanceof ScriptableObject &amp;&amp; o2 instanceof ScriptableObject) {</span>
+<span class="fc" id="L79">            return jsScriptableObjectEqual((ScriptableObject) o1, (ScriptableObject) o2);</span>
+        }
+
+        // Concatenated strings in Rhino have a different type. We need to manually
+        // resolve to String semantics, which is what the following lines do.
+<span class="fc bfc" id="L84" title="All 2 branches covered.">        if (o1 instanceof ConsString) {</span>
+<span class="fc" id="L85">            o1 = o1.toString();</span>
+        }
+<span class="fc bfc" id="L87" title="All 2 branches covered.">        if (o2 instanceof ConsString) {</span>
+<span class="fc" id="L88">            o2 = o2.toString();</span>
+        }
+        
+        // default comparison (hopefully they have meaningful equals())
+<span class="fc" id="L92">        return o1.equals(o2);</span>
+    }
+
+    public static boolean jsScriptableObjectEqual(ScriptableObject o1, ScriptableObject o2) {
+<span class="fc" id="L96">        Set&lt;Object&gt; o1Ids = new HashSet&lt;&gt;(Arrays.asList(o1.getIds()));</span>
+<span class="fc" id="L97">        Set&lt;Object&gt; o2Ids = new HashSet&lt;&gt;(Arrays.asList(o2.getIds()));</span>
+        
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        return o1Ids.equals(o2Ids) &amp;&amp;</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">                o1Ids.stream().allMatch(id -&gt; jsEquals(o1.get(id), o2.get(id)));</span>
+    }
+    
+    /**
+     * Deep-hash of an object.
+     *
+     * &lt;em&gt;DOES NOT DEAL WITH CIRCULAR REFERENCES!&lt;/em&gt;
+     *
+     * @param jsObj The JavaScript object to calculate the hash of.
+     * @return {@code jsObj}'s hash code.
+     */
+    public static int jsHash(Object jsObj) {
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        if (jsObj == null) {</span>
+<span class="fc" id="L113">            return 1;</span>
+        }
+        
+        // Concatenated strings in Rhino have a different type. We need to manually
+        // resolve to String semantics, which is what the following lines do.
+<span class="fc bfc" id="L118" title="All 2 branches covered.">        if (jsObj instanceof ConsString) {</span>
+<span class="fc" id="L119">            return jsObj.toString().hashCode();</span>
+        }
+
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">        return (jsObj instanceof ScriptableObject)</span>
+<span class="pc" id="L123">                ? jsScriptableObjectHashCode((ScriptableObject) jsObj)</span>
+<span class="fc" id="L124">                : jsObj.hashCode();</span>
+    }
+
+    public static int jsScriptableObjectHashCode(ScriptableObject jsObj) {
+<span class="nc" id="L128">        Set&lt;Object&gt; ids = new HashSet&lt;&gt;(Arrays.asList(jsObj.getIds()));</span>
+<span class="nc" id="L129">        final int[] acc = new int[1];</span>
+<span class="nc" id="L130">        ids.stream().mapToInt( id -&gt; Objects.hash(id, jsObj.get(id)) )</span>
+<span class="nc" id="L131">            .forEach( h -&gt; acc[0]^=h );</span>
+        
+<span class="nc" id="L133">        return acc[0];</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.6.202009150832</span></div></body></html>

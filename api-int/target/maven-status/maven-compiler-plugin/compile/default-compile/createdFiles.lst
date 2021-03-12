@@ -1,0 +1,7 @@
+il/ac/bgu/se/bp/debugger/commands/DebuggerCommand.class
+il/ac/bgu/se/bp/logger/Logger.class
+il/ac/bgu/se/bp/service/BPjsIDEService.class
+il/ac/bgu/se/bp/debugger/engine/SyncSnapshotHolder.class
+il/ac/bgu/se/bp/debugger/BPJsDebugger.class
+il/ac/bgu/se/bp/logger/Logger$LOG_LEVELS.class
+il/ac/bgu/se/bp/debugger/engine/DebuggerEngine.class

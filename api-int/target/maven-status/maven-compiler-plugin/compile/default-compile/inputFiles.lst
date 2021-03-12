@@ -1,0 +1,6 @@
+/home/runner/work/BPjs-Online-IDE/BPjs-Online-IDE/api-int/src/main/java/il/ac/bgu/se/bp/debugger/engine/DebuggerEngine.java
+/home/runner/work/BPjs-Online-IDE/BPjs-Online-IDE/api-int/src/main/java/il/ac/bgu/se/bp/debugger/BPJsDebugger.java
+/home/runner/work/BPjs-Online-IDE/BPjs-Online-IDE/api-int/src/main/java/il/ac/bgu/se/bp/debugger/engine/SyncSnapshotHolder.java
+/home/runner/work/BPjs-Online-IDE/BPjs-Online-IDE/api-int/src/main/java/il/ac/bgu/se/bp/logger/Logger.java
+/home/runner/work/BPjs-Online-IDE/BPjs-Online-IDE/api-int/src/main/java/il/ac/bgu/se/bp/service/BPjsIDEService.java
+/home/runner/work/BPjs-Online-IDE/BPjs-Online-IDE/api-int/src/main/java/il/ac/bgu/se/bp/debugger/commands/DebuggerCommand.java
