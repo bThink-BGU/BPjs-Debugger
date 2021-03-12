@@ -15,8 +15,8 @@ jobs:
         with:
           java-version: 1.8
 
-      - name: Build with Maven
-        run: mvn -B test
+      #      - name: Build with Maven
+      #        run: mvn -B test
 
       - name: Run tests with coverage
         run: mvn verify -P coverage
