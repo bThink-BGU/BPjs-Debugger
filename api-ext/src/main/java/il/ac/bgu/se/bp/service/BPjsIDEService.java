@@ -1,6 +1,5 @@
 package il.ac.bgu.se.bp.service;
 
-import il.ac.bgu.se.bp.ExecuteBPjsResponse;
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
 import il.ac.bgu.se.bp.rest.request.DebugRequest;
 import il.ac.bgu.se.bp.rest.request.RunRequest;
@@ -10,9 +9,9 @@ public interface BPjsIDEService extends BPJsDebugger<BooleanResponse> {
 
     BooleanResponse subscribeUser(String sessionId, String userId);
 
-    ExecuteBPjsResponse run(RunRequest code);
+    BooleanResponse run(RunRequest runRequest, String sessionId);
 
-    ExecuteBPjsResponse debug(DebugRequest code);
+    BooleanResponse debug(DebugRequest debugRequest, String sessionId);
 
     BooleanResponse addBreakpoint(int lineNumber);
 

@@ -68,7 +68,6 @@ public class DebugRequest extends RunRequest {
                 ", stopOnBreakpointsToggle=" + stopOnBreakpointsToggle +
                 ", stopOnSyncStateToggle=" + stopOnSyncStateToggle +
                 ", sourceCode='" + sourceCode + '\'' +
-                ", socketId=" + socketId +
                 '}';
     }
 }

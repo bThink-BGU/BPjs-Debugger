@@ -1,5 +1,10 @@
 package il.ac.bgu.se.bp.rest.socket;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import il.ac.bgu.se.bp.debugger.runner.OnStateChangedHandler;
+import il.ac.bgu.se.bp.debugger.state.BPDebuggerState;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -9,11 +14,14 @@ import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 import java.util.*;
 
 @Service
-public class GreetingService {
+@Qualifier("OnStateChangedHandlerImpl")
+public class OnStateChangedHandlerImpl implements OnStateChangedHandler {
     private final SimpMessagingTemplate simpMessagingTemplate;
     private static final String SIMP_SESSION_ID = "simpSessionId";
     private static final String WS_MESSAGE_TRANSFER_DESTINATION = "/state/update";
     private List<String> userNames = new ArrayList<>();
+
+    private ObjectMapper objectMapper = new ObjectMapper();
 
     /**
      * Handles WebSocket connection events
@@ -33,19 +41,30 @@ public class GreetingService {
                 getSessionIdFromMessageHeaders(event)));
     }
 
-    GreetingService(SimpMessagingTemplate simpMessagingTemplate) {
+    OnStateChangedHandlerImpl(SimpMessagingTemplate simpMessagingTemplate) {
         this.simpMessagingTemplate = simpMessagingTemplate;
     }
 
     public void sendMessages() {
         for (String userName : userNames) {
+            System.out.println("sendMessages(): userName = " + userName);
             simpMessagingTemplate.convertAndSendToUser(userName, WS_MESSAGE_TRANSFER_DESTINATION,
-                    "Hallo " + userName + " at " + new Date().toString());
+                    "Hello " + userName + " at " + new Date().toString());
         }
     }
 
-    public void addUserName(String username) {
-        userNames.add(username);
+    @Override
+    public void sendMessage(String sessionId, BPDebuggerState debuggerState) {
+        try {
+            simpMessagingTemplate.convertAndSendToUser(sessionId, WS_MESSAGE_TRANSFER_DESTINATION,
+                    objectMapper.writeValueAsString(debuggerState));
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void addUser(String sessionId, String userId) {
+        userNames.add(userId);
     }
 
     private String getSessionIdFromMessageHeaders(SessionDisconnectEvent event) {

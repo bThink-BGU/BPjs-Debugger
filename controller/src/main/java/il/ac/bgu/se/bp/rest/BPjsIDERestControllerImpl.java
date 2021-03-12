@@ -1,10 +1,8 @@
 package il.ac.bgu.se.bp.rest;
 
-import il.ac.bgu.se.bp.ExecuteBPjsResponse;
 import il.ac.bgu.se.bp.rest.request.DebugRequest;
 import il.ac.bgu.se.bp.rest.request.RunRequest;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
-import il.ac.bgu.se.bp.rest.socket.GreetingService;
 import il.ac.bgu.se.bp.service.BPjsIDEService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.Header;
@@ -24,34 +22,26 @@ public class BPjsIDERestControllerImpl implements BPjsIDERestController {
     @Autowired
     private BPjsIDEService bPjsIDEService;
 
-    @Autowired
-    private GreetingService greetingService;
-
     @MessageMapping("/subscribe")
-    public BooleanResponse subscribeUser(@Header("simpSessionId") String sessionId, Principal principal) {
-        greetingService.addUserName(principal.getName());
-        return bPjsIDEService.subscribeUser(sessionId, principal.getName());
-    }
+    public @ResponseBody
+    void subscribeUser(@Header("simpSessionId") String sessionId, Principal principal) {
+        System.out.println("sessionId: " + sessionId);
+        System.out.println("userId: " + principal.getName());
 
-    private void sleep() {
-        try {
-            Thread.sleep(1000); // simulated delay
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        bPjsIDEService.subscribeUser(sessionId, principal.getName());
     }
 
     @Override
     @RequestMapping(value = "/run", method = RequestMethod.POST)
     public @ResponseBody
-    ExecuteBPjsResponse run(@RequestBody RunRequest code) {
-        return bPjsIDEService.run(code);
+    BooleanResponse run(@Header("simpSessionId") String sessionId, @RequestBody RunRequest code) {
+        return bPjsIDEService.run(code, sessionId);
     }
 
     @Override
     @RequestMapping(value = "/debug", method = RequestMethod.POST)
     public @ResponseBody
-    ExecuteBPjsResponse debug(@RequestBody DebugRequest code) {
-        return bPjsIDEService.debug(code);
+    BooleanResponse debug(@Header("simpSessionId") String sessionId, @RequestBody DebugRequest code) {
+        return bPjsIDEService.debug(code, sessionId);
     }
 }

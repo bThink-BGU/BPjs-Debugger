@@ -1,9 +1,9 @@
 package il.ac.bgu.se.bp.service;
 
 import il.ac.bgu.cs.bp.bpjs.execution.BProgramRunner;
-import il.ac.bgu.se.bp.ExecuteBPjsResponse;
-import il.ac.bgu.se.bp.cache.BPjsIDECacheManager;
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
+import il.ac.bgu.se.bp.debugger.runner.DebuggerSessionHandler;
+import il.ac.bgu.se.bp.error.ErrorCode;
 import il.ac.bgu.se.bp.execution.BPJsDebuggerImpl;
 import il.ac.bgu.se.bp.logger.Logger;
 import il.ac.bgu.se.bp.rest.request.DebugRequest;
@@ -12,9 +12,9 @@ import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.util.StringUtils;
 
 import java.util.Map;
-import java.util.UUID;
 
 @Service
 public class BPjsIDEServiceImpl implements BPjsIDEService {
@@ -22,13 +22,14 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
     private static final Logger logger = new Logger(BPjsIDEServiceImpl.class);
 
     @Autowired
-    private BPjsIDECacheManager bPjsIDECacheManager;
+    private DebuggerSessionHandler<BProgramRunner> debuggerSessionHandler;
 
     //  todo: update userId time after each event injection
 
     @Override
     public BooleanResponse subscribeUser(String sessionId, String userId) {
         System.out.println("Received message from {1} with sessionId {2}" + ",," + userId + "," + sessionId);
+        debuggerSessionHandler.addUser(sessionId, userId);
 
         //todo: see reference: GreetingService, GreetingService.sendMessage
 
@@ -36,37 +37,55 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
     }
 
     @Override
-    public ExecuteBPjsResponse run(RunRequest code) {
-        String newUserId = UUID.randomUUID().toString();
+    public BooleanResponse run(RunRequest runRequest, String sessionId) {
         BProgramRunner bProgramRunner = new BProgramRunner();
 
-        bPjsIDECacheManager.addNewRunExecution(newUserId, bProgramRunner);
-        bPjsIDECacheManager.updateLastOperationTime(newUserId);
+        debuggerSessionHandler.addNewRunExecution(sessionId, bProgramRunner);
+        debuggerSessionHandler.updateLastOperationTime(sessionId);
 
-//        new Thread(bProgramRunner); //todo: fix   ////aaaaaaaaa
 
-        logger.info("received run request with code: {0}", code.toString());
-        return new ExecuteBPjsResponse(newUserId);
+        logger.info("received run request with code: {0}", bProgramRunner.toString());
+        return new BooleanResponse(true);
     }
 
     @Override
-    public ExecuteBPjsResponse debug(DebugRequest code) {
-        String newUserId = UUID.randomUUID().toString();
-        final String filename = "BPJSDebuggerTest.js";
+    public BooleanResponse debug(DebugRequest debugRequest, String sessionId) {
+        if (!validateRequest(debugRequest)) {
+            return createErrorResponse(ErrorCode.INVALID_REQUEST);
+        }
 
-        BPJsDebugger bpProgramDebugger = new BPJsDebuggerImpl(filename, () -> true, a -> null);
-//        bpProgramDebugger.setup(code.getBreakpoints());
+        if (!debuggerSessionHandler.validateSessionId(sessionId)) {
+            return createErrorResponse(ErrorCode.UNKNOWN_USER);
+        }
 
-        bPjsIDECacheManager.addNewDebugExecution(newUserId, bpProgramDebugger);
-        bPjsIDECacheManager.updateLastOperationTime(newUserId);
+        String filepath = createCodeFile(debugRequest.getSourceCode());
+        if (StringUtils.isEmpty(filepath)) {
+            return createErrorResponse(ErrorCode.INVALID_SOURCE_CODE);
+        }
 
-//        new Thread(bpProgramDebugger::start);
+        BPJsDebugger bpProgramDebugger = new BPJsDebuggerImpl(filepath,
+                () -> debuggerSessionHandler.removeSession(sessionId),
+                debuggerState -> debuggerSessionHandler.updateUserStateChange(sessionId, debuggerState));
 
-        // todo: add userId -> socket mapping
-        //  update userId time after each debug operation
+        debuggerSessionHandler.addNewDebugExecution(sessionId, bpProgramDebugger);
+        debuggerSessionHandler.updateLastOperationTime(sessionId);
 
-        logger.info("received debug request with code: {0}", code.toString());
-        return new ExecuteBPjsResponse(newUserId);
+        // todo: run debugger in new thread
+
+        logger.info("received debug request with code: {0}", debugRequest.toString());
+        return new BooleanResponse(true);
+    }
+
+    private BooleanResponse createErrorResponse(ErrorCode errorCode) {
+        return new BooleanResponse(false, errorCode);
+    }
+
+    private boolean validateRequest(RunRequest runRequest) {
+        return !StringUtils.isEmpty(runRequest.getSourceCode());
+    }
+
+    private String createCodeFile(String sourceCode) {
+        return null;
     }
 
     @Override

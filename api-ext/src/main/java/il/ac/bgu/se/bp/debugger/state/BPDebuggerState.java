@@ -1,11 +1,14 @@
 package il.ac.bgu.se.bp.debugger.state;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 
-public class BPDebuggerState {
+public class BPDebuggerState implements Serializable {
+    private static final long serialVersionUID = 6320377753998745711L;
+
     private List<BThreadInfo> bThreadInfoList;
     private EventsStatus eventsStatus;
     private EventInfo chosenEvent;

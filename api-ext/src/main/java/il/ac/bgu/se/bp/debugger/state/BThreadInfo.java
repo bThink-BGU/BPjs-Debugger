@@ -1,7 +1,10 @@
 package il.ac.bgu.se.bp.debugger.state;
+import java.io.Serializable;
 import java.util.*;
 
-public class BThreadInfo {
+public class BThreadInfo implements Serializable {
+    private static final long serialVersionUID = 2208145820539894522L;
+
     private String name;
     private Map<Integer, Map<String, String>> env;
     private EventInfo wait;
