@@ -12,4 +12,9 @@ public class StepInto implements DebuggerCommand {
         debugger.stepInto();
         return createSuccessResponse();
     }
+
+    @Override
+    public String toString() {
+        return "StepInto";
+    }
 }

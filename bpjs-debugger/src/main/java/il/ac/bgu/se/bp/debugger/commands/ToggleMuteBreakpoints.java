@@ -18,4 +18,11 @@ public class ToggleMuteBreakpoints implements DebuggerCommand {
         debugger.toggleMuteBreakpoints(toggleBreakPointStatus);
         return createSuccessResponse();
     }
+
+    @Override
+    public String toString() {
+        return "ToggleMuteBreakpoints{" +
+                "toggleBreakPointStatus=" + toggleBreakPointStatus +
+                '}';
+    }
 }

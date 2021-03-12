@@ -8,8 +8,6 @@ public class BThreadInfo {
     private EventInfo blocked;
     private Set<EventInfo> requested;
 
-    public BThreadInfo() {
-    }
 
     public BThreadInfo(String name, Map<Integer, Map<String, String>> env) {
         this.name = name;

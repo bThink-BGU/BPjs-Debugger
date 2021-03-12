@@ -24,6 +24,7 @@ import org.springframework.util.StringUtils;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -151,19 +152,23 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         Thread startSyncThread = new Thread(() -> {
             try {
                 updateRecentlyRegisteredBT();
+
                 syncSnapshot = syncSnapshot.start(execSvc);
                 state.setDebuggerState(RunnerState.State.SYNC_STATE);
                 debuggerEngine.setSyncSnapshot(syncSnapshot);
-                logger.debug("Generate state from startSync");
                 syncSnapshotHolder.addSyncSnapshot(syncSnapshot, null);
+                logger.debug("Generate state from startSync");
                 debuggerEngine.onStateChanged();
-                logger.info("GOT FIRST SYNC STATE");
+                logger.info("~FIRST SYNC STATE~");
                 state.setDebuggerState(RunnerState.State.SYNC_STATE);
                 if (isSkipSyncPoints) {
                     nextSync();
                 }
             } catch (InterruptedException e) {
                 logger.warning("got InterruptedException in startSync");
+            }
+            catch (RejectedExecutionException e){
+                logger.error("Forced to stop");
             }
         });
         startSyncThread.setName("startSyncThread");
@@ -224,12 +229,12 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         logger.info("Triggering event " + event);
         updateRecentlyRegisteredBT();
         syncSnapshot = syncSnapshot.triggerEvent(event, execSvc, new ArrayList<>());
-        debuggerEngine.setSyncSnapshot(syncSnapshot);
         state.setDebuggerState(RunnerState.State.SYNC_STATE);
+        debuggerEngine.setSyncSnapshot(syncSnapshot);
         logger.debug("Generate state from nextSync");
         debuggerEngine.onStateChanged();
         syncSnapshotHolder.addSyncSnapshot(syncSnapshot, event);
-        logger.info("GOT NEW SYNC STATE");
+        logger.info("~NEW SYNC STATE~");
         if (isSkipSyncPoints)
             nextSync();
     }

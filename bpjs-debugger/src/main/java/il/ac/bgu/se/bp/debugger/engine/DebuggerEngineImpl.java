@@ -72,9 +72,14 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
     @Override
     public void dispatchNextGuiEvent() throws InterruptedException {
         try {
-            logger.info("Getting state from dispatchNextGuiEvent");
-            //onStateChanged(); todo
-            queue.take().applyCommand(this);
+
+            if(!debuggerStateHelper.getLastState().equals(debuggerStateHelper.peekNextState(syncSnapshot, state, lastContextData))){
+                logger.info("Getting state from dispatchNextGuiEvent");
+                onStateChanged();
+            }
+            DebuggerCommand debuggerCommand = queue.take();
+            logger.info("applying command " + debuggerCommand.toString());
+            debuggerCommand.applyCommand(this);
         } catch (Exception e) {
             logger.error("failed on dispatchNextGuiEvent", e);
         }
@@ -117,7 +122,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
     @Override
     public void stepInto() {
         dim.setReturnValue(Dim.STEP_INTO);
-        //@todo dim.setBreakOnEnter(true); //possible bug because BP
+//        dim.setBreakOnEnter(true); //possible bug because BP
     }
 
     @Override
@@ -148,9 +153,11 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
         this.syncSnapshot = syncSnapshot;
     }
 
+
     @Override
     public void onStateChanged() {
-        onStateChangedEvent.apply(debuggerStateHelper.generateDebuggerState(syncSnapshot, state, lastContextData));
+        BPDebuggerState newState = debuggerStateHelper.generateDebuggerState(syncSnapshot, state, lastContextData);
+        onStateChangedEvent.apply(newState);
     }
 
     //todo: remove

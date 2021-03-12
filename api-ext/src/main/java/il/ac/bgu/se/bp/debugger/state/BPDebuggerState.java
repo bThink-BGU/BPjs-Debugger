@@ -12,7 +12,7 @@ public class BPDebuggerState {
 
     public BPDebuggerState() {
         this.bThreadInfoList = new ArrayList<>();
-        this.eventsStatus = new EventsStatus(new HashSet<>(), new HashSet<>(), new HashSet<>());
+        this.eventsStatus = new EventsStatus(new ArrayList<>(), new ArrayList<>(), new HashSet<>());
         this.chosenEvent = null;
     }
 
@@ -50,14 +50,9 @@ public class BPDebuggerState {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         BPDebuggerState that = (BPDebuggerState) o;
-        return bThreadInfoList.equals(that.bThreadInfoList) &&
+        return bThreadInfoList.containsAll(that.bThreadInfoList) && that.bThreadInfoList.containsAll(bThreadInfoList)&&
                 Objects.equals(eventsStatus, that.eventsStatus) &&
                 Objects.equals(chosenEvent, that.chosenEvent);}
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(bThreadInfoList, eventsStatus, chosenEvent);
-    }
 
     @Override
     public String toString() {

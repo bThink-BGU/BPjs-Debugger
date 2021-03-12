@@ -12,4 +12,9 @@ public class GetState implements DebuggerCommand {
         debugger.getState();
         return createSuccessResponse();
     }
+
+    @Override
+    public String toString() {
+        return "GetState";
+    }
 }
