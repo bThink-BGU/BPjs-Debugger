@@ -276,6 +276,8 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
 
     @Override
     public BooleanResponse continueRun() {
+        if (!isSetup())
+            return createErrorResponse(ErrorCode.SETUP_REQUIRED);
         if (this.state.getDebuggerState() != RunnerState.State.JS_DEBUG) {
             return createErrorResponse(ErrorCode.NOT_IN_JS_DEBUG_STATE);
         }
@@ -284,6 +286,8 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
 
     @Override
     public BooleanResponse stepInto() {
+        if (!isSetup())
+            return createErrorResponse(ErrorCode.SETUP_REQUIRED);
         if (this.state.getDebuggerState() != RunnerState.State.JS_DEBUG) {
             return createErrorResponse(ErrorCode.NOT_IN_JS_DEBUG_STATE);
         }
@@ -292,7 +296,8 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
 
     @Override
     public BooleanResponse stepOver() {
-        System.out.println("debuggerimpl stepover, state "+ this.state.getDebuggerState());
+        if (!isSetup())
+            return createErrorResponse(ErrorCode.SETUP_REQUIRED);
         if (this.state.getDebuggerState() != RunnerState.State.JS_DEBUG) {
             return createErrorResponse(ErrorCode.NOT_IN_JS_DEBUG_STATE);
         }
@@ -301,6 +306,8 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
 
     @Override
     public BooleanResponse stepOut() {
+        if (!isSetup())
+            return createErrorResponse(ErrorCode.SETUP_REQUIRED);
         if (this.state.getDebuggerState() != RunnerState.State.JS_DEBUG) {
             return createErrorResponse(ErrorCode.NOT_IN_JS_DEBUG_STATE);
         }
@@ -384,7 +391,6 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         if (!isSetup()) {
             return createErrorResponse(ErrorCode.SETUP_REQUIRED);
         }
-
         try {
             debuggerEngine.addCommand(debuggerCommand);
             return createSuccessResponse();

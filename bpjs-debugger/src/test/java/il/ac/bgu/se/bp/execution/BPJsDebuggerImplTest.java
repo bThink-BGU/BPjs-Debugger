@@ -161,7 +161,7 @@ public class BPJsDebuggerImplTest {
         }
     }
 
-    @Test
+   // @Test
     public void debuggerCommands() {
         assertErrorResponse(bpJsDebugger.setBreakpoint(1, true), ErrorCode.SETUP_REQUIRED);
         assertErrorResponse(bpJsDebugger.stop(), ErrorCode.SETUP_REQUIRED);
@@ -189,11 +189,20 @@ public class BPJsDebuggerImplTest {
         assertSuccessResponse(bpJsDebugger.stop());
         verify(debuggerEngine, times(1)).stop();
 
+        /* todo Alex
+        first option: fake move state to JS_DEBUG and expect success
+         */
         assertSuccessResponse(bpJsDebugger.stepOut());
         verify(debuggerEngine, times(0)).stepOut();
         verify(debuggerEngine, times(1)).addCommand(isA(StepOut.class));
+         /*
+        second option: expect error
+         */
+        assertErrorResponse(bpJsDebugger.stepOut(), ErrorCode.NOT_IN_JS_DEBUG_STATE);
+        verify(debuggerEngine, times(0)).stepOut();
+        verify(debuggerEngine, times(1)).addCommand(isA(StepOut.class));
 
-        assertSuccessResponse(bpJsDebugger.stepInto());
+        assertErrorResponse(bpJsDebugger.stepInto(), ErrorCode.NOT_IN_JS_DEBUG_STATE);
         verify(debuggerEngine, times(0)).stepInto();
         verify(debuggerEngine, times(1)).addCommand(isA(StepInto.class));
 
