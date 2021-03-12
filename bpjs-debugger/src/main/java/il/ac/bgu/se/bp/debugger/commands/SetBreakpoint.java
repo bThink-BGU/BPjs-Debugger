@@ -33,4 +33,8 @@ public class SetBreakpoint implements DebuggerCommand {
         return createErrorResponse(ErrorCode.BREAKPOINT_NOT_ALLOWED); //todo: add lineNumber
 
     }
+    @Override
+    public String toString() {
+        return "SetBreakpoint";
+    }
 }

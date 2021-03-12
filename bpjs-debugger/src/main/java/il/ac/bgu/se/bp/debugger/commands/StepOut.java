@@ -11,4 +11,9 @@ public class StepOut implements DebuggerCommand {
         debugger.stepOut();
         return createSuccessResponse();
     }
+
+    @Override
+    public String toString() {
+        return "StepOut";
+    }
 }

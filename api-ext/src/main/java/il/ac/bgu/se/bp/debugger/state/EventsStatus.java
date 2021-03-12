@@ -1,21 +1,19 @@
 package il.ac.bgu.se.bp.debugger.state;
 
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 public class EventsStatus {
-    private Set<EventInfo> wait;
-    private Set<EventInfo> blocked;
+    private List<EventInfo> wait;
+    private List<EventInfo> blocked;
     private Set<EventInfo> requested;
 
     public EventsStatus() {
-        this.wait = new HashSet<>();
-        this.blocked = new HashSet<>();
+        this.wait = new ArrayList<>();
+        this.blocked = new ArrayList<>();
         this.requested = new HashSet<>();
     }
 
-    public EventsStatus(Set<EventInfo> wait, Set<EventInfo> blocked, Set<EventInfo> requested) {
+    public EventsStatus(List<EventInfo> wait, List<EventInfo> blocked, Set<EventInfo> requested) {
         this.wait = wait;
         this.blocked = blocked;
         this.requested = requested;
@@ -26,8 +24,8 @@ public class EventsStatus {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         EventsStatus that = (EventsStatus) o;
-        return wait.equals(that.wait) &&
-                blocked.equals(that.blocked) &&
+        return wait.containsAll(that.wait) && that.wait.containsAll(wait) &&
+                blocked.containsAll(that.blocked) && that.blocked.containsAll(blocked) &&
                 requested.equals(that.requested);
     }
 

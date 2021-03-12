@@ -12,4 +12,9 @@ public class Stop implements DebuggerCommand {
         debugger.stop();
         return createSuccessResponse();
     }
+
+    @Override
+    public String toString() {
+        return "Stop";
+    }
 }
