@@ -22,7 +22,7 @@ import static il.ac.bgu.cs.bp.bpjs.model.eventsets.EventSets.none;
 
 public class DebuggerStateHelper {
     private Set<Pair<String, Object>> recentlyRegisteredBT= null;
-    private HashMap<String, Object> newBTInterpeterFrames= new HashMap<>();
+    private HashMap<String, Object> newBTInterpeterFrames = new HashMap<>();
 
     public  BPDebuggerState generateDebuggerState(BProgramSyncSnapshot syncSnapshot, RunnerState state, Dim.ContextData lastContextData) {
         Set<BThreadSyncSnapshot> bThreadSyncSnapshots = syncSnapshot.getBThreadSnapshots();
@@ -31,7 +31,7 @@ public class DebuggerStateHelper {
                 .map(bThreadSyncSnapshot -> createBThreadInfo(bThreadSyncSnapshot, state, lastContextData))
                 .collect(Collectors.toList());
 
-        if(state.getDebuggerState() == RunnerState.State.JS_DEBUG){
+        if(state.getDebuggerState() == RunnerState.State.JS_DEBUG && recentlyRegisteredBT != null){
             bThreadInfoList.addAll(getRecentlyAddedBTInfo(lastContextData));
         }
         Set<SyncStatement> statements = syncSnapshot.getStatements();

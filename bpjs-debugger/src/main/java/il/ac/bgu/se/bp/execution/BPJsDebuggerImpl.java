@@ -42,6 +42,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     private DebuggerEngine<BProgramSyncSnapshot> debuggerEngine;
     private final ExecutorService execSvc = ExecutorServiceMaker.makeWithName("BPJsDebuggerRunner-" + debuggerId.incrementAndGet());
     private BProgramSyncSnapshot syncSnapshot = null;
+    private volatile boolean isBProgSetup = false; //indicated if bprog setup
     private volatile boolean isSetup = false;
     private volatile boolean isStarted = false;
     private volatile boolean isSkipSyncPoints = false;
@@ -61,13 +62,21 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
 
     @Override
     public BooleanResponse setup(Map<Integer, Boolean> breakpoints, boolean isSkipSyncPoints) {
-        syncSnapshot = bProg.setup();
-        if (syncSnapshot.getFailedAssertion() != null) {
-            return createErrorResponse(ErrorCode.BP_SETUP_FAIL);// todo: add failed assertion message
+        if(!isBProgSetup){ // may get twice to setup - must do bprog setup first time only
+            syncSnapshot = bProg.setup();
+            isBProgSetup = true;
+            if (syncSnapshot.getFailedAssertion() != null) {
+                return createErrorResponse(ErrorCode.BP_SETUP_FAIL);// todo: add failed assertion message
+            }
         }
-
         setIsSkipSyncPoints(isSkipSyncPoints);
-        debuggerEngine.setupBreakpoints(breakpoints);
+        try{
+            debuggerEngine.setupBreakpoints(breakpoints);
+        }
+        catch (IllegalArgumentException e){
+            logger.error("cant set breakpoint line {0} to true ", e.getMessage());
+            return createErrorResponse(ErrorCode.BREAKPOINT_NOT_ALLOWED);
+        }
         debuggerEngine.setSyncSnapshot(syncSnapshot);
         setIsSetup(true);
         state.setDebuggerState(RunnerState.State.STOPPED);
@@ -267,30 +276,40 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
 
     @Override
     public BooleanResponse continueRun() {
+        if (!isSetup())
+            return createErrorResponse(ErrorCode.SETUP_REQUIRED);
+        if (this.state.getDebuggerState() != RunnerState.State.JS_DEBUG) {
+            return createErrorResponse(ErrorCode.NOT_IN_JS_DEBUG_STATE);
+        }
         return addCommandIfStarted(new Continue());
     }
 
     @Override
     public BooleanResponse stepInto() {
+        if (!isSetup())
+            return createErrorResponse(ErrorCode.SETUP_REQUIRED);
         if (this.state.getDebuggerState() != RunnerState.State.JS_DEBUG) {
-            createErrorResponse(ErrorCode.NOT_IN_JS_DEBUG_STATE);
+            return createErrorResponse(ErrorCode.NOT_IN_JS_DEBUG_STATE);
         }
         return addCommandIfStarted(new StepInto());
     }
 
     @Override
     public BooleanResponse stepOver() {
-        System.out.println("debuggerimpl stepover, state "+ this.state.getDebuggerState());
+        if (!isSetup())
+            return createErrorResponse(ErrorCode.SETUP_REQUIRED);
         if (this.state.getDebuggerState() != RunnerState.State.JS_DEBUG) {
-            createErrorResponse(ErrorCode.NOT_IN_JS_DEBUG_STATE);
+            return createErrorResponse(ErrorCode.NOT_IN_JS_DEBUG_STATE);
         }
         return addCommandIfStarted(new StepOver());
     }
 
     @Override
     public BooleanResponse stepOut() {
+        if (!isSetup())
+            return createErrorResponse(ErrorCode.SETUP_REQUIRED);
         if (this.state.getDebuggerState() != RunnerState.State.JS_DEBUG) {
-            createErrorResponse(ErrorCode.NOT_IN_JS_DEBUG_STATE);
+            return createErrorResponse(ErrorCode.NOT_IN_JS_DEBUG_STATE);
         }
         return addCommandIfStarted(new StepOut());
     }
@@ -372,7 +391,6 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         if (!isSetup()) {
             return createErrorResponse(ErrorCode.SETUP_REQUIRED);
         }
-
         try {
             debuggerEngine.addCommand(debuggerCommand);
             return createSuccessResponse();

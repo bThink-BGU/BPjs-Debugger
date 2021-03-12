@@ -7,7 +7,7 @@ import java.util.Map;
 
 public interface DebuggerEngine<S> extends GuiCallback {
     boolean isBreakpointAllowed(int lineNumber);
-    void setBreakpoint(int lineNumber, boolean stopOnBreakpoint);
+    void setBreakpoint(int lineNumber, boolean stopOnBreakpoint) throws IllegalArgumentException;
     void stop();
     void stepOut();
     void stepInto();

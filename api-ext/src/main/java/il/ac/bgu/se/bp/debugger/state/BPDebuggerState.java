@@ -1,6 +1,9 @@
 package il.ac.bgu.se.bp.debugger.state;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 
 public class BPDebuggerState {
     private List<BThreadInfo> bThreadInfoList;
@@ -8,6 +11,9 @@ public class BPDebuggerState {
     private EventInfo chosenEvent;
 
     public BPDebuggerState() {
+        this.bThreadInfoList = new ArrayList<>();
+        this.eventsStatus = new EventsStatus(new HashSet<>(), new HashSet<>(), new HashSet<>());
+        this.chosenEvent = null;
     }
 
     public BPDebuggerState(List<BThreadInfo> bThreadInfoList, EventsStatus eventsStatus) {
@@ -37,6 +43,20 @@ public class BPDebuggerState {
 
     public void setChosenEvent(EventInfo chosenEvent) {
         this.chosenEvent = chosenEvent;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        BPDebuggerState that = (BPDebuggerState) o;
+        return bThreadInfoList.equals(that.bThreadInfoList) &&
+                Objects.equals(eventsStatus, that.eventsStatus) &&
+                Objects.equals(chosenEvent, that.chosenEvent);}
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(bThreadInfoList, eventsStatus, chosenEvent);
     }
 
     @Override

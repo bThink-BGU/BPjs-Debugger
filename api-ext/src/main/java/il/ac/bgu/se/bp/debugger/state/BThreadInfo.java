@@ -1,7 +1,5 @@
 package il.ac.bgu.se.bp.debugger.state;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class BThreadInfo {
     private String name;
@@ -11,6 +9,14 @@ public class BThreadInfo {
     private Set<EventInfo> requested;
 
     public BThreadInfo() {
+    }
+
+    public BThreadInfo(String name, Map<Integer, Map<String, String>> env) {
+        this.name = name;
+        this.env = env;
+        this.wait= new EventInfo();
+        this.blocked= new EventInfo();
+        this.requested = new HashSet<>();
     }
 
     public BThreadInfo(String name, Map<Integer, Map<String, String>> env, EventInfo wait, EventInfo blocked, Set<EventInfo> requested) {
@@ -59,6 +65,18 @@ public class BThreadInfo {
 
     public void setRequested(Set<EventInfo> requested) {
         this.requested = requested;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        BThreadInfo that = (BThreadInfo) o;
+        return name.equals(that.name) &&
+                env.equals(that.env) &&
+                Objects.equals(wait,that.wait) &&
+                Objects.equals(blocked,that.blocked) &&
+                Objects.equals(requested,that.requested);
     }
 
     @Override
