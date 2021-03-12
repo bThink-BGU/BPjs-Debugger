@@ -1,0 +1,406 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BPJsDebuggerImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">bp-ide-bpjs-debugger</a> &gt; <a href="index.source.html" class="el_package">il.ac.bgu.se.bp.execution</a> &gt; <span class="el_source">BPJsDebuggerImpl.java</span></div><h1>BPJsDebuggerImpl.java</h1><pre class="source lang-java linenums">package il.ac.bgu.se.bp.execution;
+
+import il.ac.bgu.cs.bp.bpjs.internal.ExecutorServiceMaker;
+import il.ac.bgu.cs.bp.bpjs.model.*;
+import il.ac.bgu.cs.bp.bpjs.model.eventselection.EventSelectionResult;
+import il.ac.bgu.cs.bp.bpjs.model.eventselection.EventSelectionStrategy;
+import il.ac.bgu.se.bp.debugger.BPJsDebugger;
+import il.ac.bgu.se.bp.debugger.commands.*;
+import il.ac.bgu.se.bp.debugger.engine.DebuggerEngine;
+import il.ac.bgu.se.bp.debugger.engine.DebuggerEngineImpl;
+import il.ac.bgu.se.bp.debugger.engine.SyncSnapshotHolder;
+import il.ac.bgu.se.bp.debugger.engine.SyncSnapshotHolderImpl;
+import il.ac.bgu.se.bp.debugger.state.BPDebuggerState;
+import il.ac.bgu.se.bp.debugger.state.EventInfo;
+import il.ac.bgu.se.bp.error.ErrorCode;
+import il.ac.bgu.se.bp.logger.Logger;
+import il.ac.bgu.se.bp.rest.response.BooleanResponse;
+import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
+import il.ac.bgu.se.bp.utils.DebuggerStateHelper;
+import il.ac.bgu.se.bp.utils.Pair;
+import org.mozilla.javascript.Interpreter;
+import org.springframework.util.StringUtils;
+
+import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+
+import static il.ac.bgu.se.bp.utils.ResponseHelper.createErrorResponse;
+import static il.ac.bgu.se.bp.utils.ResponseHelper.createSuccessResponse;
+import static java.util.Collections.reverseOrder;
+
+/**
+ * Runs a {@link BProgram} in debug mode.
+ */
+public class BPJsDebuggerImpl implements BPJsDebugger&lt;BooleanResponse&gt; {
+<span class="fc" id="L39">    private final static AtomicInteger debuggerId = new AtomicInteger(0);</span>
+<span class="fc" id="L40">    private final Logger logger = new Logger(BPJsDebuggerImpl.class);</span>
+    private final BProgram bProg;
+    private DebuggerEngine&lt;BProgramSyncSnapshot&gt; debuggerEngine;
+<span class="fc" id="L43">    private final ExecutorService execSvc = ExecutorServiceMaker.makeWithName(&quot;BPJsDebuggerRunner-&quot; + debuggerId.incrementAndGet());</span>
+<span class="fc" id="L44">    private BProgramSyncSnapshot syncSnapshot = null;</span>
+<span class="fc" id="L45">    private volatile boolean isSetup = false;</span>
+<span class="fc" id="L46">    private volatile boolean isStarted = false;</span>
+<span class="fc" id="L47">    private volatile boolean isSkipSyncPoints = false;</span>
+<span class="fc" id="L48">    private RunnerState state = new RunnerState();</span>
+    private List&lt;Thread&gt; runningThreads;
+    private final Callable onExitInterrupt;
+    private final SyncSnapshotHolder&lt;BProgramSyncSnapshot, BEvent&gt; syncSnapshotHolder;
+<span class="fc" id="L52">    private DebuggerStateHelper debuggerStateHelper = new DebuggerStateHelper();</span>
+
+<span class="fc" id="L54">    public BPJsDebuggerImpl(String filename, Callable onExitInterrupt, Function&lt;BPDebuggerState, Void&gt; onStateChangedEvent) {</span>
+<span class="fc" id="L55">        this.onExitInterrupt = onExitInterrupt;</span>
+<span class="fc" id="L56">        runningThreads = new LinkedList&lt;&gt;();</span>
+<span class="fc" id="L57">        debuggerEngine = new DebuggerEngineImpl(filename, state, onStateChangedEvent, debuggerStateHelper);</span>
+<span class="fc" id="L58">        bProg = new ResourceBProgram(filename);</span>
+<span class="fc" id="L59">        syncSnapshotHolder = new SyncSnapshotHolderImpl();</span>
+<span class="fc" id="L60">    }</span>
+
+    @Override
+    public BooleanResponse setup(Map&lt;Integer, Boolean&gt; breakpoints, boolean isSkipSyncPoints) {
+<span class="fc" id="L64">        syncSnapshot = bProg.setup();</span>
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">        if (syncSnapshot.getFailedAssertion() != null) {</span>
+<span class="nc" id="L66">            return createErrorResponse(ErrorCode.BP_SETUP_FAIL);// todo: add failed assertion message</span>
+        }
+
+<span class="fc" id="L69">        setIsSkipSyncPoints(isSkipSyncPoints);</span>
+<span class="fc" id="L70">        debuggerEngine.setupBreakpoints(breakpoints);</span>
+<span class="fc" id="L71">        debuggerEngine.setSyncSnapshot(syncSnapshot);</span>
+<span class="fc" id="L72">        setIsSetup(true);</span>
+<span class="fc" id="L73">        state.setDebuggerState(RunnerState.State.STOPPED);</span>
+//        this.bProg.setWaitForExternalEvents(true);        //todo: add wait for external event toggle
+<span class="fc" id="L75">        return createSuccessResponse();</span>
+    }
+
+    @Override
+    public synchronized BooleanResponse setIsSkipSyncPoints(boolean isSkipSyncPoints) {
+<span class="fc" id="L80">        this.isSkipSyncPoints = isSkipSyncPoints;</span>
+<span class="fc" id="L81">        return createSuccessResponse();</span>
+    }
+
+    @Override
+    public GetSyncSnapshotsResponse getSyncSnapshotsHistory() {
+<span class="fc" id="L86">        SortedMap&lt;Long, BPDebuggerState&gt; syncSnapshotsHistory = new TreeMap&lt;&gt;();</span>
+
+<span class="fc" id="L88">        syncSnapshotHolder.getAllSyncSnapshots().forEach((time, bProgramSyncSnapshotBEventPair) -&gt; {</span>
+<span class="fc" id="L89">            BPDebuggerState bpDebuggerState = debuggerStateHelper.generateDebuggerState(bProgramSyncSnapshotBEventPair.getLeft(), state, null);</span>
+<span class="fc" id="L90">            BEvent chosenEvent = bProgramSyncSnapshotBEventPair.getRight();</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">            bpDebuggerState.setChosenEvent(new EventInfo(chosenEvent == null ? null : chosenEvent.getName()));</span>
+<span class="fc" id="L92">            syncSnapshotsHistory.put(time, bpDebuggerState);</span>
+<span class="fc" id="L93">        });</span>
+
+<span class="fc" id="L95">        return new GetSyncSnapshotsResponse(syncSnapshotsHistory);</span>
+    }
+
+    @Override
+    public BooleanResponse setSyncSnapshots(long snapShotTime) {
+<span class="fc" id="L100">        BProgramSyncSnapshot newSnapshot = syncSnapshotHolder.popKey(snapShotTime);</span>
+<span class="pc bpc" id="L101" title="1 of 2 branches missed.">        if (newSnapshot == null) {</span>
+<span class="fc" id="L102">            return createErrorResponse(ErrorCode.CANNOT_REPLACE_SNAPSHOT);</span>
+        }
+
+<span class="nc" id="L105">        syncSnapshot = newSnapshot;</span>
+<span class="nc" id="L106">        nextSync();</span>
+<span class="nc" id="L107">        return createSuccessResponse();</span>
+    }
+
+    private synchronized void setItStarted(boolean isStarted) {
+<span class="fc" id="L111">        this.isStarted = isStarted;</span>
+<span class="fc" id="L112">    }</span>
+
+    private synchronized void setIsSetup(boolean isSetup) {
+<span class="fc" id="L115">        this.isSetup = isSetup;</span>
+<span class="fc" id="L116">    }</span>
+
+    @Override
+    public synchronized boolean isSetup() {
+<span class="fc" id="L120">        return isSetup;</span>
+    }
+
+    @Override
+    public synchronized boolean isStarted() {
+<span class="fc" id="L125">        return isStarted;</span>
+    }
+
+    private void updateRecentlyRegisteredBT(){
+<span class="fc" id="L129">        Set&lt;BThreadSyncSnapshot&gt; recentlyRegisteredBthreads = bProg.getRecentlyRegisteredBthreads();</span>
+<span class="fc" id="L130">        Set&lt;Pair&lt;String, Object&gt;&gt; recentlyRegistered = new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">        for(BThreadSyncSnapshot b: recentlyRegisteredBthreads){</span>
+<span class="fc" id="L132">            recentlyRegistered.add(new Pair&lt;&gt;(b.getName(), b.getEntryPoint()));</span>
+<span class="fc" id="L133">        }</span>
+<span class="fc" id="L134">        debuggerStateHelper.setRecentlyRegisteredBthreads(recentlyRegistered);</span>
+<span class="fc" id="L135">    }</span>
+    @Override
+    public BooleanResponse startSync(boolean isSkipSyncPoints) {
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">        if (!isSetup()) {</span>
+<span class="nc" id="L139">            setup(new HashMap&lt;&gt;(), isSkipSyncPoints);</span>
+        }
+<span class="fc" id="L141">        setItStarted(true);</span>
+<span class="fc" id="L142">        Thread startSyncThread = new Thread(() -&gt; {</span>
+            try {
+<span class="fc" id="L144">                updateRecentlyRegisteredBT();</span>
+<span class="fc" id="L145">                syncSnapshot = syncSnapshot.start(execSvc);</span>
+<span class="fc" id="L146">                state.setDebuggerState(RunnerState.State.SYNC_STATE);</span>
+<span class="fc" id="L147">                debuggerEngine.setSyncSnapshot(syncSnapshot);</span>
+<span class="fc" id="L148">                logger.debug(&quot;Generate state from startSync&quot;);</span>
+<span class="fc" id="L149">                syncSnapshotHolder.addSyncSnapshot(syncSnapshot, null);</span>
+<span class="fc" id="L150">                debuggerEngine.onStateChanged();</span>
+<span class="fc" id="L151">                logger.info(&quot;GOT FIRST SYNC STATE&quot;);</span>
+<span class="fc" id="L152">                state.setDebuggerState(RunnerState.State.SYNC_STATE);</span>
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">                if (isSkipSyncPoints) {</span>
+<span class="nc" id="L154">                    nextSync();</span>
+                }
+<span class="fc" id="L156">            } catch (InterruptedException e) {</span>
+<span class="fc" id="L157">                logger.warning(&quot;got InterruptedException in startSync&quot;);</span>
+<span class="fc" id="L158">            }</span>
+<span class="fc" id="L159">        });</span>
+<span class="fc" id="L160">        startSyncThread.setName(&quot;startSyncThread&quot;);</span>
+<span class="fc" id="L161">        runningThreads.add(startSyncThread);</span>
+<span class="fc" id="L162">        startSyncThread.start();</span>
+<span class="fc" id="L163">        return createSuccessResponse();</span>
+    }
+
+    @Override
+    public BooleanResponse nextSync() {
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">        if (this.state.getDebuggerState() == RunnerState.State.WAITING_FOR_EXTERNAL_EVENT)</span>
+<span class="nc" id="L169">            return createErrorResponse(ErrorCode.WAITING_FOR_EXTERNAL_EVENT);</span>
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">        else if (this.state.getDebuggerState() == RunnerState.State.JS_DEBUG)</span>
+<span class="nc" id="L171">            return createErrorResponse(ErrorCode.NOT_IN_BP_SYNC_STATE);</span>
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">        else if (this.state.getDebuggerState() == RunnerState.State.RUNNING)</span>
+<span class="nc" id="L173">            return createErrorResponse(ErrorCode.ALREADY_RUNNING);</span>
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">        else if (!isStarted())</span>
+<span class="nc" id="L175">            return createErrorResponse(ErrorCode.NOT_STARTED);</span>
+
+<span class="fc" id="L177">        Thread nextSyncThread = createNextSyncThread();</span>
+<span class="fc" id="L178">        nextSyncThread.setName(&quot;nextSyncThread&quot;);</span>
+<span class="fc" id="L179">        runningThreads.add(nextSyncThread);</span>
+<span class="fc" id="L180">        nextSyncThread.start();</span>
+<span class="fc" id="L181">        return createSuccessResponse();</span>
+    }
+
+    private Thread createNextSyncThread() {
+<span class="fc" id="L185">        return new Thread(() -&gt; {</span>
+<span class="fc" id="L186">            state.setDebuggerState(RunnerState.State.RUNNING);</span>
+<span class="fc" id="L187">            EventSelectionStrategy eventSelectionStrategy = this.bProg.getEventSelectionStrategy();</span>
+<span class="fc" id="L188">            Set&lt;BEvent&gt; possibleEvents = eventSelectionStrategy.selectableEvents(this.syncSnapshot);</span>
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">            if (possibleEvents.isEmpty()) {</span>
+<span class="fc" id="L190">                possibleEvents = nextSyncOnNoPossibleEvents(eventSelectionStrategy, possibleEvents);</span>
+            }
+
+<span class="fc" id="L193">            logger.info(&quot;Possible events(internal): &quot; + possibleEvents);</span>
+<span class="fc" id="L194">            logger.info(&quot;External events: &quot; + syncSnapshot.getExternalEvents());</span>
+
+            try {
+<span class="fc" id="L197">                Optional&lt;EventSelectionResult&gt; eventOptional = eventSelectionStrategy.select(syncSnapshot, possibleEvents);</span>
+<span class="pc bpc" id="L198" title="1 of 2 branches missed.">                if (eventOptional.isPresent()) {</span>
+<span class="nc" id="L199">                    nextSyncOnChosenEvent(eventOptional.get());</span>
+                }
+                else {
+<span class="fc" id="L202">                    logger.info(&quot;Events queue is empty&quot;);</span>
+                }
+<span class="nc" id="L204">            } catch (InterruptedException e) {</span>
+<span class="nc" id="L205">                logger.warning(&quot;got InterruptedException in nextSync&quot;);</span>
+<span class="fc" id="L206">            }</span>
+<span class="fc" id="L207">        });</span>
+    }
+
+    private void nextSyncOnChosenEvent(EventSelectionResult eventSelectionResult) throws InterruptedException {
+<span class="nc" id="L211">        BEvent event = eventSelectionResult.getEvent();</span>
+<span class="nc bnc" id="L212" title="All 2 branches missed.">        if (!eventSelectionResult.getIndicesToRemove().isEmpty()) {</span>
+<span class="nc" id="L213">            removeExternalEvents(eventSelectionResult);</span>
+        }
+<span class="nc" id="L215">        logger.info(&quot;Triggering event &quot; + event);</span>
+<span class="nc" id="L216">        updateRecentlyRegisteredBT();</span>
+<span class="nc" id="L217">        syncSnapshot = syncSnapshot.triggerEvent(event, execSvc, new ArrayList&lt;&gt;());</span>
+<span class="nc" id="L218">        debuggerEngine.setSyncSnapshot(syncSnapshot);</span>
+<span class="nc" id="L219">        state.setDebuggerState(RunnerState.State.SYNC_STATE);</span>
+<span class="nc" id="L220">        logger.debug(&quot;Generate state from nextSync&quot;);</span>
+<span class="nc" id="L221">        debuggerEngine.onStateChanged();</span>
+<span class="nc" id="L222">        syncSnapshotHolder.addSyncSnapshot(syncSnapshot, event);</span>
+<span class="nc" id="L223">        logger.info(&quot;GOT NEW SYNC STATE&quot;);</span>
+<span class="nc bnc" id="L224" title="All 2 branches missed.">        if (isSkipSyncPoints)</span>
+<span class="nc" id="L225">            nextSync();</span>
+<span class="nc" id="L226">    }</span>
+
+    private Set&lt;BEvent&gt; nextSyncOnNoPossibleEvents(EventSelectionStrategy eventSelectionStrategy, Set&lt;BEvent&gt; possibleEvents) {
+<span class="pc bpc" id="L229" title="1 of 2 branches missed.">        if (bProg.isWaitForExternalEvents()) {</span>
+            try {
+<span class="nc" id="L231">                state.setDebuggerState(RunnerState.State.WAITING_FOR_EXTERNAL_EVENT);</span>
+<span class="nc" id="L232">                BEvent next = bProg.takeExternalEvent(); // and now we wait for external event</span>
+<span class="nc" id="L233">                state.setDebuggerState(RunnerState.State.RUNNING);</span>
+<span class="nc bnc" id="L234" title="All 2 branches missed.">                if (next == null) {</span>
+<span class="nc" id="L235">                    return possibleEvents;</span>
+                }
+                else {
+<span class="nc" id="L238">                    syncSnapshot.getExternalEvents().add(next);</span>
+<span class="nc" id="L239">                    return eventSelectionStrategy.selectableEvents(syncSnapshot);</span>
+                }
+<span class="nc" id="L241">            } catch (Exception e) {</span>
+<span class="nc" id="L242">                return possibleEvents;</span>
+            }
+        }
+        else {
+<span class="fc" id="L246">            logger.info(&quot;Event queue empty, not need to wait to external event. terminating....&quot;);</span>
+<span class="fc" id="L247">            onExit();</span>
+<span class="fc" id="L248">            return possibleEvents;</span>
+        }
+    }
+
+    private void onExit() {
+        try {
+<span class="fc" id="L254">            onExitInterrupt.call();</span>
+<span class="nc" id="L255">        } catch (Exception e) {</span>
+<span class="nc" id="L256">            e.printStackTrace();</span>
+<span class="fc" id="L257">        }</span>
+<span class="fc" id="L258">    }</span>
+
+    private void removeExternalEvents(EventSelectionResult esr) {
+        // the event selection affected the external event queue.
+<span class="nc" id="L262">        List&lt;BEvent&gt; updatedExternals = new ArrayList&lt;&gt;(this.syncSnapshot.getExternalEvents());</span>
+<span class="nc" id="L263">        esr.getIndicesToRemove().stream().sorted(reverseOrder())</span>
+<span class="nc" id="L264">                .forEach(idxObj -&gt; updatedExternals.remove(idxObj.intValue()));</span>
+<span class="nc" id="L265">        this.syncSnapshot = this.syncSnapshot.copyWith(updatedExternals);</span>
+<span class="nc" id="L266">    }</span>
+
+    @Override
+    public BooleanResponse continueRun() {
+<span class="fc" id="L270">        return addCommandIfStarted(new Continue());</span>
+    }
+
+    @Override
+    public BooleanResponse stepInto() {
+<span class="pc bpc" id="L275" title="1 of 2 branches missed.">        if (this.state.getDebuggerState() != RunnerState.State.JS_DEBUG) {</span>
+<span class="fc" id="L276">            createErrorResponse(ErrorCode.NOT_IN_JS_DEBUG_STATE);</span>
+        }
+<span class="fc" id="L278">        return addCommandIfStarted(new StepInto());</span>
+    }
+
+    @Override
+    public BooleanResponse stepOver() {
+<span class="fc" id="L283">        System.out.println(&quot;debuggerimpl stepover, state &quot;+ this.state.getDebuggerState());</span>
+<span class="pc bpc" id="L284" title="1 of 2 branches missed.">        if (this.state.getDebuggerState() != RunnerState.State.JS_DEBUG) {</span>
+<span class="fc" id="L285">            createErrorResponse(ErrorCode.NOT_IN_JS_DEBUG_STATE);</span>
+        }
+<span class="fc" id="L287">        return addCommandIfStarted(new StepOver());</span>
+    }
+
+    @Override
+    public BooleanResponse stepOut() {
+<span class="pc bpc" id="L292" title="1 of 2 branches missed.">        if (this.state.getDebuggerState() != RunnerState.State.JS_DEBUG) {</span>
+<span class="fc" id="L293">            createErrorResponse(ErrorCode.NOT_IN_JS_DEBUG_STATE);</span>
+        }
+<span class="fc" id="L295">        return addCommandIfStarted(new StepOut());</span>
+    }
+
+    @Override
+    public BooleanResponse setBreakpoint(final int lineNumber, final boolean stopOnBreakpoint) {
+<span class="fc bfc" id="L300" title="All 2 branches covered.">        if (!isSetup()) {</span>
+<span class="fc" id="L301">            return createErrorResponse(ErrorCode.SETUP_REQUIRED);</span>
+        }
+<span class="fc" id="L303">        return new SetBreakpoint(lineNumber, stopOnBreakpoint).applyCommand(debuggerEngine);</span>
+    }
+
+    @Override
+    public BooleanResponse stop() {
+<span class="fc bfc" id="L308" title="All 2 branches covered.">        if (!isSetup())</span>
+<span class="fc" id="L309">            return createErrorResponse(ErrorCode.SETUP_REQUIRED);</span>
+        //todo: remove?
+<span class="fc bfc" id="L311" title="All 2 branches covered.">        while (!execSvc.isTerminated()) {</span>
+<span class="fc" id="L312">            runningThreads.forEach(Thread::interrupt);</span>
+<span class="fc" id="L313">            execSvc.shutdownNow();</span>
+            try {
+<span class="fc" id="L315">                execSvc.awaitTermination(1500, TimeUnit.MILLISECONDS);</span>
+<span class="nc" id="L316">            } catch (InterruptedException e) {</span>
+<span class="nc" id="L317">                e.printStackTrace();</span>
+<span class="fc" id="L318">            }</span>
+<span class="pc bpc" id="L319" title="1 of 2 branches missed.">            if (!execSvc.isTerminated()) {</span>
+<span class="nc" id="L320">                logger.info(&quot;not yet terminated&quot;);</span>
+            }
+        }
+<span class="fc" id="L323">        setItStarted(false);</span>
+<span class="fc" id="L324">        return new Stop().applyCommand(debuggerEngine);</span>
+    }
+
+    @Override
+    public BooleanResponse getState() {
+<span class="fc bfc" id="L329" title="All 2 branches covered.">        if (!isSetup())</span>
+<span class="fc" id="L330">            return createErrorResponse(ErrorCode.SETUP_REQUIRED);</span>
+<span class="pc bpc" id="L331" title="1 of 2 branches missed.">        else if (state.getDebuggerState() == RunnerState.State.JS_DEBUG)</span>
+<span class="nc" id="L332">            return createErrorResponse(ErrorCode.NOT_IN_BP_SYNC_STATE);</span>
+<span class="pc bpc" id="L333" title="1 of 2 branches missed.">        else if (state.getDebuggerState() == RunnerState.State.RUNNING)</span>
+<span class="nc" id="L334">            return createErrorResponse(ErrorCode.ALREADY_RUNNING);</span>
+<span class="fc" id="L335">        return new GetState().applyCommand(debuggerEngine);</span>
+    }
+
+    @Override
+    public BooleanResponse toggleMuteBreakpoints(boolean toggleBreakPointStatus) {
+<span class="pc bpc" id="L340" title="1 of 2 branches missed.">        if (!isSetup())</span>
+<span class="nc" id="L341">            return new BooleanResponse(false, ErrorCode.SETUP_REQUIRED);</span>
+<span class="fc" id="L342">        return new ToggleMuteBreakpoints(toggleBreakPointStatus).applyCommand(debuggerEngine);</span>
+    }
+
+    @Override
+    public BooleanResponse addExternalEvent(String externalEvent) {
+<span class="fc bfc" id="L347" title="All 2 branches covered.">        if (StringUtils.isEmpty(externalEvent)) {</span>
+<span class="fc" id="L348">            return createErrorResponse(ErrorCode.INVALID_EVENT);</span>
+        }
+<span class="fc" id="L350">        bProg.enqueueExternalEvent(new BEvent(externalEvent));</span>
+<span class="fc" id="L351">        return createSuccessResponse();</span>
+    }
+
+    @Override
+    public BooleanResponse removeExternalEvent(String externalEvent) {
+<span class="fc bfc" id="L356" title="All 2 branches covered.">        if (StringUtils.isEmpty(externalEvent)) {</span>
+<span class="fc" id="L357">            return createErrorResponse(ErrorCode.INVALID_EVENT);</span>
+        }
+<span class="fc" id="L359">        List&lt;BEvent&gt; updatedExternals = new ArrayList&lt;&gt;(syncSnapshot.getExternalEvents());</span>
+<span class="pc" id="L360">        updatedExternals.removeIf(bEvent -&gt; bEvent.getName().equals(externalEvent));</span>
+<span class="fc" id="L361">        syncSnapshot = syncSnapshot.copyWith(updatedExternals);</span>
+<span class="fc" id="L362">        return createSuccessResponse();</span>
+    }
+
+    @Override
+    public BooleanResponse setWaitForExternalEvents(boolean shouldWait) {
+<span class="fc" id="L367">        bProg.setWaitForExternalEvents(shouldWait);</span>
+<span class="fc" id="L368">        return createSuccessResponse();</span>
+    }
+
+    private BooleanResponse addCommandIfStarted(DebuggerCommand debuggerCommand) {
+<span class="fc bfc" id="L372" title="All 2 branches covered.">        if (!isSetup()) {</span>
+<span class="fc" id="L373">            return createErrorResponse(ErrorCode.SETUP_REQUIRED);</span>
+        }
+
+        try {
+<span class="fc" id="L377">            debuggerEngine.addCommand(debuggerCommand);</span>
+<span class="fc" id="L378">            return createSuccessResponse();</span>
+<span class="nc" id="L379">        } catch (Exception e) {</span>
+<span class="nc" id="L380">            logger.error(&quot;failed adding command&quot;, e);</span>
+<span class="nc" id="L381">            e.printStackTrace();</span>
+        }
+<span class="nc" id="L383">        return createErrorResponse(ErrorCode.FAILED_ADDING_COMMAND);</span>
+    }
+
+
+//    //OLD METHOD TO RUN BPROG - JUST FOR REFERENCE
+//    public void start(Map&lt;Integer, Boolean&gt; breakpoints) {
+//        if (!isSetup) {
+//            setup(breakpoints, false);
+//            return;
+//        }
+//        BProgramRunner rnr = new BProgramRunner();
+//        rnr.addListener(new PrintBProgramRunnerListener());
+//        rnr.addListener(new BProgramRunnerListenerAdapter() {
+//            @Override
+//            public void ended(BProgram bp) {
+//                setItStarted(false);
+//            }
+//        });
+//        rnr.setBProgram(bProg);
+//        setItStarted(true);
+//        new Thread(rnr).start();
+//    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.6.202009150832</span></div></body></html>

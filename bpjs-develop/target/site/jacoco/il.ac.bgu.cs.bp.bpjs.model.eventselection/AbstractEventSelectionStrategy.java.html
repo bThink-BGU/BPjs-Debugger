@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AbstractEventSelectionStrategy.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">bp-ide-bpjs-bp-framework</a> &gt; <a href="index.source.html" class="el_package">il.ac.bgu.cs.bp.bpjs.model.eventselection</a> &gt; <span class="el_source">AbstractEventSelectionStrategy.java</span></div><h1>AbstractEventSelectionStrategy.java</h1><pre class="source lang-java linenums">/*
+ * The MIT License
+ *
+ * Copyright 2017 BGU.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the &quot;Software&quot;), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+package il.ac.bgu.cs.bp.bpjs.model.eventselection;
+
+import il.ac.bgu.cs.bp.bpjs.model.SyncStatement;
+import il.ac.bgu.cs.bp.bpjs.model.BEvent;
+import il.ac.bgu.cs.bp.bpjs.model.BProgramSyncSnapshot;
+import il.ac.bgu.cs.bp.bpjs.model.eventsets.EventSet;
+import java.util.ArrayList;
+import static java.util.Collections.singleton;
+import java.util.Optional;
+import java.util.Random;
+import java.util.Set;
+import java.util.stream.Collectors;
+import static java.util.stream.Collectors.toSet;
+import org.mozilla.javascript.Context;
+
+/**
+ * A convenience class for implementing event selection strategies. Contains mostly reusable code for randomizing selectable events.
+ * 
+ * 
+ * @author michael
+ */
+public abstract class AbstractEventSelectionStrategy implements EventSelectionStrategy {
+
+    protected final Random rnd;
+    protected final long seed;
+    
+<span class="fc" id="L50">    public AbstractEventSelectionStrategy( long seed ) {</span>
+<span class="fc" id="L51">        rnd = new Random(seed);</span>
+<span class="fc" id="L52">        this.seed = seed;</span>
+<span class="fc" id="L53">    }</span>
+    
+<span class="fc" id="L55">    public AbstractEventSelectionStrategy() {</span>
+<span class="fc" id="L56">        rnd = new Random();</span>
+<span class="fc" id="L57">        seed = rnd.nextLong();</span>
+<span class="fc" id="L58">        rnd.setSeed(seed);</span>
+<span class="fc" id="L59">    }</span>
+
+    public long getSeed() {
+<span class="fc" id="L62">        return seed;</span>
+    }
+
+    /**
+     * Randomly select an event from {@code selectableEvents}, or a non-blocked event from {@code externalEvents}, in case {@code selectableEvents} is empty.
+     * 
+     * @param bpss a b-program at synchronization point.
+     * @param selectableEvents Set of events that can be selected.
+     * @return An optional event selection result.
+     */
+    @Override
+    public Optional&lt;EventSelectionResult&gt; select(BProgramSyncSnapshot bpss, Set&lt;BEvent&gt; selectableEvents) {
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        if (selectableEvents.isEmpty()) {</span>
+<span class="fc" id="L75">            return Optional.empty();</span>
+        }
+<span class="fc" id="L77">        BEvent chosen = new ArrayList&lt;&gt;(selectableEvents).get(rnd.nextInt(selectableEvents.size()));</span>
+<span class="fc" id="L78">        Set&lt;BEvent&gt; requested = bpss.getStatements().stream()</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">                                          .filter((SyncStatement stmt) -&gt; stmt != null)</span>
+<span class="fc" id="L80">                                          .flatMap((SyncStatement stmt) -&gt; stmt.getRequest().stream())</span>
+<span class="fc" id="L81">                                          .collect(Collectors.toSet());</span>
+        
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        if (requested.contains(chosen)) {</span>
+<span class="fc" id="L84">            return Optional.of(new EventSelectionResult(chosen));</span>
+        } else {
+            // that was an external event, need to find the first index
+<span class="fc" id="L87">            return Optional.of(new EventSelectionResult(chosen, singleton(bpss.getExternalEvents().indexOf(chosen))));</span>
+        }
+    }
+
+    protected Set&lt;BEvent&gt; getRequestedAndNotBlocked(SyncStatement stmt, EventSet blocked) {
+        try {
+<span class="fc" id="L93">            Context.enter();</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">            return stmt.getRequest().stream().filter((BEvent req) -&gt; !blocked.contains(req)).collect(toSet());</span>
+        } finally {
+<span class="fc" id="L96">            Context.exit();</span>
+        }
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.6.202009150832</span></div></body></html>

@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OrderedSet.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">bp-ide-bpjs-bp-framework</a> &gt; <a href="index.source.html" class="el_package">il.ac.bgu.cs.bp.bpjs.internal</a> &gt; <span class="el_source">OrderedSet.java</span></div><h1>OrderedSet.java</h1><pre class="source lang-java linenums">/*
+ * The MIT License
+ *
+ * Copyright 2017 michael.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the &quot;Software&quot;), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+package il.ac.bgu.cs.bp.bpjs.internal;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.Objects;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+
+/**
+ * A set, where the iteration order is the order of addition.
+ *
+ * @author michael
+ * @param &lt;T&gt; Element type
+ */
+public class OrderedSet&lt;T&gt; implements SortedSet&lt;T&gt;, java.io.Serializable {
+
+    private final ArrayList&lt;T&gt; items;
+
+    public static &lt;T&gt; OrderedSet&lt;T&gt; of(T... ts) {
+<span class="fc" id="L50">        OrderedSet&lt;T&gt; retVal = new OrderedSet&lt;&gt;();</span>
+<span class="fc" id="L51">        Arrays.stream(ts).forEach(retVal::add);</span>
+<span class="fc" id="L52">        return retVal;</span>
+    }
+
+<span class="fc" id="L55">    public OrderedSet() {</span>
+<span class="fc" id="L56">        items = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L57">    }</span>
+
+<span class="fc" id="L59">    public OrderedSet(Collection&lt;T&gt; someItems) {</span>
+<span class="fc" id="L60">        items = new ArrayList&lt;&gt;(someItems.size());</span>
+<span class="fc" id="L61">        someItems.forEach( items::add );</span>
+<span class="fc" id="L62">    }</span>
+
+    @Override
+    public Comparator&lt;? super T&gt; comparator() {
+<span class="fc" id="L66">        return null;</span>
+    }
+
+    @Override
+    public SortedSet&lt;T&gt; subSet(T fromElement, T toElement) {
+<span class="fc" id="L71">        int idxFrom = items.indexOf(fromElement);</span>
+<span class="fc" id="L72">        int idxTo = items.indexOf(toElement);</span>
+<span class="fc" id="L73">        return Collections.unmodifiableSortedSet(new OrderedSet&lt;&gt;(items.subList(idxFrom, idxTo)));</span>
+    }
+
+    @Override
+    public SortedSet&lt;T&gt; headSet(T toElement) {
+<span class="fc" id="L78">        int idxTo = items.indexOf(toElement);</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">        return (idxTo == -1) ? Collections.emptySortedSet()</span>
+<span class="fc" id="L80">                : Collections.unmodifiableSortedSet(new OrderedSet&lt;&gt;(items.subList(0, idxTo)));</span>
+    }
+
+    @Override
+    public SortedSet&lt;T&gt; tailSet(T fromElement) {
+<span class="fc" id="L85">        int idxFrom = items.indexOf(fromElement);</span>
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">        return (idxFrom == -1) ? Collections.emptySortedSet()</span>
+<span class="fc" id="L87">                : Collections.unmodifiableSortedSet(new OrderedSet&lt;&gt;(items.subList(idxFrom, items.size())));</span>
+    }
+
+    @Override
+    public T first() {
+<span class="fc" id="L92">        return items.get(0);</span>
+    }
+
+    @Override
+    public T last() {
+<span class="fc" id="L97">        return items.get(items.size() - 1);</span>
+    }
+
+    @Override
+    public int size() {
+<span class="fc" id="L102">        return items.size();</span>
+    }
+
+    @Override
+    public boolean isEmpty() {
+<span class="fc" id="L107">        return items.isEmpty();</span>
+    }
+
+    @Override
+    public boolean contains(Object o) {
+<span class="fc" id="L112">        return items.contains(o);</span>
+    }
+
+    @Override
+    public Iterator&lt;T&gt; iterator() {
+<span class="fc" id="L117">        return items.iterator();</span>
+    }
+
+    @Override
+    public Object[] toArray() {
+<span class="fc" id="L122">        return items.toArray();</span>
+    }
+
+    @Override
+    public &lt;T&gt; T[] toArray(T[] a) {
+<span class="fc" id="L127">        return items.toArray(a);</span>
+    }
+
+    @Override
+    public boolean add(T e) {
+<span class="fc bfc" id="L132" title="All 2 branches covered.">        if (!items.contains(e)) {</span>
+<span class="fc" id="L133">            items.add(e);</span>
+<span class="fc" id="L134">            return true;</span>
+        }
+<span class="fc" id="L136">        return false;</span>
+    }
+
+    @Override
+    @SuppressWarnings(&quot;element-type-mismatch&quot;)
+    public boolean remove(Object o) {
+<span class="fc bfc" id="L142" title="All 2 branches covered.">        if (items.contains(o)) {</span>
+<span class="fc" id="L143">            items.remove(o);</span>
+<span class="fc" id="L144">            return true;</span>
+        }
+<span class="fc" id="L146">        return false;</span>
+    }
+
+    @Override
+    public boolean containsAll(Collection&lt;?&gt; c) {
+<span class="fc" id="L151">        return items.containsAll(c);</span>
+    }
+
+    @Override
+    public boolean addAll(Collection&lt;? extends T&gt; c) {
+<span class="nc" id="L156">        boolean added = false;</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">        for (T t : c) {</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">            if (!contains(t)) {</span>
+<span class="nc" id="L159">                added = true;</span>
+<span class="nc" id="L160">                items.add(t);</span>
+            }
+<span class="nc" id="L162">        }</span>
+<span class="nc" id="L163">        return added;</span>
+    }
+
+    @Override
+    public boolean retainAll(Collection&lt;?&gt; c) {
+<span class="nc" id="L168">        return items.retainAll(c);</span>
+    }
+
+    @Override
+    public boolean removeAll(Collection&lt;?&gt; c) {
+<span class="nc" id="L173">        return items.removeAll(c);</span>
+    }
+
+    @Override
+    public void clear() {
+<span class="fc" id="L178">        items.clear();</span>
+<span class="fc" id="L179">    }</span>
+
+    @Override
+    public boolean removeIf(Predicate&lt;? super T&gt; filter) {
+<span class="nc" id="L183">        return SortedSet.super.removeIf(filter);</span>
+    }
+
+    @Override
+    public Stream&lt;T&gt; stream() {
+<span class="fc" id="L188">        return SortedSet.super.stream();</span>
+    }
+
+    @Override
+    public Stream&lt;T&gt; parallelStream() {
+<span class="nc" id="L193">        return SortedSet.super.parallelStream();</span>
+    }
+
+    @Override
+    public void forEach(Consumer&lt;? super T&gt; action) {
+<span class="fc" id="L198">        SortedSet.super.forEach(action);</span>
+<span class="fc" id="L199">    }</span>
+
+    @Override
+    public String toString() {
+<span class="fc" id="L203">        return &quot;[OrderedSet &quot; + items.toString() + &quot;]&quot;;</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="fc" id="L208">        int hash = 7;</span>
+<span class="fc" id="L209">        hash = 79 * hash + Objects.hashCode(this.items);</span>
+<span class="fc" id="L210">        return hash;</span>
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+<span class="fc bfc" id="L215" title="All 2 branches covered.">        if (this == obj) {</span>
+<span class="fc" id="L216">            return true;</span>
+        }
+<span class="fc bfc" id="L218" title="All 2 branches covered.">        if (obj == null) {</span>
+<span class="fc" id="L219">            return false;</span>
+        }
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">        if (obj instanceof Set) {</span>
+<span class="fc" id="L222">            Set otherSet = (Set) obj;</span>
+<span class="fc bfc" id="L223" title="All 2 branches covered.">            if (obj instanceof OrderedSet) {</span>
+<span class="fc" id="L224">                OrderedSet otherOrderedSet = (OrderedSet) otherSet;</span>
+<span class="fc" id="L225">                return items.equals(otherOrderedSet.items);</span>
+
+            } else {
+                // regular set equality
+<span class="pc bpc" id="L229" title="2 of 4 branches missed.">                return containsAll(otherSet) &amp;&amp; otherSet.containsAll(this);</span>
+            }
+
+        } else {
+<span class="nc" id="L233">            return false;</span>
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.6.202009150832</span></div></body></html>
