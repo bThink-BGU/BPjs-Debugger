@@ -21,8 +21,9 @@ jobs:
       - name: Run tests with coverage
         run: mvn verify -P coverage
 
+      - uses: actions/checkout@master
       - name: Run codacy-coverage-reporter
         uses: codacy/codacy-coverage-reporter-action@master
         with:
-          project-token: ${{ secrets.CODECOV_TOKEN }}
-          coverage-reports: bpjs-debugger/target/site/jacoco/jacoco.xml,service/target/site/jacoco/jacoco.xml,controller/target/site/jacoco/jacoco.xml
+          project-token: ${{ secrets.SEC_TOKEN }}
+          coverage-reports: bpjs-debugger/target/site/jacoco/jacoco.xml
