@@ -6,6 +6,8 @@ import java.util.Objects;
 public class DebugRequest {
     private String code;
     private int[] breakpoints;
+    private boolean stopOnBreakpointsToggle;
+    private boolean stopOnSyncStateToggle;
 
     public DebugRequest() {
     }
