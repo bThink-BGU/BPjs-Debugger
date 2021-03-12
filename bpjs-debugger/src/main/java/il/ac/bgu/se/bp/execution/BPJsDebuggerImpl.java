@@ -276,13 +276,16 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
 
     @Override
     public BooleanResponse continueRun() {
+        if (this.state.getDebuggerState() != RunnerState.State.JS_DEBUG) {
+            return createErrorResponse(ErrorCode.NOT_IN_JS_DEBUG_STATE);
+        }
         return addCommandIfStarted(new Continue());
     }
 
     @Override
     public BooleanResponse stepInto() {
         if (this.state.getDebuggerState() != RunnerState.State.JS_DEBUG) {
-            createErrorResponse(ErrorCode.NOT_IN_JS_DEBUG_STATE);
+            return createErrorResponse(ErrorCode.NOT_IN_JS_DEBUG_STATE);
         }
         return addCommandIfStarted(new StepInto());
     }
@@ -291,7 +294,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     public BooleanResponse stepOver() {
         System.out.println("debuggerimpl stepover, state "+ this.state.getDebuggerState());
         if (this.state.getDebuggerState() != RunnerState.State.JS_DEBUG) {
-            createErrorResponse(ErrorCode.NOT_IN_JS_DEBUG_STATE);
+            return createErrorResponse(ErrorCode.NOT_IN_JS_DEBUG_STATE);
         }
         return addCommandIfStarted(new StepOver());
     }
@@ -299,7 +302,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     @Override
     public BooleanResponse stepOut() {
         if (this.state.getDebuggerState() != RunnerState.State.JS_DEBUG) {
-            createErrorResponse(ErrorCode.NOT_IN_JS_DEBUG_STATE);
+            return createErrorResponse(ErrorCode.NOT_IN_JS_DEBUG_STATE);
         }
         return addCommandIfStarted(new StepOut());
     }
