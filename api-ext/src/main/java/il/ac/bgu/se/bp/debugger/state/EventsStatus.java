@@ -3,9 +3,9 @@ package il.ac.bgu.se.bp.debugger.state;
 import java.util.Set;
 
 public class EventsStatus {
-    Set<EventInfo> wait;
-    Set<EventInfo> blocked;
-    Set<EventInfo> requested;
+    private Set<EventInfo> wait;
+    private Set<EventInfo> blocked;
+    private Set<EventInfo> requested;
 
     public EventsStatus(Set<EventInfo> wait, Set<EventInfo> blocked, Set<EventInfo> requested) {
         this.wait = wait;

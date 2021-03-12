@@ -4,6 +4,7 @@ import il.ac.bgu.se.bp.debugger.BPJsDebugger;
 import il.ac.bgu.se.bp.debugger.state.BPDebuggerState;
 import il.ac.bgu.se.bp.execution.BPJsDebuggerImpl;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
+import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
 
 import java.util.Collections;
 import java.util.Scanner;
@@ -48,7 +49,7 @@ public class BPJsDebuggerCliRunner {
         String cmd = splat[0];
         switch (cmd) {
             case "b":
-                if (!bpJsDebugger.isSetup() || !bpJsDebugger.isStarted()) {
+                if (!bpJsDebugger.isSetup()) {
                     sendRequest(() -> bpJsDebugger.setup(
                             Collections.singletonMap(Integer.parseInt(splat[1]), true),
                             isSkipSyncPoints));
@@ -129,7 +130,7 @@ public class BPJsDebuggerCliRunner {
                 sendRequest(() -> bpJsDebugger.setIsSkipSyncPoints(isSkipSyncPoints));
                 break;
             case "getss":
-                sendRequest(bpJsDebugger::getSyncSnapshotsHistory);
+                sendGetSyncSnapshotsResponse(bpJsDebugger::getSyncSnapshotsHistory);
                 break;
             case "sss":  // set syncsnapshot
                 sendRequest(() -> bpJsDebugger.setSyncSnapshots(Long.parseLong(splat[1])));
@@ -157,6 +158,16 @@ public class BPJsDebuggerCliRunner {
             e.printStackTrace();
         }
     }
+
+    private static void sendGetSyncSnapshotsResponse(Callable<GetSyncSnapshotsResponse> callable) {
+        try {
+            GetSyncSnapshotsResponse getSyncSnapshotsResponse = callable.call();
+            System.out.println(getSyncSnapshotsResponse.toString());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
 
     private static Callable<Boolean> createOnExitCallback(Scanner sc) {
         return () -> {

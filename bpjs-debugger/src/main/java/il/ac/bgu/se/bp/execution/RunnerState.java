@@ -2,6 +2,7 @@ package il.ac.bgu.se.bp.execution;
 
 public class RunnerState {
     public enum State {
+        INITIALIZE,
         STOPPED,
         RUNNING,
         SYNC_STATE,
@@ -10,13 +11,8 @@ public class RunnerState {
     }
     private State debuggerState;
 
-    public RunnerState(State debuggerState) {
-        synchronized (this){
-            this.debuggerState = debuggerState;
-        }
-    }
     public RunnerState() {
-        this.debuggerState = State.STOPPED;
+        this.debuggerState = State.INITIALIZE;
     }
 
     public synchronized State getDebuggerState() {

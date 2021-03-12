@@ -7,6 +7,7 @@ import il.ac.bgu.cs.bp.bpjs.model.ResourceBProgram;
 import il.ac.bgu.se.bp.debugger.state.BPDebuggerState;
 import il.ac.bgu.se.bp.debugger.state.EventsStatus;
 import il.ac.bgu.se.bp.execution.RunnerState;
+import il.ac.bgu.se.bp.utils.DebuggerStateHelper;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
@@ -32,7 +33,7 @@ public class DebuggerEngineImplTest {
     private BPDebuggerState expectedState;
 
     @InjectMocks
-    private DebuggerEngineImpl debuggerEngine = new DebuggerEngineImpl(TEST_FILENAME, new RunnerState(), onStateChangedCallback);
+    private DebuggerEngineImpl debuggerEngine = new DebuggerEngineImpl(TEST_FILENAME, new RunnerState(), onStateChangedCallback, new DebuggerStateHelper());
 
     @Before
     public void setUp() {

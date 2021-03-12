@@ -1,5 +1,7 @@
 package il.ac.bgu.se.bp.debugger;
 
+import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
+
 import java.util.Map;
 
 public interface BPJsDebugger<T> extends Debugger<T> {
@@ -7,7 +9,6 @@ public interface BPJsDebugger<T> extends Debugger<T> {
     T setup(Map<Integer, Boolean> breakpoints, boolean isSkipSyncPoints);
     boolean isSetup();
 
-    void start(Map<Integer, Boolean> breakpoints);
     boolean isStarted();
 
     T addExternalEvent(String externalEvent);
@@ -16,6 +17,6 @@ public interface BPJsDebugger<T> extends Debugger<T> {
     T startSync(boolean isSkipSyncPoints);
     T nextSync();
     T setIsSkipSyncPoints(boolean isSkipSyncPoints);
-    T getSyncSnapshotsHistory();
+    GetSyncSnapshotsResponse getSyncSnapshotsHistory();
     T setSyncSnapshots(long snapShotTime);
 }

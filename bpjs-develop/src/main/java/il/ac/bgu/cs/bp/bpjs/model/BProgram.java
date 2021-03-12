@@ -463,7 +463,10 @@ public abstract class BProgram {
         recentlyRegisteredBthreads.drainTo(out);
         return out;
     }
-
+    public Set<BThreadSyncSnapshot> getRecentlyRegisteredBthreads() {
+        Set<BThreadSyncSnapshot> out = new HashSet<>(recentlyRegisteredBthreads);
+        return out;
+    }
     List<BEvent> drainEnqueuedExternalEvents() {
         List<BEvent> out = new ArrayList<>(recentlyEnqueuedExternalEvents.size());
         recentlyEnqueuedExternalEvents.drainTo(out);

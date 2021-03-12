@@ -9,5 +9,4 @@ public interface Debugger<T> {
     T continueRun();
     T toggleMuteBreakpoints(boolean toggleBreakPointStatus);
     T getState();
-
 }
