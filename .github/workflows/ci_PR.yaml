@@ -25,4 +25,4 @@ jobs:
         uses: codacy/codacy-coverage-reporter-action@master
         with:
           project-token: ${{ secrets.CODECOV_TOKEN }}
-          coverage-reports: ./bpjs-debugger/target/site/jacoco/jacoco.xml,./service/target/site/jacoco/jacoco.xml,./controller/target/site/jacoco/jacoco.xml
+          coverage-reports: bpjs-debugger/target/site/jacoco/jacoco.xml,service/target/site/jacoco/jacoco.xml,controller/target/site/jacoco/jacoco.xml
