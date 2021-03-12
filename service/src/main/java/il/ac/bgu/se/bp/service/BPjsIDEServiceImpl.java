@@ -1,15 +1,19 @@
 package il.ac.bgu.se.bp.service;
 
 import il.ac.bgu.cs.bp.bpjs.execution.BProgramRunner;
-import il.ac.bgu.se.bp.DebugRequest;
 import il.ac.bgu.se.bp.ExecuteBPjsResponse;
 import il.ac.bgu.se.bp.cache.BPjsIDECacheManager;
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
 import il.ac.bgu.se.bp.execution.BPJsDebuggerImpl;
 import il.ac.bgu.se.bp.logger.Logger;
+import il.ac.bgu.se.bp.rest.request.DebugRequest;
+import il.ac.bgu.se.bp.rest.request.RunRequest;
+import il.ac.bgu.se.bp.rest.response.BooleanResponse;
+import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -18,12 +22,21 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
     private static final Logger logger = new Logger(BPjsIDEServiceImpl.class);
 
     @Autowired
-    BPjsIDECacheManager bPjsIDECacheManager;
+    private BPjsIDECacheManager bPjsIDECacheManager;
 
     //  todo: update userId time after each event injection
 
     @Override
-    public ExecuteBPjsResponse run(DebugRequest code) {
+    public BooleanResponse subscribeUser(String sessionId, String userId) {
+        System.out.println("Received message from {1} with sessionId {2}" + ",," + userId + "," + sessionId);
+
+        //todo: see reference: GreetingService, GreetingService.sendMessage
+
+        return new BooleanResponse(true);
+    }
+
+    @Override
+    public ExecuteBPjsResponse run(RunRequest code) {
         String newUserId = UUID.randomUUID().toString();
         BProgramRunner bProgramRunner = new BProgramRunner();
 
@@ -57,52 +70,107 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
     }
 
     @Override
-    public ExecuteBPjsResponse addBreakpoint(int lineNumber) {
+    public BooleanResponse addBreakpoint(int lineNumber) {
         return setBreakpoint(lineNumber, true);
     }
 
     @Override
-    public ExecuteBPjsResponse removeBreakpoint(int lineNumber) {
+    public BooleanResponse removeBreakpoint(int lineNumber) {
         return setBreakpoint(lineNumber, false);
     }
 
     @Override
-    public ExecuteBPjsResponse continueRun() {
+    public BooleanResponse setup(Map<Integer, Boolean> breakpoints, boolean isSkipSyncPoints) {
         return null;
     }
 
     @Override
-    public ExecuteBPjsResponse toggleMuteBreakpoints(boolean toggleBreakPointStatus) {
+    public boolean isSetup() {
+        return false;
+    }
+
+    @Override
+    public boolean isStarted() {
+        return false;
+    }
+
+    @Override
+    public BooleanResponse addExternalEvent(String externalEvent) {
         return null;
     }
 
     @Override
-    public ExecuteBPjsResponse getState() {
+    public BooleanResponse removeExternalEvent(String externalEvent) {
         return null;
     }
 
     @Override
-    public ExecuteBPjsResponse setBreakpoint(int lineNumber, boolean stopOnBreakpoint) {
+    public BooleanResponse setWaitForExternalEvents(boolean shouldWait) {
         return null;
     }
 
     @Override
-    public ExecuteBPjsResponse stop() {
+    public BooleanResponse startSync(boolean isSkipSyncPoints) {
         return null;
     }
 
     @Override
-    public ExecuteBPjsResponse stepOut() {
+    public BooleanResponse nextSync() {
         return null;
     }
 
     @Override
-    public ExecuteBPjsResponse stepInto() {
+    public BooleanResponse setIsSkipSyncPoints(boolean isSkipSyncPoints) {
         return null;
     }
 
     @Override
-    public ExecuteBPjsResponse stepOver() {
+    public GetSyncSnapshotsResponse getSyncSnapshotsHistory() {
+        return null;
+    }
+
+    @Override
+    public BooleanResponse setSyncSnapshots(long snapShotTime) {
+        return null;
+    }
+
+    @Override
+    public BooleanResponse setBreakpoint(int lineNumber, boolean stopOnBreakpoint) {
+        return null;
+    }
+
+    @Override
+    public BooleanResponse stop() {
+        return null;
+    }
+
+    @Override
+    public BooleanResponse stepOut() {
+        return null;
+    }
+
+    @Override
+    public BooleanResponse stepInto() {
+        return null;
+    }
+
+    @Override
+    public BooleanResponse stepOver() {
+        return null;
+    }
+
+    @Override
+    public BooleanResponse continueRun() {
+        return null;
+    }
+
+    @Override
+    public BooleanResponse toggleMuteBreakpoints(boolean toggleBreakPointStatus) {
+        return null;
+    }
+
+    @Override
+    public BooleanResponse getState() {
         return null;
     }
 }
