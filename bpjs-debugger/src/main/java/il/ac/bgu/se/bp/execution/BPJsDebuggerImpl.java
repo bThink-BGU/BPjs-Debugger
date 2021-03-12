@@ -42,6 +42,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     private DebuggerEngine<BProgramSyncSnapshot> debuggerEngine;
     private final ExecutorService execSvc = ExecutorServiceMaker.makeWithName("BPJsDebuggerRunner-" + debuggerId.incrementAndGet());
     private BProgramSyncSnapshot syncSnapshot = null;
+    private volatile boolean isBProgSetup = false; //indicated if bprog setup
     private volatile boolean isSetup = false;
     private volatile boolean isStarted = false;
     private volatile boolean isSkipSyncPoints = false;
@@ -61,13 +62,21 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
 
     @Override
     public BooleanResponse setup(Map<Integer, Boolean> breakpoints, boolean isSkipSyncPoints) {
-        syncSnapshot = bProg.setup();
-        if (syncSnapshot.getFailedAssertion() != null) {
-            return createErrorResponse(ErrorCode.BP_SETUP_FAIL);// todo: add failed assertion message
+        if(!isBProgSetup){ // may get twice to setup - must do bprog setup first time only
+            syncSnapshot = bProg.setup();
+            isBProgSetup = true;
+            if (syncSnapshot.getFailedAssertion() != null) {
+                return createErrorResponse(ErrorCode.BP_SETUP_FAIL);// todo: add failed assertion message
+            }
         }
-
         setIsSkipSyncPoints(isSkipSyncPoints);
-        debuggerEngine.setupBreakpoints(breakpoints);
+        try{
+            debuggerEngine.setupBreakpoints(breakpoints);
+        }
+        catch (IllegalArgumentException e){
+            logger.error("cant set breakpoint line {0} to true ", e.getMessage());
+            return createErrorResponse(ErrorCode.BREAKPOINT_NOT_ALLOWED);
+        }
         debuggerEngine.setSyncSnapshot(syncSnapshot);
         setIsSetup(true);
         state.setDebuggerState(RunnerState.State.STOPPED);

@@ -6,7 +6,6 @@ import il.ac.bgu.se.bp.debugger.state.BPDebuggerState;
 import il.ac.bgu.se.bp.execution.RunnerState;
 import il.ac.bgu.se.bp.logger.Logger;
 import il.ac.bgu.se.bp.utils.DebuggerStateHelper;
-import il.ac.bgu.se.bp.utils.Pair;
 import org.mozilla.javascript.*;
 import org.mozilla.javascript.tools.debugger.Dim;
 
@@ -41,7 +40,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
         setIsRunning(true);
     }
 
-    public void setupBreakpoints(Map<Integer, Boolean> breakpoints) {
+    public void setupBreakpoints(Map<Integer, Boolean> breakpoints) throws IllegalArgumentException {
         if (breakpoints == null)
             return;
         breakpoints.forEach(this::setBreakpoint);
@@ -56,6 +55,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
         System.out.println("Breakpoint reached- " + s + " Line no: " + stackFrame.getLineNumber());
         state.setDebuggerState(RunnerState.State.JS_DEBUG);
         lastContextData = stackFrame.contextData();
+
         logger.debug("Get state from enterInterrupt");
         if (areBreakpointsMuted) {
             continueRun();
@@ -137,14 +137,10 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
     }
 
     @Override
-    public void setBreakpoint(int lineNumber, boolean stopOnBreakpoint) {
-        try {
-            Dim.SourceInfo sourceInfo = dim.sourceInfo(this.filename);
-            sourceInfo.breakpoint(lineNumber, stopOnBreakpoint);
-            System.out.println("after set breakpoint -" + " line " + lineNumber + " changed to " + stopOnBreakpoint);
-        } catch (Exception e) {
-            logger.error("cannot assign breakpoint on line {0}", lineNumber);
-        }
+    public void setBreakpoint(int lineNumber, boolean stopOnBreakpoint) throws IllegalArgumentException {
+        Dim.SourceInfo sourceInfo = dim.sourceInfo(this.filename);
+        sourceInfo.breakpoint(lineNumber, stopOnBreakpoint);
+        System.out.println("after set breakpoint -" + " line " + lineNumber + " changed to " + stopOnBreakpoint);
     }
 
     @Override
@@ -176,9 +172,9 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
         System.out.println("Vars: \n" + vars);
     }
 
-        /*
-    old code just for reference
-     */
+    /*
+old code just for reference
+ */
     @Override
     public void getState() {
         onStateChanged();
