@@ -56,7 +56,6 @@ public class OnStateChangedHandlerImpl implements OnStateChangedHandler {
     @Override
     public void sendMessage(String sessionId, BPDebuggerState debuggerState) {
         try {
-//            sendMessages();
             simpMessagingTemplate.convertAndSendToUser(sessionId, WS_MESSAGE_TRANSFER_DESTINATION,
                     objectMapper.writeValueAsString(debuggerState));
         } catch (JsonProcessingException e) {

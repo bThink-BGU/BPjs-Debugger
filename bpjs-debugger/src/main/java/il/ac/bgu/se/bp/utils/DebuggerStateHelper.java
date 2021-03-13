@@ -12,6 +12,7 @@ import il.ac.bgu.se.bp.debugger.state.EventsStatus;
 import il.ac.bgu.se.bp.execution.RunnerState;
 import org.mozilla.javascript.*;
 import org.mozilla.javascript.tools.debugger.Dim;
+
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -20,14 +21,18 @@ import static il.ac.bgu.cs.bp.bpjs.model.eventsets.EventSets.none;
 
 
 public class DebuggerStateHelper {
-    private Set<Pair<String, Object>> recentlyRegisteredBT= null;
+    private Set<Pair<String, Object>> recentlyRegisteredBT = null;
     private HashMap<String, Object> newBTInterpeterFrames = new HashMap<>();
-    private BPDebuggerState lastState= null;
+    private BPDebuggerState lastState = null;
+    private BEvent lastChosenEvent;
 
-    public  BPDebuggerState generateDebuggerState(BProgramSyncSnapshot syncSnapshot, RunnerState state, Dim.ContextData lastContextData) {
-        lastState =  generateDebuggerStateInner(syncSnapshot,state,lastContextData);
+    public void setLastChosenEvent(BEvent lastChosenEvent) {
+        this.lastChosenEvent = lastChosenEvent;
+    }
+
+    public BPDebuggerState generateDebuggerState(BProgramSyncSnapshot syncSnapshot, RunnerState state, Dim.ContextData lastContextData) {
+        lastState = generateDebuggerStateInner(syncSnapshot, state, lastContextData);
         return lastState;
-
     }
 
     private BPDebuggerState generateDebuggerStateInner(BProgramSyncSnapshot syncSnapshot, RunnerState state, Dim.ContextData lastContextData) {
@@ -49,12 +54,13 @@ public class DebuggerStateHelper {
         List<EventSet> wait = statements.stream().map(SyncStatement::getWaitFor).collect(Collectors.toList());
         List<EventSet> blocked = statements.stream().map(SyncStatement::getBlock).collect(Collectors.toList());
         List<BEvent> requested = statements.stream().map(SyncStatement::getRequest).flatMap(Collection::stream).collect(Collectors.toList());
-        List<EventInfo> waitEvents = wait.stream().map((e) ->e.equals(none)?  new EventInfo() : new EventInfo(((BEvent) e).getName())).collect(Collectors.toList());
-        List<EventInfo> blockedEvents = blocked.stream().map((e) ->e.equals(none)?  new EventInfo() : new EventInfo(((BEvent) e).getName())).collect(Collectors.toList());
+        List<EventInfo> waitEvents = wait.stream().map((e) -> e.equals(none) ? new EventInfo() : new EventInfo(((BEvent) e).getName())).collect(Collectors.toList());
+        List<EventInfo> blockedEvents = blocked.stream().map((e) -> e.equals(none) ? new EventInfo() : new EventInfo(((BEvent) e).getName())).collect(Collectors.toList());
         Set<EventInfo> requestedEvents = requested.stream().map((e) -> new EventInfo(e.getName())).collect(Collectors.toSet());
 
         EventsStatus eventsStatus = new EventsStatus(waitEvents, blockedEvents, requestedEvents);
-        return new BPDebuggerState(bThreadInfoList, eventsStatus);
+        EventInfo chosenEvent = new EventInfo(lastChosenEvent != null ? lastChosenEvent.getName() : "");
+        return new BPDebuggerState(bThreadInfoList, eventsStatus, chosenEvent);
     }
 
     private List<BThreadInfo> getRecentlyAddedBTInfo( RunnerState state, Dim.ContextData lastContextData ){
@@ -109,14 +115,14 @@ public class DebuggerStateHelper {
     }
 
 
-    private  BThreadInfo createBThreadInfo(BThreadSyncSnapshot bThreadSS, RunnerState state, Dim.ContextData lastContextData) {
+    private BThreadInfo createBThreadInfo(BThreadSyncSnapshot bThreadSS, RunnerState state, Dim.ContextData lastContextData) {
         ScriptableObject scope = (ScriptableObject) bThreadSS.getScope();
         try {
             Object implementation = getValue(scope, "implementation");
             Dim.StackFrame debuggerFrame = (Dim.StackFrame) getValue(implementation, "debuggerFrame");
             Map<Integer, Map<String, String>> env = state == null ? null :
                     state.getDebuggerState() == RunnerState.State.JS_DEBUG ? getEnvDebug(implementation, lastContextData) :
-                            getEnv(implementation,debuggerFrame.contextData());
+                            getEnv(implementation, debuggerFrame.contextData());
             EventSet waitFor = bThreadSS.getSyncStatement().getWaitFor();
             EventInfo waitEvent = new EventInfo(waitFor.equals(none) ? "" : ((BEvent) waitFor).getName());
             EventSet blocked = bThreadSS.getSyncStatement().getBlock();

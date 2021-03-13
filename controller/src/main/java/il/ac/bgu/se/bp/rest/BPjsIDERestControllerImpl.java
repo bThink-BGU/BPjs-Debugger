@@ -8,10 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 
@@ -34,14 +31,14 @@ public class BPjsIDERestControllerImpl implements BPjsIDERestController {
     @Override
     @RequestMapping(value = "/run", method = RequestMethod.POST)
     public @ResponseBody
-    BooleanResponse run(@Header("simpSessionId") String sessionId, @RequestBody RunRequest code) {
-        return bPjsIDEService.run(code, sessionId);
+    BooleanResponse run(@RequestHeader("userId") String userId, @RequestBody RunRequest code) {
+        return bPjsIDEService.run(code, userId);
     }
 
     @Override
     @RequestMapping(value = "/debug", method = RequestMethod.POST)
     public @ResponseBody
-    BooleanResponse debug(@Header("simpSessionId") String sessionId, @RequestBody DebugRequest code) {
-        return bPjsIDEService.debug(code, sessionId);
+    BooleanResponse debug(@RequestHeader("userId") String userId, @RequestBody DebugRequest code) {
+        return bPjsIDEService.debug(code, userId);
     }
 }

@@ -232,6 +232,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         syncSnapshot = syncSnapshot.triggerEvent(event, execSvc, new ArrayList<>());
         state.setDebuggerState(RunnerState.State.SYNC_STATE);
         debuggerEngine.setSyncSnapshot(syncSnapshot);
+        debuggerStateHelper.setLastChosenEvent(event);
         logger.debug("Generate state from nextSync");
         debuggerEngine.onStateChanged();
         syncSnapshotHolder.addSyncSnapshot(syncSnapshot, event);

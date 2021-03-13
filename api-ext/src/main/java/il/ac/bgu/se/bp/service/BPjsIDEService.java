@@ -9,9 +9,9 @@ public interface BPjsIDEService extends BPJsDebugger<BooleanResponse> {
 
     BooleanResponse subscribeUser(String sessionId, String userId);
 
-    BooleanResponse run(RunRequest runRequest, String sessionId);
+    BooleanResponse run(RunRequest runRequest, String userId);
 
-    BooleanResponse debug(DebugRequest debugRequest, String sessionId);
+    BooleanResponse debug(DebugRequest debugRequest, String userId);
 
     BooleanResponse addBreakpoint(int lineNumber);
 

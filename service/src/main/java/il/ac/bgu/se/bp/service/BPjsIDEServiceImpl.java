@@ -38,11 +38,11 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
     }
 
     @Override
-    public BooleanResponse run(RunRequest runRequest, String sessionId) {
+    public BooleanResponse run(RunRequest runRequest, String userId) {
         BProgramRunner bProgramRunner = new BProgramRunner();
 
-        debuggerSessionHandler.addNewRunExecution(sessionId, bProgramRunner);
-        debuggerSessionHandler.updateLastOperationTime(sessionId);
+        debuggerSessionHandler.addNewRunExecution(userId, bProgramRunner);
+        debuggerSessionHandler.updateLastOperationTime(userId);
 
 
         logger.info("received run request with code: {0}", bProgramRunner.toString());
@@ -50,12 +50,12 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
     }
 
     @Override
-    public BooleanResponse debug(DebugRequest debugRequest, String sessionId) {
+    public BooleanResponse debug(DebugRequest debugRequest, String userId) {
         if (!validateRequest(debugRequest)) {
             return createErrorResponse(ErrorCode.INVALID_REQUEST);
         }
 
-        if (!debuggerSessionHandler.validateSessionId(sessionId)) {
+        if (!debuggerSessionHandler.validateUserId(userId)) {
             return createErrorResponse(ErrorCode.UNKNOWN_USER);
         }
 
@@ -65,11 +65,11 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
         }
 
         BPJsDebugger bpProgramDebugger = new BPJsDebuggerImpl(filepath,
-                () -> debuggerSessionHandler.removeSession(sessionId),
-                debuggerState -> debuggerSessionHandler.updateUserStateChange(sessionId, debuggerState));
+                () -> debuggerSessionHandler.removeUser(userId),
+                debuggerState -> debuggerSessionHandler.updateUserStateChange(userId, debuggerState));
 
-        debuggerSessionHandler.addNewDebugExecution(sessionId, bpProgramDebugger);
-        debuggerSessionHandler.updateLastOperationTime(sessionId);
+        debuggerSessionHandler.addNewDebugExecution(userId, bpProgramDebugger);
+        debuggerSessionHandler.updateLastOperationTime(userId);
 
         bPjsProgramExecutor.debugProgram(bpProgramDebugger, debugRequest.getBreakpoints(),
                 debugRequest.isSkipBreakpointsToggle(), debugRequest.isSkipSyncStateToggle());

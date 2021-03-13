@@ -24,6 +24,12 @@ public class BPDebuggerState implements Serializable {
         this.eventsStatus = eventsStatus;
     }
 
+    public BPDebuggerState(List<BThreadInfo> bThreadInfoList, EventsStatus eventsStatus, EventInfo chosenEvent) {
+        this.bThreadInfoList = bThreadInfoList;
+        this.eventsStatus = eventsStatus;
+        this.chosenEvent = chosenEvent;
+    }
+
     public List<BThreadInfo> getbThreadInfoList() {
         return bThreadInfoList;
     }
