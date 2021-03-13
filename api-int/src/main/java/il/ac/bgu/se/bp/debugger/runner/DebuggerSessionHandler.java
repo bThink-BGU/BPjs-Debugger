@@ -4,15 +4,15 @@ import il.ac.bgu.se.bp.debugger.BPJsDebugger;
 import il.ac.bgu.se.bp.debugger.state.BPDebuggerState;
 
 public interface DebuggerSessionHandler<T> extends OnStateChangedHandler {
-    void addNewRunExecution(String sessionId, T bProgramRunner);
+    void addNewRunExecution(String userId, T bProgramRunner);
 
-    void addNewDebugExecution(String sessionId, BPJsDebugger bpProgramDebugger);
+    void addNewDebugExecution(String userId, BPJsDebugger bpProgramDebugger);
 
-    boolean validateSessionId(String sessionId);
+    boolean validateUserId(String userId);
 
-    boolean removeSession(String sessionId);
+    boolean removeUser(String userId);
 
-    void updateLastOperationTime(String sessionId);
+    void updateLastOperationTime(String userId);
 
-    Void updateUserStateChange(String sessionId, BPDebuggerState debuggerState);
+    Void updateUserStateChange(String userId, BPDebuggerState debuggerState);
 }

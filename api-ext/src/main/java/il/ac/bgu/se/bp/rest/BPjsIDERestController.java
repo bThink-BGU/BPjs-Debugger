@@ -10,9 +10,7 @@ public interface BPjsIDERestController {
 
     void subscribeUser(String sessionId, Principal principal);
 
-    BooleanResponse run(String sessionId, RunRequest code);
+    BooleanResponse run(String userId, RunRequest code);
 
-    BooleanResponse debug(String sessionId, DebugRequest code);
-
-
+    BooleanResponse debug(String userId, DebugRequest code);
 }

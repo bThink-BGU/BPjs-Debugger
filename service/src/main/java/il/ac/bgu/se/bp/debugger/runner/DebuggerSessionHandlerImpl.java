@@ -27,7 +27,7 @@ public class DebuggerSessionHandlerImpl implements DebuggerSessionHandler<BProgr
     private static final Map<String, BPJsDebugger> bpDebugProgramsByUsers = new ConcurrentHashMap<>();
     private static final Map<String, BProgramRunner> bpRunProgramsByUsers = new ConcurrentHashMap<>();
     private static final Map<String, LocalDateTime> bpUsersLastOperationTime = new ConcurrentHashMap<>();
-    private static final Map<String, String> userIdBySessionId = new ConcurrentHashMap<>();
+    private static final Map<String, String> sessionIdByUserId = new ConcurrentHashMap<>();
 
     @Autowired
     @Qualifier("OnStateChangedHandlerImpl")
@@ -44,9 +44,9 @@ public class DebuggerSessionHandlerImpl implements DebuggerSessionHandler<BProgr
     }
 
     @Override
-    public boolean validateSessionId(String sessionId) {
-        return !StringUtils.isEmpty(sessionId) &&
-                !StringUtils.isEmpty(getUserIdBySessionId(sessionId));
+    public boolean validateUserId(String userId) {
+        return !StringUtils.isEmpty(userId) &&
+                sessionIdByUserId.containsKey(userId);
     }
 
     @Override
@@ -55,20 +55,15 @@ public class DebuggerSessionHandlerImpl implements DebuggerSessionHandler<BProgr
     }
 
     @Override
-    public boolean removeSession(String sessionId) {
-        userIdBySessionId.remove(sessionId);
+    public boolean removeUser(String userId) {
+        sessionIdByUserId.remove(userId);
         return true;
     }
 
     @Override
-    public Void updateUserStateChange(String sessionId, BPDebuggerState debuggerState) {
-        String userId = getUserIdBySessionId(sessionId);
+    public Void updateUserStateChange(String userId, BPDebuggerState debuggerState) {
         onStateChangedHandler.sendMessage(userId, debuggerState);
         return null;
-    }
-
-    private String getUserIdBySessionId(String sessionId) {
-        return userIdBySessionId.get(sessionId);
     }
 
     private LocalDateTime getCurrentLocalDateTime() {
@@ -92,15 +87,15 @@ public class DebuggerSessionHandlerImpl implements DebuggerSessionHandler<BProgr
         });
     }
 
-    //    @Scheduled(fixedRateString = "6000", initialDelayString = "0")
+    //    @Scheduled(fixedRateString = "3000", initialDelayString = "0")
     public void schedulingTask() {
-        onStateChangedHandler.sendMessages();
-        userIdBySessionId.values().forEach(userId -> onStateChangedHandler.sendMessage(userId, new BPDebuggerState()));
+//        onStateChangedHandler.sendMessages();
+        sessionIdByUserId.keySet().forEach(userId -> onStateChangedHandler.sendMessage(userId, new BPDebuggerState()));
     }
 
     @Override
     public void addUser(String sessionId, String userId) {
-        userIdBySessionId.put(sessionId, userId);
+        sessionIdByUserId.put(userId, sessionId);
         onStateChangedHandler.addUser(sessionId, userId);
     }
 
@@ -110,11 +105,10 @@ public class DebuggerSessionHandlerImpl implements DebuggerSessionHandler<BProgr
     }
 
     @Override
-    public void sendMessage(String sessionId, BPDebuggerState debuggerState) {
-        if (!validateSessionId(sessionId)) {
+    public void sendMessage(String userId, BPDebuggerState debuggerState) {
+        if (!validateUserId(userId)) {
             return;
         }
-        String userId = getUserIdBySessionId(sessionId);
         onStateChangedHandler.sendMessage(userId, debuggerState);
     }
 }

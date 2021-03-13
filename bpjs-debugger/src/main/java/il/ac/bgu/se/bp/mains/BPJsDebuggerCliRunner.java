@@ -1,5 +1,6 @@
 package il.ac.bgu.se.bp.mains;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
 import il.ac.bgu.se.bp.debugger.state.BPDebuggerState;
 import il.ac.bgu.se.bp.execution.BPJsDebuggerImpl;
@@ -18,9 +19,10 @@ public class BPJsDebuggerCliRunner {
     private static Scanner sc = new Scanner(System.in);
     private static boolean isSkipSyncPoints = false;
     private static boolean isSkipBreakPoints = false;
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     public static void main(String[] args) {
-        final String filename = "BPJSDebuggerTest.js";
+        final String filename = "BPJSDebuggerForTesting.js";
 //        final String filename = "BPJSDebuggerRecTest.js";
 
         Function<BPDebuggerState, Void> onStateChangedEvent = BPJsDebuggerCliRunner::onStateChanged;
@@ -164,7 +166,7 @@ public class BPJsDebuggerCliRunner {
     private static void sendGetSyncSnapshotsResponse(Callable<GetSyncSnapshotsResponse> callable) {
         try {
             GetSyncSnapshotsResponse getSyncSnapshotsResponse = callable.call();
-            System.out.println(getSyncSnapshotsResponse.toString());
+            System.out.println(objectMapper.writeValueAsString(getSyncSnapshotsResponse));
         } catch (Exception e) {
             e.printStackTrace();
         }
