@@ -31,7 +31,8 @@ public class DebuggerStateHelper {
     }
 
     public BPDebuggerState generateDebuggerState(BProgramSyncSnapshot syncSnapshot, RunnerState state, Dim.ContextData lastContextData) {
-        return generateDebuggerStateInner(syncSnapshot, state, lastContextData);
+        lastState = generateDebuggerStateInner(syncSnapshot, state, lastContextData);
+        return lastState;
     }
 
     private BPDebuggerState generateDebuggerStateInner(BProgramSyncSnapshot syncSnapshot, RunnerState state, Dim.ContextData lastContextData) {
