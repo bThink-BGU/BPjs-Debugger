@@ -54,13 +54,13 @@ public class BPJsDebuggerImplTest {
     public void setUp() {
         MockitoAnnotations.initMocks(this);
         onStateChangedQueue.clear();
-        Arrays.stream(BREAKPOINTS_LINES).forEach(lineNumber -> breakpoints.put(lineNumber, true));
+        Arrays.stream(BREAKPOINTS_LINES).forEach(lineNumber -> breakpoints.put(lineNumber, Boolean.TRUE));
         doAnswer(a -> onStateChangedTester(new BPDebuggerState())).when(debuggerEngine).onStateChanged();
     }
 
     private void setupDebugger() {
         assertFalse(bpJsDebugger.isSetup());
-        BooleanResponse booleanResponse = bpJsDebugger.setup(breakpoints, false);
+        BooleanResponse booleanResponse = bpJsDebugger.setup(breakpoints, false, false);
         assertSuccessResponse(booleanResponse);
         assertTrue(bpJsDebugger.isSetup());
 
@@ -120,7 +120,7 @@ public class BPJsDebuggerImplTest {
     @Test
     public void startSyncTest() throws InterruptedException {
         setupDebugger();
-        assertSuccessResponse(bpJsDebugger.startSync(false));
+        assertSuccessResponse(bpJsDebugger.startSync(false, false));
 
         sleepUntil(e -> bpJsDebugger.isStarted(), 3);
         assertTrue(bpJsDebugger.isStarted());
@@ -133,7 +133,7 @@ public class BPJsDebuggerImplTest {
     @Test
     public void nextSyncTest() throws InterruptedException {
         setupDebugger();
-        assertSuccessResponse(bpJsDebugger.startSync(false));
+        assertSuccessResponse(bpJsDebugger.startSync(false, false));
 
         sleepUntil(e -> bpJsDebugger.isStarted(), 3);
         assertTrue(bpJsDebugger.isStarted());

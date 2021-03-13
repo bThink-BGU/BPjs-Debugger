@@ -2,6 +2,7 @@ package il.ac.bgu.se.bp.service;
 
 import il.ac.bgu.cs.bp.bpjs.execution.BProgramRunner;
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
+import il.ac.bgu.se.bp.debugger.runner.BPjsProgramExecutor;
 import il.ac.bgu.se.bp.debugger.runner.DebuggerSessionHandler;
 import il.ac.bgu.se.bp.error.ErrorCode;
 import il.ac.bgu.se.bp.execution.BPJsDebuggerImpl;
@@ -24,15 +25,15 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
     @Autowired
     private DebuggerSessionHandler<BProgramRunner> debuggerSessionHandler;
 
+    @Autowired
+    private BPjsProgramExecutor bPjsProgramExecutor;
+
     //  todo: update userId time after each event injection
 
     @Override
     public BooleanResponse subscribeUser(String sessionId, String userId) {
         System.out.println("Received message from {1} with sessionId {2}" + ",," + userId + "," + sessionId);
         debuggerSessionHandler.addUser(sessionId, userId);
-
-        //todo: see reference: GreetingService, GreetingService.sendMessage
-
         return new BooleanResponse(true);
     }
 
@@ -58,7 +59,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
             return createErrorResponse(ErrorCode.UNKNOWN_USER);
         }
 
-        String filepath = createCodeFile(debugRequest.getSourceCode());
+        String filepath = "BPJSDebuggerForTesting.js"; //createCodeFile(debugRequest.getSourceCode());
         if (StringUtils.isEmpty(filepath)) {
             return createErrorResponse(ErrorCode.INVALID_SOURCE_CODE);
         }
@@ -70,7 +71,8 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
         debuggerSessionHandler.addNewDebugExecution(sessionId, bpProgramDebugger);
         debuggerSessionHandler.updateLastOperationTime(sessionId);
 
-        // todo: run debugger in new thread
+        bPjsProgramExecutor.debugProgram(bpProgramDebugger, debugRequest.getBreakpoints(),
+                debugRequest.isSkipBreakpointsToggle(), debugRequest.isSkipSyncStateToggle());
 
         logger.info("received debug request with code: {0}", debugRequest.toString());
         return new BooleanResponse(true);
@@ -99,7 +101,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
     }
 
     @Override
-    public BooleanResponse setup(Map<Integer, Boolean> breakpoints, boolean isSkipSyncPoints) {
+    public BooleanResponse setup(Map<Integer, Boolean> breakpoints, boolean isSkipBreakpoints, boolean isSkipSyncPoints) {
         return null;
     }
 
@@ -129,7 +131,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
     }
 
     @Override
-    public BooleanResponse startSync(boolean isSkipSyncPoints) {
+    public BooleanResponse startSync(boolean isSkipBreakpoints, boolean isSkipSyncPoints) {
         return null;
     }
 

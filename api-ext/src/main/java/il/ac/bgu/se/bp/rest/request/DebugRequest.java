@@ -8,8 +8,8 @@ public class DebugRequest extends RunRequest {
     private static final long serialVersionUID = 6588719020597509990L;
 
     private List<Integer> breakpoints = new LinkedList<>();
-    private boolean stopOnBreakpointsToggle;
-    private boolean stopOnSyncStateToggle;
+    private boolean skipBreakpointsToggle;
+    private boolean skipSyncStateToggle;
 
     public DebugRequest() {
     }
@@ -31,20 +31,20 @@ public class DebugRequest extends RunRequest {
         this.breakpoints = breakpoints;
     }
 
-    public boolean isStopOnBreakpointsToggle() {
-        return stopOnBreakpointsToggle;
+    public boolean isSkipBreakpointsToggle() {
+        return skipBreakpointsToggle;
     }
 
-    public void setStopOnBreakpointsToggle(boolean stopOnBreakpointsToggle) {
-        this.stopOnBreakpointsToggle = stopOnBreakpointsToggle;
+    public void setSkipBreakpointsToggle(boolean skipBreakpointsToggle) {
+        this.skipBreakpointsToggle = skipBreakpointsToggle;
     }
 
-    public boolean isStopOnSyncStateToggle() {
-        return stopOnSyncStateToggle;
+    public boolean isSkipSyncStateToggle() {
+        return skipSyncStateToggle;
     }
 
-    public void setStopOnSyncStateToggle(boolean stopOnSyncStateToggle) {
-        this.stopOnSyncStateToggle = stopOnSyncStateToggle;
+    public void setSkipSyncStateToggle(boolean skipSyncStateToggle) {
+        this.skipSyncStateToggle = skipSyncStateToggle;
     }
 
     @Override
@@ -53,20 +53,20 @@ public class DebugRequest extends RunRequest {
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
         DebugRequest that = (DebugRequest) o;
-        return stopOnBreakpointsToggle == that.stopOnBreakpointsToggle && stopOnSyncStateToggle == that.stopOnSyncStateToggle && Objects.equals(breakpoints, that.breakpoints);
+        return skipBreakpointsToggle == that.skipBreakpointsToggle && skipSyncStateToggle == that.skipSyncStateToggle && Objects.equals(breakpoints, that.breakpoints);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), breakpoints, stopOnBreakpointsToggle, stopOnSyncStateToggle);
+        return Objects.hash(super.hashCode(), breakpoints, skipBreakpointsToggle, skipSyncStateToggle);
     }
 
     @Override
     public String toString() {
         return "DebugRequest{" +
                 "breakpoints=" + breakpoints +
-                ", stopOnBreakpointsToggle=" + stopOnBreakpointsToggle +
-                ", stopOnSyncStateToggle=" + stopOnSyncStateToggle +
+                ", skipBreakpointsToggle=" + skipBreakpointsToggle +
+                ", skipSyncStateToggle=" + skipSyncStateToggle +
                 ", sourceCode='" + sourceCode + '\'' +
                 '}';
     }

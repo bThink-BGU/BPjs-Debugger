@@ -45,7 +45,8 @@ public class DebuggerSessionHandlerImpl implements DebuggerSessionHandler<BProgr
 
     @Override
     public boolean validateSessionId(String sessionId) {
-        return !StringUtils.isEmpty(getUserIdBySessionId(sessionId));
+        return !StringUtils.isEmpty(sessionId) &&
+                !StringUtils.isEmpty(getUserIdBySessionId(sessionId));
     }
 
     @Override
@@ -61,7 +62,8 @@ public class DebuggerSessionHandlerImpl implements DebuggerSessionHandler<BProgr
 
     @Override
     public Void updateUserStateChange(String sessionId, BPDebuggerState debuggerState) {
-        onStateChangedHandler.sendMessage(sessionId, debuggerState);
+        String userId = getUserIdBySessionId(sessionId);
+        onStateChangedHandler.sendMessage(userId, debuggerState);
         return null;
     }
 
@@ -90,7 +92,7 @@ public class DebuggerSessionHandlerImpl implements DebuggerSessionHandler<BProgr
         });
     }
 
-    @Scheduled(fixedRateString = "6000", initialDelayString = "0")
+    //    @Scheduled(fixedRateString = "6000", initialDelayString = "0")
     public void schedulingTask() {
         onStateChangedHandler.sendMessages();
         userIdBySessionId.values().forEach(userId -> onStateChangedHandler.sendMessage(userId, new BPDebuggerState()));

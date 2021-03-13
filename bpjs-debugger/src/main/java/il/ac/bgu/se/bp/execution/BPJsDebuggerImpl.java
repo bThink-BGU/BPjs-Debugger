@@ -18,7 +18,6 @@ import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
 import il.ac.bgu.se.bp.utils.DebuggerStateHelper;
 import il.ac.bgu.se.bp.utils.Pair;
-import org.mozilla.javascript.Interpreter;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
@@ -62,8 +61,8 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     }
 
     @Override
-    public BooleanResponse setup(Map<Integer, Boolean> breakpoints, boolean isSkipSyncPoints) {
-        if(!isBProgSetup){ // may get twice to setup - must do bprog setup first time only
+    public BooleanResponse setup(Map<Integer, Boolean> breakpoints, boolean isSkipBreakpoints, boolean isSkipSyncPoints) {
+        if (!isBProgSetup) { // may get twice to setup - must do bprog setup first time only
             syncSnapshot = bProg.setup();
             isBProgSetup = true;
             if (syncSnapshot.getFailedAssertion() != null) {
@@ -71,8 +70,9 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
             }
         }
         setIsSkipSyncPoints(isSkipSyncPoints);
-        try{
+        try {
             debuggerEngine.setupBreakpoints(breakpoints);
+            debuggerEngine.toggleMuteBreakpoints(isSkipBreakpoints);
         }
         catch (IllegalArgumentException e){
             logger.error("cant set breakpoint line {0} to true ", e.getMessage());
@@ -143,10 +143,11 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         }
         debuggerStateHelper.setRecentlyRegisteredBthreads(recentlyRegistered);
     }
+
     @Override
-    public BooleanResponse startSync(boolean isSkipSyncPoints) {
+    public BooleanResponse startSync(boolean isSkipBreakpoints, boolean isSkipSyncPoints) {
         if (!isSetup()) {
-            setup(new HashMap<>(), isSkipSyncPoints);
+            setup(new HashMap<>(), isSkipSyncPoints, isSkipBreakpoints);
         }
         setItStarted(true);
         Thread startSyncThread = new Thread(() -> {
