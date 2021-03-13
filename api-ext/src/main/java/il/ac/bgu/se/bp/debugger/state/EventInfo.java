@@ -1,15 +1,26 @@
 package il.ac.bgu.se.bp.debugger.state;
 
+import java.io.Serializable;
 import java.util.Objects;
 
-public class EventInfo {
+public class EventInfo implements Serializable {
+    private static final long serialVersionUID = 983874658293202351L;
+
     private String name;
 
     public EventInfo() {
-        this.name= "";
+        this.name = "";
     }
 
     public EventInfo(String name) {
+        this.name = name;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
         this.name = name;
     }
 

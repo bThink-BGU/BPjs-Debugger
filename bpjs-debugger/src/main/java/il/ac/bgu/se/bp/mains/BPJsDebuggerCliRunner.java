@@ -52,6 +52,7 @@ public class BPJsDebuggerCliRunner {
                 if (!bpJsDebugger.isSetup()) {
                     sendRequest(() -> bpJsDebugger.setup(
                             Collections.singletonMap(Integer.parseInt(splat[1]), true),
+                            isSkipBreakPoints,
                             isSkipSyncPoints));
                 }
                 else
@@ -63,6 +64,7 @@ public class BPJsDebuggerCliRunner {
                 if (!bpJsDebugger.isSetup() || !bpJsDebugger.isStarted()) {
                     sendRequest(() -> bpJsDebugger.setup(
                             Collections.singletonMap(Integer.parseInt(splat[1]), false),
+                            isSkipBreakPoints,
                             isSkipSyncPoints));
                 }
                 else
@@ -70,7 +72,7 @@ public class BPJsDebuggerCliRunner {
                 break;
             case "go":
                 if (!bpJsDebugger.isStarted()) {
-                    sendRequest(() -> bpJsDebugger.startSync(isSkipSyncPoints));
+                    sendRequest(() -> bpJsDebugger.startSync(isSkipBreakPoints, isSkipSyncPoints));
                 }
                 else {
                     sendRequest(bpJsDebugger::continueRun);

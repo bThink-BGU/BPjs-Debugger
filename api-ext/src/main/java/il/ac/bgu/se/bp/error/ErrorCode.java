@@ -18,10 +18,13 @@ public enum ErrorCode {
     BREAKPOINT_NOT_ALLOWED(30), // todo: add lineNumber
 
 
-
     FAILED_ADDING_COMMAND(40),
-    ;
 
+
+    INVALID_REQUEST(80),
+    INVALID_SOURCE_CODE(81),
+    UNKNOWN_USER(82),
+    ;
 
 
     private final int errorCode;

@@ -1,8 +1,11 @@
 package il.ac.bgu.se.bp.debugger.state;
 
+import java.io.Serializable;
 import java.util.*;
 
-public class EventsStatus {
+public class EventsStatus implements Serializable {
+    private static final long serialVersionUID = -2004676986407911544L;
+
     private List<EventInfo> wait;
     private List<EventInfo> blocked;
     private Set<EventInfo> requested;
@@ -16,6 +19,30 @@ public class EventsStatus {
     public EventsStatus(List<EventInfo> wait, List<EventInfo> blocked, Set<EventInfo> requested) {
         this.wait = wait;
         this.blocked = blocked;
+        this.requested = requested;
+    }
+
+    public List<EventInfo> getWait() {
+        return wait;
+    }
+
+    public void setWait(List<EventInfo> wait) {
+        this.wait = wait;
+    }
+
+    public List<EventInfo> getBlocked() {
+        return blocked;
+    }
+
+    public void setBlocked(List<EventInfo> blocked) {
+        this.blocked = blocked;
+    }
+
+    public Set<EventInfo> getRequested() {
+        return requested;
+    }
+
+    public void setRequested(Set<EventInfo> requested) {
         this.requested = requested;
     }
 

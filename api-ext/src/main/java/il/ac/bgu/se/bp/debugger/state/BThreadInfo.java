@@ -1,19 +1,24 @@
 package il.ac.bgu.se.bp.debugger.state;
+import java.io.Serializable;
 import java.util.*;
 
-public class BThreadInfo {
+public class BThreadInfo implements Serializable {
+    private static final long serialVersionUID = 2208145820539894522L;
+
     private String name;
     private Map<Integer, Map<String, String>> env;
     private EventInfo wait;
     private EventInfo blocked;
     private Set<EventInfo> requested;
 
+    public BThreadInfo() {
+    }
 
     public BThreadInfo(String name, Map<Integer, Map<String, String>> env) {
         this.name = name;
         this.env = env;
-        this.wait= new EventInfo();
-        this.blocked= new EventInfo();
+        this.wait = new EventInfo();
+        this.blocked = new EventInfo();
         this.requested = new HashSet<>();
     }
 
