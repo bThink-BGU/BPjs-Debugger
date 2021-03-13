@@ -1,16 +1,11 @@
 package il.ac.bgu.se.bp.debugger.engine;
 
-import il.ac.bgu.cs.bp.bpjs.model.BEvent;
 import il.ac.bgu.se.bp.debugger.state.BPDebuggerState;
 import il.ac.bgu.se.bp.debugger.state.BThreadInfo;
 import il.ac.bgu.se.bp.debugger.state.EventInfo;
 import il.ac.bgu.se.bp.debugger.state.EventsStatus;
 
-import java.lang.reflect.Array;
 import java.util.*;
-import java.util.stream.Collectors;
-
-import static il.ac.bgu.cs.bp.bpjs.model.eventsets.EventSets.none;
 
 public class ExpectedResults {
     public static BPDebuggerState testEnvChangedInBreakPoints_ENV1(){
@@ -24,7 +19,7 @@ public class ExpectedResults {
         Map<Integer, Map<String, String>> bt2Env =  new HashMap<>();
         bThreadInfoList.add(new BThreadInfo("bt-test-1", bt1Env));
         bThreadInfoList.add(new BThreadInfo("bt-test-2", bt2Env));
-        return new BPDebuggerState(bThreadInfoList, new EventsStatus());
+        return new BPDebuggerState(bThreadInfoList, new EventsStatus(), new EventInfo());
     }
     public static BPDebuggerState testEnvChangedInBreakPoints_ENV2(){
         List<BThreadInfo> bThreadInfoList = new ArrayList<>();
@@ -37,7 +32,7 @@ public class ExpectedResults {
         Map<Integer, Map<String, String>> bt2Env =  new HashMap<>();
         bThreadInfoList.add(new BThreadInfo("bt-test-1", bt1Env));
         bThreadInfoList.add(new BThreadInfo("bt-test-2", bt2Env));
-        return new BPDebuggerState(bThreadInfoList, new EventsStatus());
+        return new BPDebuggerState(bThreadInfoList, new EventsStatus(), new EventInfo());
     }
     public static BPDebuggerState testEnvChangedInBreakPoints_ENV3(){
         List<BThreadInfo> bThreadInfoList = new ArrayList<>();
@@ -63,6 +58,6 @@ public class ExpectedResults {
         List<EventInfo> emptyEvents = new ArrayList<>();
         emptyEvents.add(new EventInfo());
         emptyEvents.add(new EventInfo());
-        return new BPDebuggerState(bThreadInfoList, new EventsStatus(emptyEvents, emptyEvents, requested));
+        return new BPDebuggerState(bThreadInfoList, new EventsStatus(emptyEvents, emptyEvents, requested), new EventInfo());
     }
 }
