@@ -45,7 +45,7 @@ public class DebuggerStateHelper {
         if(state.getDebuggerState() == RunnerState.State.JS_DEBUG){
             bThreadInfoList.addAll(getRecentlyAddedBTInfo(state, lastContextData));
         }
-        else{
+        else {
             this.recentlyRegisteredBT = null;
             this.newBTInterpeterFrames = null;
         }
@@ -54,12 +54,12 @@ public class DebuggerStateHelper {
         List<EventSet> wait = statements.stream().map(SyncStatement::getWaitFor).collect(Collectors.toList());
         List<EventSet> blocked = statements.stream().map(SyncStatement::getBlock).collect(Collectors.toList());
         List<BEvent> requested = statements.stream().map(SyncStatement::getRequest).flatMap(Collection::stream).collect(Collectors.toList());
-        List<EventInfo> waitEvents = wait.stream().map((e) -> e.equals(none) ? new EventInfo() : new EventInfo(((BEvent) e).getName())).collect(Collectors.toList());
-        List<EventInfo> blockedEvents = blocked.stream().map((e) -> e.equals(none) ? new EventInfo() : new EventInfo(((BEvent) e).getName())).collect(Collectors.toList());
+        List<EventInfo> waitEvents = wait.stream().map((e) -> e.equals(none) ? null : new EventInfo(((BEvent) e).getName())).filter(Objects::nonNull).collect(Collectors.toList());
+        List<EventInfo> blockedEvents = blocked.stream().map((e) -> e.equals(none) ? null : new EventInfo(((BEvent) e).getName())).filter(Objects::nonNull).collect(Collectors.toList());
         Set<EventInfo> requestedEvents = requested.stream().map((e) -> new EventInfo(e.getName())).collect(Collectors.toSet());
 
         EventsStatus eventsStatus = new EventsStatus(waitEvents, blockedEvents, requestedEvents);
-        EventInfo chosenEvent = new EventInfo(lastChosenEvent != null ? lastChosenEvent.getName() : "");
+        EventInfo chosenEvent = lastChosenEvent != null ? new EventInfo(lastChosenEvent.getName()) : null;
         return new BPDebuggerState(bThreadInfoList, eventsStatus, chosenEvent);
     }
 
@@ -124,9 +124,9 @@ public class DebuggerStateHelper {
                     state.getDebuggerState() == RunnerState.State.JS_DEBUG ? getEnvDebug(implementation, lastContextData) :
                             getEnv(implementation, debuggerFrame.contextData());
             EventSet waitFor = bThreadSS.getSyncStatement().getWaitFor();
-            EventInfo waitEvent = new EventInfo(waitFor.equals(none) ? "" : ((BEvent) waitFor).getName());
+            EventInfo waitEvent = waitFor.equals(none) ? null : new EventInfo(((BEvent) waitFor).getName());
             EventSet blocked = bThreadSS.getSyncStatement().getBlock();
-            EventInfo blockedEvent = new EventInfo(blocked.equals(none) ? "" : ((BEvent) blocked).getName());
+            EventInfo blockedEvent = blocked.equals(none) ? null : new EventInfo(((BEvent) blocked).getName());
             Set<EventInfo> requested = new ArrayList<>(bThreadSS.getSyncStatement().getRequest()).stream().map((r) -> new EventInfo(r.getName())).collect(Collectors.toSet());
             return new BThreadInfo(bThreadSS.getName(), env, waitEvent, blockedEvent, requested);
         } catch (NoSuchFieldException | IllegalAccessException e) {

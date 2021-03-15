@@ -19,7 +19,7 @@ public class ExpectedResults {
         Map<Integer, Map<String, String>> bt2Env =  new HashMap<>();
         bThreadInfoList.add(new BThreadInfo("bt-test-1", bt1Env));
         bThreadInfoList.add(new BThreadInfo("bt-test-2", bt2Env));
-        return new BPDebuggerState(bThreadInfoList, new EventsStatus(), new EventInfo());
+        return new BPDebuggerState(bThreadInfoList, new EventsStatus(), null);
     }
     public static BPDebuggerState testEnvChangedInBreakPoints_ENV2(){
         List<BThreadInfo> bThreadInfoList = new ArrayList<>();
@@ -32,7 +32,7 @@ public class ExpectedResults {
         Map<Integer, Map<String, String>> bt2Env =  new HashMap<>();
         bThreadInfoList.add(new BThreadInfo("bt-test-1", bt1Env));
         bThreadInfoList.add(new BThreadInfo("bt-test-2", bt2Env));
-        return new BPDebuggerState(bThreadInfoList, new EventsStatus(), new EventInfo());
+        return new BPDebuggerState(bThreadInfoList, new EventsStatus(), null);
     }
     public static BPDebuggerState testEnvChangedInBreakPoints_ENV3(){
         List<BThreadInfo> bThreadInfoList = new ArrayList<>();
@@ -50,14 +50,12 @@ public class ExpectedResults {
         bt2Env.put(0, env2);
         Set<EventInfo> requested1= new HashSet<>(), requested2= new HashSet<>(), requested = new HashSet<>();
         requested1.add(new EventInfo("bt-1-event-1"));
-        bThreadInfoList.add(new BThreadInfo("bt-test-1", bt1Env, new EventInfo(),new EventInfo(), requested1));
+        bThreadInfoList.add(new BThreadInfo("bt-test-1", bt1Env, null, null, requested1));
         requested2.add(new EventInfo("bt-2-event-1"));
         requested.addAll(requested1);
         requested.addAll(requested2);
-        bThreadInfoList.add(new BThreadInfo("bt-test-2", bt2Env, new EventInfo(),new EventInfo(), requested2));
+        bThreadInfoList.add(new BThreadInfo("bt-test-2", bt2Env, null, null, requested2));
         List<EventInfo> emptyEvents = new ArrayList<>();
-        emptyEvents.add(new EventInfo());
-        emptyEvents.add(new EventInfo());
-        return new BPDebuggerState(bThreadInfoList, new EventsStatus(emptyEvents, emptyEvents, requested), new EventInfo());
+        return new BPDebuggerState(bThreadInfoList, new EventsStatus(emptyEvents, emptyEvents, requested), null);
     }
 }

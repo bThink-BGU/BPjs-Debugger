@@ -17,8 +17,6 @@ public class BThreadInfo implements Serializable {
     public BThreadInfo(String name, Map<Integer, Map<String, String>> env) {
         this.name = name;
         this.env = env;
-        this.wait = new EventInfo();
-        this.blocked = new EventInfo();
         this.requested = new HashSet<>();
     }
 

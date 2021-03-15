@@ -25,7 +25,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -137,15 +136,15 @@ public class DebuggerEngineImplTest {
 
         BPDebuggerState state = onStateChangedQueue.take();
         expectedState = ExpectedResults.testEnvChangedInBreakPoints_ENV1();
-        assertEquals(state, expectedState);
+        assertEquals(expectedState, state);
         state = onStateChangedQueue.take();
         expectedState = ExpectedResults.testEnvChangedInBreakPoints_ENV2();
-        assertEquals(state, expectedState);
+        assertEquals(expectedState, state);
         debuggerEngine.onStateChanged();
         onStateChangedQueue.take();
         state = onStateChangedQueue.take();
         expectedState = ExpectedResults.testEnvChangedInBreakPoints_ENV3();
-        assertEquals(state, expectedState);
+        assertEquals(expectedState, state);
     }
 
     private static Void onStateChangedTester(BPDebuggerState debuggerState) {

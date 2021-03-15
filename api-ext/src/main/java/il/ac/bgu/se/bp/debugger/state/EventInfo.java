@@ -9,7 +9,6 @@ public class EventInfo implements Serializable {
     private String name;
 
     public EventInfo() {
-        this.name = "";
     }
 
     public EventInfo(String name) {

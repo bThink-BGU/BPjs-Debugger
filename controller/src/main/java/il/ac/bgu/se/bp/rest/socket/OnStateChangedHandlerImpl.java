@@ -1,7 +1,5 @@
 package il.ac.bgu.se.bp.rest.socket;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import il.ac.bgu.se.bp.debugger.runner.OnStateChangedHandler;
 import il.ac.bgu.se.bp.debugger.state.BPDebuggerState;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -20,8 +18,6 @@ public class OnStateChangedHandlerImpl implements OnStateChangedHandler {
     private static final String SIMP_SESSION_ID = "simpSessionId";
     private static final String WS_MESSAGE_TRANSFER_DESTINATION = "/state/update";
     private List<String> userNames = new ArrayList<>();
-
-    private ObjectMapper objectMapper = new ObjectMapper();
 
     /**
      * Handles WebSocket connection events
@@ -55,12 +51,7 @@ public class OnStateChangedHandlerImpl implements OnStateChangedHandler {
 
     @Override
     public void sendMessage(String sessionId, BPDebuggerState debuggerState) {
-        try {
-            simpMessagingTemplate.convertAndSendToUser(sessionId, WS_MESSAGE_TRANSFER_DESTINATION,
-                    objectMapper.writeValueAsString(debuggerState));
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        }
+        simpMessagingTemplate.convertAndSendToUser(sessionId, WS_MESSAGE_TRANSFER_DESTINATION, debuggerState);
     }
 
     public void addUser(String sessionId, String userId) {
