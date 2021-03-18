@@ -12,6 +12,10 @@ public class BPDebuggerState implements Serializable {
     private List<BThreadInfo> bThreadInfoList;
     private EventsStatus eventsStatus;
     private EventInfo chosenEvent;
+    private String currentRunningBT;
+    private Integer currentLineNumber;
+
+
 
     public BPDebuggerState() {
         this.bThreadInfoList = new ArrayList<>();
@@ -28,7 +32,28 @@ public class BPDebuggerState implements Serializable {
         this.eventsStatus = eventsStatus;
         this.chosenEvent = chosenEvent;
     }
+    public BPDebuggerState(List<BThreadInfo> bThreadInfoList, EventsStatus eventsStatus, EventInfo chosenEvent, String currentRunningBT, Integer currentLineNumber) {
+        this.bThreadInfoList = bThreadInfoList;
+        this.eventsStatus = eventsStatus;
+        this.chosenEvent = chosenEvent;
+        this.currentRunningBT = currentRunningBT;
+        this.currentLineNumber = currentLineNumber;
+    }
+    public String getCurrentRunningBT() {
+        return currentRunningBT;
+    }
 
+    public void setCurrentRunningBT(String currentRunningBT) {
+        this.currentRunningBT = currentRunningBT;
+    }
+
+    public Integer getCurrentLineNumber() {
+        return currentLineNumber;
+    }
+
+    public void setCurrentLineNumber(Integer currentLineNumber) {
+        this.currentLineNumber = currentLineNumber;
+    }
     public List<BThreadInfo> getbThreadInfoList() {
         return bThreadInfoList;
     }
@@ -60,7 +85,9 @@ public class BPDebuggerState implements Serializable {
         BPDebuggerState that = (BPDebuggerState) o;
         return bThreadInfoList.containsAll(that.bThreadInfoList) && that.bThreadInfoList.containsAll(bThreadInfoList)&&
                 Objects.equals(eventsStatus, that.eventsStatus) &&
-                Objects.equals(chosenEvent, that.chosenEvent);}
+                Objects.equals(chosenEvent, that.chosenEvent) &&
+        Objects.equals(currentRunningBT, that.currentRunningBT) &&
+                Objects.equals(currentLineNumber, that.currentLineNumber) ;}
 
     @Override
     public String toString() {
@@ -69,6 +96,9 @@ public class BPDebuggerState implements Serializable {
         for(BThreadInfo b : bThreadInfoList)
             s.append("["+ b.toString()+"],\n\n");
         s.append(eventsStatus.toString()+ "\n");
+        s.append("currentRunningBT: " +currentRunningBT+ "\n");
+        s.append("currentLineNumber: " +currentLineNumber+ "\n");
+
         return s.toString();
     }
 }

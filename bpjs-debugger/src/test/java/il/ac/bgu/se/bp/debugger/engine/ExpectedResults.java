@@ -19,7 +19,7 @@ public class ExpectedResults {
         Map<Integer, Map<String, String>> bt2Env =  new HashMap<>();
         bThreadInfoList.add(new BThreadInfo("bt-test-1", bt1Env));
         bThreadInfoList.add(new BThreadInfo("bt-test-2", bt2Env));
-        return new BPDebuggerState(bThreadInfoList, new EventsStatus(), null);
+        return new BPDebuggerState(bThreadInfoList, new EventsStatus(), null, "bt-test-1", 2);
     }
     public static BPDebuggerState testEnvChangedInBreakPoints_ENV2(){
         List<BThreadInfo> bThreadInfoList = new ArrayList<>();
@@ -32,7 +32,7 @@ public class ExpectedResults {
         Map<Integer, Map<String, String>> bt2Env =  new HashMap<>();
         bThreadInfoList.add(new BThreadInfo("bt-test-1", bt1Env));
         bThreadInfoList.add(new BThreadInfo("bt-test-2", bt2Env));
-        return new BPDebuggerState(bThreadInfoList, new EventsStatus(), null);
+        return new BPDebuggerState(bThreadInfoList, new EventsStatus(), null,"bt-test-1", 3);
     }
     public static BPDebuggerState testEnvChangedInBreakPoints_ENV3(){
         List<BThreadInfo> bThreadInfoList = new ArrayList<>();
