@@ -34,7 +34,7 @@ public class BPJsDebuggerCliRunner {
     }
 
     private static Void onStateChanged(BPDebuggerState state) {
-        System.out.println(state.toString());
+//        System.out.println(state.toString());
         return null;
     }
 
