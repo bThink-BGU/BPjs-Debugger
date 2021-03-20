@@ -1,5 +1,7 @@
 package il.ac.bgu.se.bp.execution;
 
+import il.ac.bgu.cs.bp.bpjs.execution.listeners.BProgramRunnerListener;
+import il.ac.bgu.cs.bp.bpjs.execution.listeners.PrintBProgramRunnerListener;
 import il.ac.bgu.cs.bp.bpjs.internal.ExecutorServiceMaker;
 import il.ac.bgu.cs.bp.bpjs.model.*;
 import il.ac.bgu.cs.bp.bpjs.model.eventselection.EventSelectionResult;
@@ -38,7 +40,7 @@ import static java.util.Collections.reverseOrder;
 public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     private final static AtomicInteger debuggerId = new AtomicInteger(0);
     private final Logger logger = new Logger(BPJsDebuggerImpl.class);
-    private final BProgram bProg;
+    private final BProgram bprog;
     private DebuggerEngine<BProgramSyncSnapshot> debuggerEngine;
     private final ExecutorService execSvc = ExecutorServiceMaker.makeWithName("BPJsDebuggerRunner-" + debuggerId.incrementAndGet());
     private BProgramSyncSnapshot syncSnapshot = null;
@@ -51,19 +53,24 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     private final Callable onExitInterrupt;
     private final SyncSnapshotHolder<BProgramSyncSnapshot, BEvent> syncSnapshotHolder;
     private DebuggerStateHelper debuggerStateHelper = new DebuggerStateHelper();
+    private final List<BProgramRunnerListener> listeners = new ArrayList<>();
 
     public BPJsDebuggerImpl(String filename, Callable onExitInterrupt, Function<BPDebuggerState, Void> onStateChangedEvent) {
         this.onExitInterrupt = onExitInterrupt;
         runningThreads = new LinkedList<>();
         debuggerEngine = new DebuggerEngineImpl(filename, state, onStateChangedEvent, debuggerStateHelper);
-        bProg = new ResourceBProgram(filename);
+        bprog = new ResourceBProgram(filename);
         syncSnapshotHolder = new SyncSnapshotHolderImpl();
+        this.listeners.add(new PrintBProgramRunnerListener());
+        bprog.setAddBThreadCallback( (bp, bt)->listeners.forEach(l->l.bthreadAdded(bp, bt)));
     }
 
     @Override
     public BooleanResponse setup(Map<Integer, Boolean> breakpoints, boolean isSkipBreakpoints, boolean isSkipSyncPoints) {
         if (!isBProgSetup) { // may get twice to setup - must do bprog setup first time only
-            syncSnapshot = bProg.setup();
+            listeners.forEach(l -> l.starting(bprog));
+            syncSnapshot = bprog.setup();
+            syncSnapshot.getBThreadSnapshots().forEach(sn->listeners.forEach( l -> l.bthreadAdded(bprog, sn)) );
             isBProgSetup = true;
             if (syncSnapshot.getFailedAssertion() != null) {
                 return createErrorResponse(ErrorCode.BP_SETUP_FAIL);// todo: add failed assertion message
@@ -81,6 +88,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         debuggerEngine.setSyncSnapshot(syncSnapshot);
         setIsSetup(true);
         state.setDebuggerState(RunnerState.State.STOPPED);
+
 //        this.bProg.setWaitForExternalEvents(true);        //todo: add wait for external event toggle
         return createSuccessResponse();
     }
@@ -136,7 +144,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     }
 
     private void updateRecentlyRegisteredBT(){
-        Set<BThreadSyncSnapshot> recentlyRegisteredBthreads = bProg.getRecentlyRegisteredBthreads();
+        Set<BThreadSyncSnapshot> recentlyRegisteredBthreads = bprog.getRecentlyRegisteredBthreads();
         Set<Pair<String, Object>> recentlyRegistered = new HashSet<>();
         for(BThreadSyncSnapshot b: recentlyRegisteredBthreads){
             recentlyRegistered.add(new Pair<>(b.getName(), b.getEntryPoint()));
@@ -153,8 +161,15 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         Thread startSyncThread = new Thread(() -> {
             try {
                 updateRecentlyRegisteredBT();
-
+                listeners.forEach(l -> l.started(bprog));
                 syncSnapshot = syncSnapshot.start(execSvc);
+                if ( ! syncSnapshot.isStateValid() ) {
+                    FailedAssertion failedAssertion = syncSnapshot.getFailedAssertion();
+                    listeners.forEach( l->l.assertionFailed(bprog, failedAssertion));
+                    state.setDebuggerState(RunnerState.State.STOPPED);
+                    logger.error("Start sync fatal error");
+                    return;
+                }
                 state.setDebuggerState(RunnerState.State.SYNC_STATE);
                 debuggerEngine.setSyncSnapshot(syncSnapshot);
                 syncSnapshotHolder.addSyncSnapshot(syncSnapshot, null);
@@ -199,7 +214,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     private Thread createNextSyncThread() {
         return new Thread(() -> {
             state.setDebuggerState(RunnerState.State.RUNNING);
-            EventSelectionStrategy eventSelectionStrategy = this.bProg.getEventSelectionStrategy();
+            EventSelectionStrategy eventSelectionStrategy = this.bprog.getEventSelectionStrategy();
             Set<BEvent> possibleEvents = eventSelectionStrategy.selectableEvents(this.syncSnapshot);
             if (possibleEvents.isEmpty()) {
                 possibleEvents = nextSyncOnNoPossibleEvents(eventSelectionStrategy, possibleEvents);
@@ -229,7 +244,14 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         }
         logger.info("Triggering event " + event);
         updateRecentlyRegisteredBT();
-        syncSnapshot = syncSnapshot.triggerEvent(event, execSvc, new ArrayList<>());
+        syncSnapshot = syncSnapshot.triggerEvent(event, execSvc, listeners);
+        if ( ! syncSnapshot.isStateValid() ) {
+            FailedAssertion failedAssertion = syncSnapshot.getFailedAssertion();
+            listeners.forEach( l->l.assertionFailed(bprog, failedAssertion));
+            state.setDebuggerState(RunnerState.State.STOPPED);
+            logger.error("Next Sync fatal error");
+            return;
+        }
         state.setDebuggerState(RunnerState.State.SYNC_STATE);
         debuggerEngine.setSyncSnapshot(syncSnapshot);
         debuggerStateHelper.setLastChosenEvent(event);
@@ -242,10 +264,11 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     }
 
     private Set<BEvent> nextSyncOnNoPossibleEvents(EventSelectionStrategy eventSelectionStrategy, Set<BEvent> possibleEvents) {
-        if (bProg.isWaitForExternalEvents()) {
+        if (bprog.isWaitForExternalEvents()) {
             try {
                 state.setDebuggerState(RunnerState.State.WAITING_FOR_EXTERNAL_EVENT);
-                BEvent next = bProg.takeExternalEvent(); // and now we wait for external event
+                listeners.forEach( l->l.superstepDone(bprog) );
+                BEvent next = bprog.takeExternalEvent(); // and now we wait for external event
                 state.setDebuggerState(RunnerState.State.RUNNING);
                 if (next == null) {
                     return possibleEvents;
@@ -260,6 +283,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         }
         else {
             logger.info("Event queue empty, not need to wait to external event. terminating....");
+            listeners.forEach(l->l.ended(bprog));
             onExit();
             return possibleEvents;
         }
@@ -373,7 +397,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         if (StringUtils.isEmpty(externalEvent)) {
             return createErrorResponse(ErrorCode.INVALID_EVENT);
         }
-        bProg.enqueueExternalEvent(new BEvent(externalEvent));
+        bprog.enqueueExternalEvent(new BEvent(externalEvent));
         return createSuccessResponse();
     }
 
@@ -390,7 +414,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
 
     @Override
     public BooleanResponse setWaitForExternalEvents(boolean shouldWait) {
-        bProg.setWaitForExternalEvents(shouldWait);
+        bprog.setWaitForExternalEvents(shouldWait);
         return createSuccessResponse();
     }
 
