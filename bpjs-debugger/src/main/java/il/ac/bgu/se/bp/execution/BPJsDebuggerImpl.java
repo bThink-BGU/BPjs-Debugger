@@ -19,6 +19,7 @@ import il.ac.bgu.se.bp.error.ErrorCode;
 import il.ac.bgu.se.bp.logger.Logger;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
+import il.ac.bgu.se.bp.utils.DebuggerPrintStream;
 import il.ac.bgu.se.bp.utils.DebuggerStateHelper;
 import il.ac.bgu.se.bp.utils.Pair;
 import il.ac.bgu.se.bp.utils.observer.BPEvent;
@@ -48,7 +49,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse>, Publishe
     private BProgram bprog;
     private DebuggerEngine<BProgramSyncSnapshot> debuggerEngine;
     private BProgramSyncSnapshot syncSnapshot = null;
-    private volatile boolean isBProgSetup = false; //indicated if bprog setup
+    private volatile boolean isBProgSetup = false; //indicated if bprog after setup
     private volatile boolean isSetup = false;
     private volatile boolean isStarted = false;
     private volatile boolean isSkipSyncPoints = false;
@@ -59,6 +60,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse>, Publishe
     private final List<BProgramRunnerListener> listeners = new ArrayList<>();
     private List<Subscriber<BPEvent>> subscribers;
     private final String debuggerId;
+    private final DebuggerPrintStream debuggerPrintStream = new DebuggerPrintStream();
 
     public BPJsDebuggerImpl(String debuggerId, String filename) {
         runningThreads = new LinkedList<>();
@@ -71,11 +73,11 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse>, Publishe
         execSvc = ExecutorServiceMaker.makeWithName(debuggerThreadId);
         logger = new Logger(BPJsDebuggerImpl.class, debuggerThreadId);
         subscribers = new ArrayList<>();
-
         debuggerEngine = new DebuggerEngineImpl(debuggerId, filename, state, debuggerStateHelper);
-        listeners.add(new PrintBProgramRunnerListener());
-
+        debuggerPrintStream.setDebuggerId(debuggerId);
+        listeners.add(new PrintBProgramRunnerListener(debuggerPrintStream));
         bprog = new ResourceBProgram(filename);
+
         bprog.setAddBThreadCallback((bp, bt) -> listeners.forEach(l -> l.bthreadAdded(bp, bt)));
     }
 
@@ -84,6 +86,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse>, Publishe
         if (!isBProgSetup) { // may get twice to setup - must do bprog setup first time only
             listeners.forEach(l -> l.starting(bprog));
             syncSnapshot = bprog.setup();
+            bprog.setLoggerOutputStreamer(debuggerPrintStream);
             syncSnapshot.getBThreadSnapshots().forEach(sn->listeners.forEach( l -> l.bthreadAdded(bprog, sn)) );
             isBProgSetup = true;
             if (syncSnapshot.getFailedAssertion() != null) {
@@ -446,11 +449,14 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse>, Publishe
     public void subscribe(Subscriber<BPEvent> subscriber) {
         subscribers.add(subscriber);
         debuggerEngine.subscribe(subscriber);
+        debuggerPrintStream.subscribe(subscriber);
     }
 
     @Override
     public void unsubscribe(Subscriber<BPEvent> subscriber) {
+        subscribers.remove(subscriber);
         debuggerEngine.unsubscribe(subscriber);
+        debuggerPrintStream.unsubscribe(subscriber);
     }
 
     @Override

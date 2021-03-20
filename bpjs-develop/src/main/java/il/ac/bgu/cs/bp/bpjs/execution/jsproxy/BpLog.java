@@ -24,6 +24,8 @@
 package il.ac.bgu.cs.bp.bpjs.execution.jsproxy;
 
 import il.ac.bgu.cs.bp.bpjs.model.BProgram;
+
+import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -40,9 +42,19 @@ import org.mozilla.javascript.ScriptableObject;
  * @author michael
  */
 public class BpLog implements java.io.Serializable {
-    
+    private PrintStream out;
     public enum LogLevel {
         Off, Warn, Info, Fine
+    }
+    public BpLog( PrintStream aStream ){
+        out = aStream;
+    }
+
+    public BpLog() {
+        this( System.out );
+    }
+    public void setLoggerOutputStreamer(PrintStream printStream){
+        out=printStream;
     }
     LogLevel level = LogLevel.Info;
 
@@ -60,7 +72,7 @@ public class BpLog implements java.io.Serializable {
 
     public void log(LogLevel lvl, Object msg) {
         if (level.compareTo(lvl) >= 0) {
-            System.out.println("[BP][" + lvl.name() + "] " + stringify(msg));
+            out.println("[BP][" + lvl.name() + "] " + stringify(msg));
         }
     }
 

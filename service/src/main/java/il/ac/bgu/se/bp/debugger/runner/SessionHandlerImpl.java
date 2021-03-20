@@ -103,7 +103,7 @@ public class SessionHandlerImpl implements SessionHandler<BProgramRunner> {
         }
         logger.debug("sending BPDebuggerState update");
         stateNotificationHandler.sendNotification(userId, debuggerState);
-        visit(userId, new ConsoleMessage("console.log..... what a message"));      //temp
+//        visit(userId, new ConsoleMessage("console.log..... what a message"));      //temp
     }
 
     @Override

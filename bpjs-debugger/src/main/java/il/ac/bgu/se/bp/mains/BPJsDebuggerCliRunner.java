@@ -16,7 +16,6 @@ import java.util.Collections;
 import java.util.Scanner;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.function.Function;
 
 public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisitor {
 

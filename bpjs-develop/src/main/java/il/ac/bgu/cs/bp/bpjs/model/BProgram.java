@@ -4,6 +4,7 @@ import il.ac.bgu.cs.bp.bpjs.execution.jsproxy.BProgramJsProxy;
 import il.ac.bgu.cs.bp.bpjs.model.eventselection.EventSelectionStrategy;
 import il.ac.bgu.cs.bp.bpjs.model.eventselection.SimpleEventSelectionStrategy;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -13,10 +14,7 @@ import il.ac.bgu.cs.bp.bpjs.exceptions.BPjsRuntimeException;
 import il.ac.bgu.cs.bp.bpjs.execution.jsproxy.BpLog;
 import il.ac.bgu.cs.bp.bpjs.execution.tasks.FailedAssertionException;
 import il.ac.bgu.cs.bp.bpjs.internal.ScriptableUtils;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+
 import java.nio.charset.StandardCharsets;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.ContextFactory;
@@ -202,6 +200,9 @@ public abstract class BProgram {
         return evaluate(script, scriptName);
     }
 
+    public void setLoggerOutputStreamer(PrintStream printStream){
+        jsProxy.log.setLoggerOutputStreamer(printStream);
+    }
     /**
      * Runs the passed code in the passed scope.
      *
