@@ -12,31 +12,33 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 
+import static il.ac.bgu.se.bp.rest.utils.Constants.SIMP_SESSION_ID;
+import static il.ac.bgu.se.bp.rest.utils.Endpoints.*;
+
+
 @Controller
-@RequestMapping("/bpjs")
+@RequestMapping(BASE_URI)
 public class BPjsIDERestControllerImpl implements BPjsIDERestController {
 
     @Autowired
     private BPjsIDEService bPjsIDEService;
 
-    @MessageMapping("/subscribe")
+    @MessageMapping(SUBSCRIBE)
     public @ResponseBody
-    void subscribeUser(@Header("simpSessionId") String sessionId, Principal principal) {
-        System.out.println("sessionId: " + sessionId);
+    void subscribeUser(@Header(SIMP_SESSION_ID) String sessionId, Principal principal) {
         System.out.println("userId: " + principal.getName());
-
         bPjsIDEService.subscribeUser(sessionId, principal.getName());
     }
 
     @Override
-    @RequestMapping(value = "/run", method = RequestMethod.POST)
+    @RequestMapping(value = RUN, method = RequestMethod.POST)
     public @ResponseBody
     BooleanResponse run(@RequestHeader("userId") String userId, @RequestBody RunRequest code) {
         return bPjsIDEService.run(code, userId);
     }
 
     @Override
-    @RequestMapping(value = "/debug", method = RequestMethod.POST)
+    @RequestMapping(value = DEBUG, method = RequestMethod.POST)
     public @ResponseBody
     BooleanResponse debug(@RequestHeader("userId") String userId, @RequestBody DebugRequest code) {
         return bPjsIDEService.debug(code, userId);

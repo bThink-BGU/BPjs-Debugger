@@ -1,4 +1,4 @@
-package il.ac.bgu.se.bp.debugger.state;
+package il.ac.bgu.se.bp.socket.state;
 
 import java.io.Serializable;
 import java.util.*;

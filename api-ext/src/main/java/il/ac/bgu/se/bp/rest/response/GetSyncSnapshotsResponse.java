@@ -1,6 +1,6 @@
 package il.ac.bgu.se.bp.rest.response;
 
-import il.ac.bgu.se.bp.debugger.state.BPDebuggerState;
+import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
 
 import java.util.Objects;
 import java.util.SortedMap;

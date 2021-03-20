@@ -12,14 +12,18 @@ import il.ac.bgu.se.bp.debugger.engine.DebuggerEngine;
 import il.ac.bgu.se.bp.debugger.engine.DebuggerEngineImpl;
 import il.ac.bgu.se.bp.debugger.engine.SyncSnapshotHolder;
 import il.ac.bgu.se.bp.debugger.engine.SyncSnapshotHolderImpl;
-import il.ac.bgu.se.bp.debugger.state.BPDebuggerState;
-import il.ac.bgu.se.bp.debugger.state.EventInfo;
+import il.ac.bgu.se.bp.debugger.engine.events.BPExitEvent;
+import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
+import il.ac.bgu.se.bp.socket.state.EventInfo;
 import il.ac.bgu.se.bp.error.ErrorCode;
 import il.ac.bgu.se.bp.logger.Logger;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
 import il.ac.bgu.se.bp.utils.DebuggerStateHelper;
 import il.ac.bgu.se.bp.utils.Pair;
+import il.ac.bgu.se.bp.utils.observer.BPEvent;
+import il.ac.bgu.se.bp.utils.observer.Publisher;
+import il.ac.bgu.se.bp.utils.observer.Subscriber;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
@@ -28,7 +32,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 
 import static il.ac.bgu.se.bp.utils.ResponseHelper.createErrorResponse;
 import static il.ac.bgu.se.bp.utils.ResponseHelper.createSuccessResponse;
@@ -37,12 +40,13 @@ import static java.util.Collections.reverseOrder;
 /**
  * Runs a {@link BProgram} in debug mode.
  */
-public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
-    private final static AtomicInteger debuggerId = new AtomicInteger(0);
-    private final Logger logger = new Logger(BPJsDebuggerImpl.class);
-    private final BProgram bprog;
+public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse>, Publisher<BPEvent> {
+    private final static AtomicInteger debuggerThreadIdGenerator = new AtomicInteger(0);
+
+    private ExecutorService execSvc;
+    private Logger logger;
+    private BProgram bprog;
     private DebuggerEngine<BProgramSyncSnapshot> debuggerEngine;
-    private final ExecutorService execSvc = ExecutorServiceMaker.makeWithName("BPJsDebuggerRunner-" + debuggerId.incrementAndGet());
     private BProgramSyncSnapshot syncSnapshot = null;
     private volatile boolean isBProgSetup = false; //indicated if bprog setup
     private volatile boolean isSetup = false;
@@ -50,19 +54,29 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     private volatile boolean isSkipSyncPoints = false;
     private RunnerState state = new RunnerState();
     private List<Thread> runningThreads;
-    private final Callable onExitInterrupt;
-    private final SyncSnapshotHolder<BProgramSyncSnapshot, BEvent> syncSnapshotHolder;
+    private final SyncSnapshotHolder<BProgramSyncSnapshot, BEvent> syncSnapshotHolder = new SyncSnapshotHolderImpl();
     private DebuggerStateHelper debuggerStateHelper = new DebuggerStateHelper();
     private final List<BProgramRunnerListener> listeners = new ArrayList<>();
+    private List<Subscriber<BPEvent>> subscribers;
+    private final String debuggerId;
 
-    public BPJsDebuggerImpl(String filename, Callable onExitInterrupt, Function<BPDebuggerState, Void> onStateChangedEvent) {
-        this.onExitInterrupt = onExitInterrupt;
+    public BPJsDebuggerImpl(String debuggerId, String filename) {
         runningThreads = new LinkedList<>();
-        debuggerEngine = new DebuggerEngineImpl(filename, state, onStateChangedEvent, debuggerStateHelper);
+        this.debuggerId = debuggerId;
+        initDebugger(debuggerId, filename);
+    }
+
+    private void initDebugger(String debuggerId, String filename) {
+        String debuggerThreadId = "BPJsDebuggerRunner-" + debuggerThreadIdGenerator.incrementAndGet();
+        execSvc = ExecutorServiceMaker.makeWithName(debuggerThreadId);
+        logger = new Logger(BPJsDebuggerImpl.class, debuggerThreadId);
+        subscribers = new ArrayList<>();
+
+        debuggerEngine = new DebuggerEngineImpl(debuggerId, filename, state, debuggerStateHelper);
+        listeners.add(new PrintBProgramRunnerListener());
+
         bprog = new ResourceBProgram(filename);
-        syncSnapshotHolder = new SyncSnapshotHolderImpl();
-        this.listeners.add(new PrintBProgramRunnerListener());
-        bprog.setAddBThreadCallback( (bp, bt)->listeners.forEach(l->l.bthreadAdded(bp, bt)));
+        bprog.setAddBThreadCallback((bp, bt) -> listeners.forEach(l -> l.bthreadAdded(bp, bt)));
     }
 
     @Override
@@ -290,16 +304,12 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     }
 
     private void onExit() {
-        try {
-            onExitInterrupt.call();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        notifySubscribers(new BPExitEvent(debuggerId));
     }
 
     private void removeExternalEvents(EventSelectionResult esr) {
         // the event selection affected the external event queue.
-        List<BEvent> updatedExternals = new ArrayList<>(this.syncSnapshot.getExternalEvents());
+        List<BEvent> updatedExternals = new ArrayList<>(syncSnapshot.getExternalEvents());
         esr.getIndicesToRemove().stream().sorted(reverseOrder())
                 .forEach(idxObj -> updatedExternals.remove(idxObj.intValue()));
         this.syncSnapshot = this.syncSnapshot.copyWith(updatedExternals);
@@ -432,6 +442,23 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         return createErrorResponse(ErrorCode.FAILED_ADDING_COMMAND);
     }
 
+    @Override
+    public void subscribe(Subscriber<BPEvent> subscriber) {
+        subscribers.add(subscriber);
+        debuggerEngine.subscribe(subscriber);
+    }
+
+    @Override
+    public void unsubscribe(Subscriber<BPEvent> subscriber) {
+        debuggerEngine.unsubscribe(subscriber);
+    }
+
+    @Override
+    public void notifySubscribers(BPEvent event) {
+        for (Subscriber<BPEvent> subscriber : subscribers) {
+            subscriber.update(event);
+        }
+    }
 
 //    //OLD METHOD TO RUN BPROG - JUST FOR REFERENCE
 //    public void start(Map<Integer, Boolean> breakpoints) {

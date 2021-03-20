@@ -5,7 +5,7 @@ import il.ac.bgu.se.bp.debugger.commands.StepInto;
 import il.ac.bgu.se.bp.debugger.commands.StepOut;
 import il.ac.bgu.se.bp.debugger.commands.StepOver;
 import il.ac.bgu.se.bp.debugger.engine.DebuggerEngine;
-import il.ac.bgu.se.bp.debugger.state.BPDebuggerState;
+import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
 import il.ac.bgu.se.bp.error.ErrorCode;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
@@ -36,8 +36,7 @@ import static org.mockito.Mockito.*;
 public class BPJsDebuggerImplTest {
 
     private final static String TEST_FILENAME = "BPJSDebuggerForTesting.js";
-    private final static Callable onExitCallback = BPJsDebuggerImplTest::onExitTester;
-    private final static Function<BPDebuggerState, Void> onStateChangedCallback = BPJsDebuggerImplTest::onStateChangedTester;
+    private static final String debuggerId = "6981cb0a-f871-474b-98e9-faf7c02e18a4";
 
     private final static int[] BREAKPOINTS_LINES = new int[]{2, 4};
     private final static Map<Integer, Boolean> breakpoints = new HashMap<>();
@@ -45,7 +44,7 @@ public class BPJsDebuggerImplTest {
     private final static BlockingQueue<BPDebuggerState> onStateChangedQueue = new ArrayBlockingQueue<>(5);
 
     @InjectMocks
-    private BPJsDebuggerImpl bpJsDebugger = new BPJsDebuggerImpl(TEST_FILENAME, onExitCallback, onStateChangedCallback);
+    private BPJsDebuggerImpl bpJsDebugger = new BPJsDebuggerImpl(debuggerId, TEST_FILENAME);
 
     @Mock
     private DebuggerEngine debuggerEngine;

@@ -4,6 +4,7 @@ import il.ac.bgu.se.bp.debugger.BPJsDebugger;
 import il.ac.bgu.se.bp.rest.request.DebugRequest;
 import il.ac.bgu.se.bp.rest.request.RunRequest;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
+import il.ac.bgu.se.bp.utils.observer.Publisher;
 
 public interface BPjsIDEService extends BPJsDebugger<BooleanResponse> {
 

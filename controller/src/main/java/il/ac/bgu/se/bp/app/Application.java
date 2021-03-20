@@ -1,4 +1,4 @@
-package il.ac.bgu.se.bp.runner;
+package il.ac.bgu.se.bp.app;
 
 
 import org.springframework.boot.SpringApplication;

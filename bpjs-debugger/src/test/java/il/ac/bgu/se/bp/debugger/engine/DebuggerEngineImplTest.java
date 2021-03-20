@@ -6,16 +6,21 @@ import il.ac.bgu.cs.bp.bpjs.model.BProgramSyncSnapshot;
 import il.ac.bgu.cs.bp.bpjs.model.BThreadSyncSnapshot;
 import il.ac.bgu.cs.bp.bpjs.model.ResourceBProgram;
 import il.ac.bgu.se.bp.debugger.commands.StepInto;
-import il.ac.bgu.se.bp.debugger.state.BPDebuggerState;
+import il.ac.bgu.se.bp.debugger.engine.events.BPStateEvent;
+import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
 import il.ac.bgu.se.bp.execution.RunnerState;
 import il.ac.bgu.se.bp.utils.DebuggerStateHelper;
 import il.ac.bgu.se.bp.utils.Pair;
+import il.ac.bgu.se.bp.utils.observer.BPEvent;
+import il.ac.bgu.se.bp.utils.observer.Publisher;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.internal.util.reflection.FieldSetter;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.mozilla.javascript.tools.debugger.Dim;
 
 import java.util.*;
@@ -30,8 +35,8 @@ import static org.mockito.Mockito.*;
 
 public class DebuggerEngineImplTest {
 
-    private final static Function<BPDebuggerState, Void> onStateChangedCallback = DebuggerEngineImplTest::onStateChangedTester;
     private final static String TEST_FILENAME = "BPJSTestEngine.js";
+    private static final String debuggerId = "6981cb0a-f871-474b-98e9-faf7c02e18a4";
 
     private final static int[] BREAKPOINTS_LINES = new int[]{2, 4};
     private final static Map<Integer, Boolean> breakpoints = new HashMap<>();
@@ -40,10 +45,15 @@ public class DebuggerEngineImplTest {
     private final static BlockingQueue<BPDebuggerState> onStateChangedQueue = new ArrayBlockingQueue<>(5);
     private RunnerState state = new RunnerState();
     private BPDebuggerState expectedState;
+
     @Mock
     private DebuggerStateHelper debuggerStateHelper;
+
+    @Mock
+    private Publisher<BPEvent> publisher;
+
     @InjectMocks
-    private DebuggerEngineImpl debuggerEngine = new DebuggerEngineImpl(TEST_FILENAME, state, onStateChangedCallback, debuggerStateHelper);
+    private DebuggerEngineImpl debuggerEngine = new DebuggerEngineImpl(debuggerId, TEST_FILENAME, state, debuggerStateHelper);
 
     @Before
     public void setUp() {
@@ -54,6 +64,7 @@ public class DebuggerEngineImplTest {
 
     @Test
     public void testIsBreakPointAllowed() throws InterruptedException {
+        doAnswer(invocation -> onStateChangedTester(invocation.getArgument(0, BPStateEvent.class))).when(publisher).notifySubscribers(any());
         expectedState = new BPDebuggerState(new LinkedList<>(), null);
         BProgram bProg = new ResourceBProgram(TEST_FILENAME);
         BProgramSyncSnapshot bProgramSyncSnapshot = bProg.setup();
@@ -77,6 +88,7 @@ public class DebuggerEngineImplTest {
 
     @Test
     public void testSetBreakpointPositive() {
+        doAnswer(invocation -> onStateChangedTester(invocation.getArgument(0, BPStateEvent.class))).when(publisher).notifySubscribers(any());
         expectedState = new BPDebuggerState(new LinkedList<>(), null);
         BProgram bProg = new ResourceBProgram(TEST_FILENAME);
         BProgramSyncSnapshot bProgramSyncSnapshot = bProg.setup();
@@ -98,6 +110,7 @@ public class DebuggerEngineImplTest {
 
     @Test
     public void testEnvChangedInBreakPoints() throws InterruptedException {
+        doAnswer(invocation -> onStateChangedTester(invocation.getArgument(0, BPStateEvent.class))).when(publisher).notifySubscribers(any());
         expectedState = new BPDebuggerState(new LinkedList<>(), null);
         BProgram bProg = new ResourceBProgram(TEST_FILENAME);
         BProgramSyncSnapshot bProgramSyncSnapshot = bProg.setup();
@@ -147,11 +160,11 @@ public class DebuggerEngineImplTest {
         assertEquals(expectedState, state);
     }
 
-    private static Void onStateChangedTester(BPDebuggerState debuggerState) {
-        onStateChangedQueue.add(debuggerState);
+
+    private static Void onStateChangedTester(BPStateEvent bpStateEvent) {
+        assertEquals(debuggerId, bpStateEvent.getDebuggerId());
+        onStateChangedQueue.add(bpStateEvent.getEvent());
         return null;
-
-
     }
 
 }

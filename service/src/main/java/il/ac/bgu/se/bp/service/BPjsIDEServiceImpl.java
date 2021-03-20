@@ -3,7 +3,7 @@ package il.ac.bgu.se.bp.service;
 import il.ac.bgu.cs.bp.bpjs.execution.BProgramRunner;
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
 import il.ac.bgu.se.bp.debugger.runner.BPjsProgramExecutor;
-import il.ac.bgu.se.bp.debugger.runner.DebuggerSessionHandler;
+import il.ac.bgu.se.bp.debugger.runner.SessionHandler;
 import il.ac.bgu.se.bp.error.ErrorCode;
 import il.ac.bgu.se.bp.execution.BPJsDebuggerImpl;
 import il.ac.bgu.se.bp.logger.Logger;
@@ -17,23 +17,23 @@ import org.thymeleaf.util.StringUtils;
 
 import java.util.Map;
 
+import static il.ac.bgu.se.bp.utils.ResponseHelper.createSuccessResponse;
+
 @Service
 public class BPjsIDEServiceImpl implements BPjsIDEService {
 
     private static final Logger logger = new Logger(BPjsIDEServiceImpl.class);
 
     @Autowired
-    private DebuggerSessionHandler<BProgramRunner> debuggerSessionHandler;
+    private SessionHandler<BProgramRunner> sessionHandler;
 
     @Autowired
-    private BPjsProgramExecutor bPjsProgramExecutor;
-
-    //  todo: update userId time after each event injection
+    private BPjsProgramExecutor<BPJsDebugger> bPjsProgramExecutor;
 
     @Override
     public BooleanResponse subscribeUser(String sessionId, String userId) {
         System.out.println("Received message from {1} with sessionId {2}" + ",," + userId + "," + sessionId);
-        debuggerSessionHandler.addUser(sessionId, userId);
+        sessionHandler.addUser(sessionId, userId);
         return new BooleanResponse(true);
     }
 
@@ -41,8 +41,8 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
     public BooleanResponse run(RunRequest runRequest, String userId) {
         BProgramRunner bProgramRunner = new BProgramRunner();
 
-        debuggerSessionHandler.addNewRunExecution(userId, bProgramRunner);
-        debuggerSessionHandler.updateLastOperationTime(userId);
+        sessionHandler.addNewRunExecution(userId, bProgramRunner);
+        sessionHandler.updateLastOperationTime(userId);
 
 
         logger.info("received run request with code: {0}", bProgramRunner.toString());
@@ -55,7 +55,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
             return createErrorResponse(ErrorCode.INVALID_REQUEST);
         }
 
-        if (!debuggerSessionHandler.validateUserId(userId)) {
+        if (!sessionHandler.validateUserId(userId)) {
             return createErrorResponse(ErrorCode.UNKNOWN_USER);
         }
 
@@ -64,18 +64,21 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
             return createErrorResponse(ErrorCode.INVALID_SOURCE_CODE);
         }
 
-        BPJsDebugger bpProgramDebugger = new BPJsDebuggerImpl(filepath,
-                () -> debuggerSessionHandler.removeUser(userId),
-                debuggerState -> debuggerSessionHandler.updateUserStateChange(userId, debuggerState));
+        logger.info("received debug request for user: {0}", userId);
+        return handleDebugRequest(debugRequest, userId, filepath);
+    }
 
-        debuggerSessionHandler.addNewDebugExecution(userId, bpProgramDebugger);
-        debuggerSessionHandler.updateLastOperationTime(userId);
+    private BooleanResponse handleDebugRequest(DebugRequest debugRequest, String userId, String filepath) {
+        BPJsDebuggerImpl bpProgramDebugger = new BPJsDebuggerImpl(userId, filepath);
+        bpProgramDebugger.subscribe(sessionHandler);
+
+        sessionHandler.addNewDebugExecution(userId, bpProgramDebugger);
+        sessionHandler.updateLastOperationTime(userId);
 
         bPjsProgramExecutor.debugProgram(bpProgramDebugger, debugRequest.getBreakpoints(),
                 debugRequest.isSkipBreakpointsToggle(), debugRequest.isSkipSyncStateToggle());
 
-        logger.info("received debug request with code: {0}", debugRequest.toString());
-        return new BooleanResponse(true);
+        return createSuccessResponse();
     }
 
     private BooleanResponse createErrorResponse(ErrorCode errorCode) {

@@ -1,9 +1,9 @@
 package il.ac.bgu.se.bp.debugger.engine;
 
-import il.ac.bgu.se.bp.debugger.state.BPDebuggerState;
-import il.ac.bgu.se.bp.debugger.state.BThreadInfo;
-import il.ac.bgu.se.bp.debugger.state.EventInfo;
-import il.ac.bgu.se.bp.debugger.state.EventsStatus;
+import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
+import il.ac.bgu.se.bp.socket.state.BThreadInfo;
+import il.ac.bgu.se.bp.socket.state.EventInfo;
+import il.ac.bgu.se.bp.socket.state.EventsStatus;
 
 import java.util.*;
 

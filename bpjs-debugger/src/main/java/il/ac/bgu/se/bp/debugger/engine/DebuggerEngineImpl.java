@@ -2,22 +2,27 @@ package il.ac.bgu.se.bp.debugger.engine;
 
 import il.ac.bgu.cs.bp.bpjs.model.BProgramSyncSnapshot;
 import il.ac.bgu.se.bp.debugger.commands.DebuggerCommand;
-import il.ac.bgu.se.bp.debugger.state.BPDebuggerState;
+import il.ac.bgu.se.bp.debugger.engine.dim.DimHelper;
+import il.ac.bgu.se.bp.debugger.engine.dim.DimHelperImpl;
+import il.ac.bgu.se.bp.debugger.engine.events.BPStateEvent;
+import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
 import il.ac.bgu.se.bp.execution.RunnerState;
 import il.ac.bgu.se.bp.logger.Logger;
 import il.ac.bgu.se.bp.utils.DebuggerStateHelper;
+import il.ac.bgu.se.bp.utils.observer.BPEvent;
+import il.ac.bgu.se.bp.utils.observer.Publisher;
+import il.ac.bgu.se.bp.utils.observer.BPEventPublisherImpl;
+import il.ac.bgu.se.bp.utils.observer.Subscriber;
 import org.mozilla.javascript.*;
 import org.mozilla.javascript.tools.debugger.Dim;
 
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> {
     private final Logger logger = new Logger(DebuggerEngineImpl.class);
-    private Dim dim;
+    private DimHelper dimHelper;
     private final BlockingQueue<DebuggerCommand> queue;
     private final String filename;
     private Dim.ContextData lastContextData = null;
@@ -25,24 +30,31 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
     private final RunnerState state;
     private volatile boolean areBreakpointsMuted = false;
     private BProgramSyncSnapshot syncSnapshot = null;
-    private final Function<BPDebuggerState, Void> onStateChangedEvent;
     private DebuggerStateHelper debuggerStateHelper;
+    private Publisher<BPEvent> publisher;
+    private String debuggerId;
 
-    public DebuggerEngineImpl(String filename, RunnerState state, Function<BPDebuggerState, Void> onStateChangedEvent, DebuggerStateHelper debuggerStateHelper) {
-        this.onStateChangedEvent = onStateChangedEvent;
+    public DebuggerEngineImpl(String debuggerId, String filename, RunnerState state, DebuggerStateHelper debuggerStateHelper) {
         this.filename = filename;
         this.state = state;
         this.debuggerStateHelper = debuggerStateHelper;
+        this.debuggerId = debuggerId;
+        publisher = new BPEventPublisherImpl();
         queue = new ArrayBlockingQueue<>(1);
-        dim = new Dim();
-        dim.setGuiCallback(this);
-        dim.attachTo(ContextFactory.getGlobal());
+        initDim();
         setIsRunning(true);
     }
 
+    private void initDim() {
+        dimHelper = new DimHelperImpl();
+        dimHelper.setGuiCallback(this);
+        dimHelper.attachTo(ContextFactory.getGlobal());
+    }
+
     public void setupBreakpoints(Map<Integer, Boolean> breakpoints) throws IllegalArgumentException {
-        if (breakpoints == null)
+        if (breakpoints == null) {
             return;
+        }
         breakpoints.forEach(this::setBreakpoint);
     }
 
@@ -59,7 +71,8 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
         logger.debug("Get state from enterInterrupt");
         if (areBreakpointsMuted) {
             continueRun();
-        } else {
+        }
+        else {
             onStateChanged();
         }
     }
@@ -70,10 +83,9 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
     }
 
     @Override
-    public void dispatchNextGuiEvent() throws InterruptedException {
+    public void dispatchNextGuiEvent() {
         try {
-
-            if(!debuggerStateHelper.getLastState().equals(debuggerStateHelper.peekNextState(syncSnapshot, state, lastContextData))){
+            if (!debuggerStateHelper.getLastState().equals(debuggerStateHelper.peekNextState(syncSnapshot, state, lastContextData))) {
                 logger.info("Getting state from dispatchNextGuiEvent");
                 onStateChanged();
             }
@@ -98,54 +110,46 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
         this.isRunning = isRunning;
     }
 
-    private synchronized void setAreBreakpointsMuted(boolean areBreakpointsMuted) {
-        this.areBreakpointsMuted = areBreakpointsMuted;
+    @Override
+    public synchronized void toggleMuteBreakpoints(boolean toggleBreakPointStatus) {
+        this.areBreakpointsMuted = toggleBreakPointStatus;
     }
 
     @Override
     public void stop() {
-        dim.setReturnValue(Dim.EXIT);
-        dim = null;
+        dimHelper.stop();
         setIsRunning(false);
     }
 
     @Override
-    public void toggleMuteBreakpoints(boolean toggleBreakPointStatus) {
-        setAreBreakpointsMuted(toggleBreakPointStatus);
-    }
-
-    @Override
     public void stepOut() {
-        dim.setReturnValue(Dim.STEP_OUT);
+        dimHelper.setReturnValue(Dim.STEP_OUT);
     }
 
     @Override
     public void stepInto() {
-        dim.setReturnValue(Dim.STEP_INTO);
+        dimHelper.setReturnValue(Dim.STEP_INTO);
 //        dim.setBreakOnEnter(true); //possible bug because BP
     }
 
     @Override
     public void stepOver() {
-        dim.setReturnValue(Dim.STEP_OVER);
+        dimHelper.setReturnValue(Dim.STEP_OVER);
     }
 
     @Override
     public void continueRun() {
-        this.dim.go();
+        dimHelper.go();
     }
 
     @Override
     public boolean isBreakpointAllowed(int lineNumber) {
-        Dim.SourceInfo sourceInfo = dim.sourceInfo(this.filename);
-        return sourceInfo.breakableLine(lineNumber);
+        return dimHelper.isBreakpointAllowed(lineNumber, filename);
     }
 
     @Override
     public void setBreakpoint(int lineNumber, boolean stopOnBreakpoint) throws IllegalArgumentException {
-        Dim.SourceInfo sourceInfo = dim.sourceInfo(this.filename);
-        sourceInfo.breakpoint(lineNumber, stopOnBreakpoint);
-        System.out.println("after set breakpoint -" + " line " + lineNumber + " changed to " + stopOnBreakpoint);
+        dimHelper.setBreakpoint(lineNumber, stopOnBreakpoint, filename);
     }
 
     @Override
@@ -157,34 +161,26 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
     @Override
     public void onStateChanged() {
         BPDebuggerState newState = debuggerStateHelper.generateDebuggerState(syncSnapshot, state, lastContextData);
-        onStateChangedEvent.apply(newState);
+        notifySubscribers(new BPStateEvent(debuggerId, newState));
     }
 
-    //todo: remove
-    public void getVars() {
-        StringBuilder vars = new StringBuilder();
-        Dim.ContextData currentContextData = dim.currentContextData();
-        for (int i = 0; i < currentContextData.frameCount(); i++) {
-            vars.append("Scope no: ").append(i).append("\n");
-            Dim.StackFrame stackFrame = currentContextData.getFrame(i);
-            NativeCall scope = (NativeCall) stackFrame.scope();
-            Object[] objects = ((Scriptable) scope).getIds();
-            List<String> arguments = Arrays.stream(objects).map(Object::toString).collect(Collectors.toList()).subList(1, objects.length);
-            for (String arg : arguments) {
-                Object res = ScriptableObject.getProperty(scope, arg);
-                if (Undefined.instance != res)
-                    vars.append(arg).append(" ").append(res).append("\n");
-            }
-        }
-        System.out.println("Vars: \n" + vars);
-    }
-
-    /*
-old code just for reference
- */
     @Override
     public void getState() {
         onStateChanged();
     }
 
+    @Override
+    public void subscribe(Subscriber subscriber) {
+        publisher.subscribe(subscriber);
+    }
+
+    @Override
+    public void unsubscribe(Subscriber subscriber) {
+        publisher.unsubscribe(subscriber);
+    }
+
+    @Override
+    public void notifySubscribers(BPEvent event) {
+        publisher.notifySubscribers(event);
+    }
 }

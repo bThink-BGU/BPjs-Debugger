@@ -1,11 +1,13 @@
 package il.ac.bgu.se.bp.debugger.engine;
 
 import il.ac.bgu.se.bp.debugger.commands.DebuggerCommand;
+import il.ac.bgu.se.bp.utils.observer.BPEvent;
+import il.ac.bgu.se.bp.utils.observer.Publisher;
 import org.mozilla.javascript.tools.debugger.GuiCallback;
 
 import java.util.Map;
 
-public interface DebuggerEngine<S> extends GuiCallback {
+public interface DebuggerEngine<S> extends GuiCallback, Publisher<BPEvent> {
     boolean isBreakpointAllowed(int lineNumber);
     void setBreakpoint(int lineNumber, boolean stopOnBreakpoint) throws IllegalArgumentException;
     void stop();

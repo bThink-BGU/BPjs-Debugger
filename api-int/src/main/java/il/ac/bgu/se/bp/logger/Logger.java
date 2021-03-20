@@ -13,6 +13,10 @@ public class Logger {
         this.className = "[" + clazz.getSimpleName() + "]";
     }
 
+    public Logger(Class<?> clazz, String debuggerId) {
+        this.className = "[" + clazz.getSimpleName() + "]";
+    }
+
     public void debug(String msg, Object... args) {
         loggerPrinter(msg, LOG_LEVELS.DEBUG, args);
     }

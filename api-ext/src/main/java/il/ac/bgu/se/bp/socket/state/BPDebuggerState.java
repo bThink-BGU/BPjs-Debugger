@@ -1,4 +1,4 @@
-package il.ac.bgu.se.bp.debugger.state;
+package il.ac.bgu.se.bp.socket.state;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -14,7 +14,6 @@ public class BPDebuggerState implements Serializable {
     private EventInfo chosenEvent;
     private String currentRunningBT;
     private Integer currentLineNumber;
-
 
 
     public BPDebuggerState() {
