@@ -1,5 +1,6 @@
 package il.ac.bgu.se.bp.rest;
 
+import il.ac.bgu.se.bp.rest.controller.BPjsIDERestController;
 import il.ac.bgu.se.bp.rest.request.DebugRequest;
 import il.ac.bgu.se.bp.rest.request.RunRequest;
 import il.ac.bgu.se.bp.rest.request.SetBreakpointRequest;

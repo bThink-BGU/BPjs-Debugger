@@ -1,7 +1,7 @@
 package il.ac.bgu.se.bp.service;
 
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
-import il.ac.bgu.se.bp.debugger.runner.BPjsProgramExecutor;
+import il.ac.bgu.se.bp.service.manage.BPjsProgramExecutor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Component;
