@@ -14,7 +14,7 @@ public class Logger {
     }
 
     public Logger(Class<?> clazz, String debuggerId) {
-        this.className = "[" + clazz.getSimpleName() + "]";
+        this.className = "[" + clazz.getSimpleName() + "] [" + debuggerId + "]";
     }
 
     public void debug(String msg, Object... args) {
