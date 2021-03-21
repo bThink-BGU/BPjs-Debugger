@@ -1,6 +1,6 @@
 package il.ac.bgu.se.bp.rest.socket.notifications.handler;
 
-import il.ac.bgu.se.bp.debugger.runner.NotificationHandler;
+import il.ac.bgu.se.bp.service.notification.NotificationHandler;
 import il.ac.bgu.se.bp.rest.socket.notifications.sender.NotificationSender;
 import org.springframework.beans.factory.annotation.Autowired;
 

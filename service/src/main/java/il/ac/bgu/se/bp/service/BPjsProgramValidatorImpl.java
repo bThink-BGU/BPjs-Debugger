@@ -2,7 +2,7 @@ package il.ac.bgu.se.bp.service;
 
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
 import il.ac.bgu.se.bp.debugger.RunnerState;
-import il.ac.bgu.se.bp.debugger.runner.BPjsProgramValidator;
+import il.ac.bgu.se.bp.service.manage.BPjsProgramValidator;
 import il.ac.bgu.se.bp.error.ErrorCode;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import org.springframework.stereotype.Component;

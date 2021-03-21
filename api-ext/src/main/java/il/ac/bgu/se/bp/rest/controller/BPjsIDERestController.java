@@ -1,4 +1,4 @@
-package il.ac.bgu.se.bp.rest;
+package il.ac.bgu.se.bp.rest.controller;
 
 import il.ac.bgu.se.bp.rest.request.DebugRequest;
 import il.ac.bgu.se.bp.rest.request.RunRequest;

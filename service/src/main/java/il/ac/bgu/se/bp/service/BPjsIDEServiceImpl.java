@@ -2,9 +2,6 @@ package il.ac.bgu.se.bp.service;
 
 import il.ac.bgu.cs.bp.bpjs.execution.BProgramRunner;
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
-import il.ac.bgu.se.bp.debugger.runner.BPjsProgramExecutor;
-import il.ac.bgu.se.bp.debugger.runner.BPjsProgramValidator;
-import il.ac.bgu.se.bp.debugger.runner.SessionHandler;
 import il.ac.bgu.se.bp.error.ErrorCode;
 import il.ac.bgu.se.bp.execution.BPJsDebuggerImpl;
 import il.ac.bgu.se.bp.logger.Logger;
@@ -14,6 +11,9 @@ import il.ac.bgu.se.bp.rest.request.SetBreakpointRequest;
 import il.ac.bgu.se.bp.rest.request.ToggleBreakpointsRequest;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.service.code.SourceCodeHelper;
+import il.ac.bgu.se.bp.service.manage.BPjsProgramExecutor;
+import il.ac.bgu.se.bp.service.manage.BPjsProgramValidator;
+import il.ac.bgu.se.bp.service.manage.SessionHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -27,10 +27,10 @@ import static il.ac.bgu.se.bp.utils.ResponseHelper.createSuccessResponse;
 @EnableScheduling
 public class BPjsIDEServiceImpl implements BPjsIDEService {
 
-    @Scheduled(fixedRate = 1000)
-    public void threadsCount() {
-        logger.info("THREADS COUNT: {0}", Thread.activeCount());
-    }
+//    @Scheduled(fixedRate = 1000)
+//    public void threadsCount() {
+//        logger.info("THREADS COUNT: {0}", Thread.activeCount());
+//    }
 
     private static final Logger logger = new Logger(BPjsIDEServiceImpl.class);
 
