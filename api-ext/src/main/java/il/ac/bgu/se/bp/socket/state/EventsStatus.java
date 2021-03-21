@@ -61,6 +61,15 @@ public class EventsStatus implements Serializable {
         return Objects.hash(wait, blocked, requested);
     }
 
+    public String prettier(String ... prefix) {
+        String pref = prefix != null && prefix.length > 0 ? prefix[0] : "";
+        return pref + "EventsStatus{\n" +
+                pref + "\twait=" + wait + ",\n" +
+                pref + "\tblocked=" + blocked + ",\n" +
+                pref + "\trequested=" + requested + ",\n" +
+                pref + '}';
+    }
+
     @Override
     public String toString() {
         return "EventsStatus{" +

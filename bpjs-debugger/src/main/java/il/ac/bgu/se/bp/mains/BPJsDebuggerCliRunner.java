@@ -162,9 +162,6 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
             if (!booleanResponse.isSuccess()) {
                 System.out.println("booleanResponse.getErrorCode: " + booleanResponse.getErrorCode());
             }
-            else {
-                System.out.println("request sent successfully");
-            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -196,14 +193,12 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
 
     @Override
     public void visit(String userId, BPDebuggerState debuggerState) {
-        System.out.println("debuggerState event received");
-        System.out.println("content: " + debuggerState.toString());
+        System.out.println("debuggerState event received, content: " + debuggerState.prettier());
     }
 
     @Override
     public void visit(String userId, ConsoleMessage consoleMessage) {
-        System.out.println("consoleMessage event received");
-        System.out.println("content: " + consoleMessage.toString());
+        System.out.println("consoleMessage event received, content: " + consoleMessage.toString());
     }
 
     @Override

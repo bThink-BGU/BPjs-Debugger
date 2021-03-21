@@ -80,15 +80,29 @@ public class BThreadInfo implements Serializable {
                 Objects.equals(requested,that.requested);
     }
 
+    public String prettier(String ... prefix) {
+        String pref = prefix != null && prefix.length > 0 ? prefix[0] : "";
+
+        List<String> envS = new LinkedList<>();
+
+        for (Map.Entry e : env.entrySet()) {
+            envS.add(e.getKey() + ":" + e.getValue());
+        }
+
+        return pref + "BThreadInfo{" + "\n" +
+                pref + "\tname= '" + name + "\'\n" +
+                pref + "\tenv= [" + String.join("\n\t" + pref, envS) + "],\n" +
+                pref + "\twait= " + wait + ",\n" +
+                pref + "\tblocked= " + blocked + ",\n" +
+                pref + "\trequested= " + requested + ",\n" +
+                pref + '}';
+    }
+
     @Override
     public String toString() {
-        StringBuilder envS = new StringBuilder();
-        for (Map.Entry e : env.entrySet()) {
-            envS.append(e.getKey()+ ":"+ e.getValue()).append("\n");
-        }
         return "BThreadInfo{" +
                 "name='" + name + '\'' +
-                ", env=" + envS +
+                ", env=" + env +
                 ", wait=" + wait +
                 ", blocked=" + blocked +
                 ", requested=" + requested +

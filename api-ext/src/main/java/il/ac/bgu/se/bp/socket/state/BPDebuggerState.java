@@ -31,6 +31,7 @@ public class BPDebuggerState implements Serializable {
         this.eventsStatus = eventsStatus;
         this.chosenEvent = chosenEvent;
     }
+
     public BPDebuggerState(List<BThreadInfo> bThreadInfoList, EventsStatus eventsStatus, EventInfo chosenEvent, String currentRunningBT, Integer currentLineNumber) {
         this.bThreadInfoList = bThreadInfoList;
         this.eventsStatus = eventsStatus;
@@ -38,6 +39,7 @@ public class BPDebuggerState implements Serializable {
         this.currentRunningBT = currentRunningBT;
         this.currentLineNumber = currentLineNumber;
     }
+
     public String getCurrentRunningBT() {
         return currentRunningBT;
     }
@@ -53,6 +55,7 @@ public class BPDebuggerState implements Serializable {
     public void setCurrentLineNumber(Integer currentLineNumber) {
         this.currentLineNumber = currentLineNumber;
     }
+
     public List<BThreadInfo> getbThreadInfoList() {
         return bThreadInfoList;
     }
@@ -79,25 +82,46 @@ public class BPDebuggerState implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         BPDebuggerState that = (BPDebuggerState) o;
-        return bThreadInfoList.containsAll(that.bThreadInfoList) && that.bThreadInfoList.containsAll(bThreadInfoList)&&
+        return bThreadInfoList.containsAll(that.bThreadInfoList) && that.bThreadInfoList.containsAll(bThreadInfoList) &&
                 Objects.equals(eventsStatus, that.eventsStatus) &&
                 Objects.equals(chosenEvent, that.chosenEvent) &&
-        Objects.equals(currentRunningBT, that.currentRunningBT) &&
-                Objects.equals(currentLineNumber, that.currentLineNumber) ;}
+                Objects.equals(currentRunningBT, that.currentRunningBT) &&
+                Objects.equals(currentLineNumber, that.currentLineNumber);
+    }
+
+    public String prettier() {
+        StringBuilder s = new StringBuilder();
+        s.append("\n{\n")
+                .append("BPDebuggerState\n");
+
+        bThreadInfoList.forEach(bThreadInfo -> s.append(bThreadInfo.prettier("\t")).append("\n\n"));
+
+        s.append(eventsStatus.prettier("\t"))
+                .append("\n")
+                .append("\tcurrentRunningBT: ").append(currentRunningBT)
+                .append("\n")
+                .append("\tcurrentLineNumber: ").append(currentLineNumber)
+                .append("\n")
+                .append("}");
+
+        return s.toString();
+    }
 
     @Override
     public String toString() {
-        StringBuilder s = new StringBuilder();
-        s.append("BPDebuggerState\n");
-        for(BThreadInfo b : bThreadInfoList)
-            s.append("["+ b.toString()+"],\n\n");
-        s.append(eventsStatus.toString()+ "\n");
-        s.append("currentRunningBT: " +currentRunningBT+ "\n");
-        s.append("currentLineNumber: " +currentLineNumber+ "\n");
-
-        return s.toString();
+        return "BPDebuggerState{" +
+                "bThreadInfoList=" + bThreadInfoList +
+                ", eventsStatus=" + eventsStatus +
+                ", chosenEvent=" + chosenEvent +
+                ", currentRunningBT='" + currentRunningBT + '\'' +
+                ", currentLineNumber=" + currentLineNumber +
+                '}';
     }
 }
