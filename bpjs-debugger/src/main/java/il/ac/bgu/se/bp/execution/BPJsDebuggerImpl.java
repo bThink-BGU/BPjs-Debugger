@@ -7,6 +7,7 @@ import il.ac.bgu.cs.bp.bpjs.model.*;
 import il.ac.bgu.cs.bp.bpjs.model.eventselection.EventSelectionResult;
 import il.ac.bgu.cs.bp.bpjs.model.eventselection.EventSelectionStrategy;
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
+import il.ac.bgu.se.bp.debugger.RunnerState;
 import il.ac.bgu.se.bp.debugger.commands.*;
 import il.ac.bgu.se.bp.debugger.engine.DebuggerEngine;
 import il.ac.bgu.se.bp.debugger.engine.DebuggerEngineImpl;
@@ -28,10 +29,8 @@ import il.ac.bgu.se.bp.utils.observer.Subscriber;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static il.ac.bgu.se.bp.utils.ResponseHelper.createErrorResponse;
@@ -142,7 +141,12 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse>, Publishe
         return createSuccessResponse();
     }
 
-    private synchronized void setItStarted(boolean isStarted) {
+    @Override
+    public RunnerState getDebuggerState() {
+        return state;
+    }
+
+    private synchronized void setIsStarted(boolean isStarted) {
         this.isStarted = isStarted;
     }
 
@@ -174,84 +178,63 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse>, Publishe
         if (!isSetup()) {
             setup(new HashMap<>(), isSkipSyncPoints, isSkipBreakpoints);
         }
-        setItStarted(true);
-        Thread startSyncThread = new Thread(() -> {
-            try {
-                updateRecentlyRegisteredBT();
-                listeners.forEach(l -> l.started(bprog));
-                syncSnapshot = syncSnapshot.start(execSvc);
-                if ( ! syncSnapshot.isStateValid() ) {
-                    FailedAssertion failedAssertion = syncSnapshot.getFailedAssertion();
-                    listeners.forEach( l->l.assertionFailed(bprog, failedAssertion));
-                    state.setDebuggerState(RunnerState.State.STOPPED);
-                    logger.error("Start sync fatal error");
-                    return;
-                }
-                state.setDebuggerState(RunnerState.State.SYNC_STATE);
-                debuggerEngine.setSyncSnapshot(syncSnapshot);
-                syncSnapshotHolder.addSyncSnapshot(syncSnapshot, null);
-                logger.debug("Generate state from startSync");
-                debuggerEngine.onStateChanged();
-                logger.info("~FIRST SYNC STATE~");
-                state.setDebuggerState(RunnerState.State.SYNC_STATE);
-                if (isSkipSyncPoints) {
-                    nextSync();
-                }
-            } catch (InterruptedException e) {
-                logger.warning("got InterruptedException in startSync");
+        setIsStarted(true);
+        try {
+            updateRecentlyRegisteredBT();
+            listeners.forEach(l -> l.started(bprog));
+            syncSnapshot = syncSnapshot.start(execSvc);
+            if ( ! syncSnapshot.isStateValid() ) {
+                FailedAssertion failedAssertion = syncSnapshot.getFailedAssertion();
+                listeners.forEach( l->l.assertionFailed(bprog, failedAssertion));
+                state.setDebuggerState(RunnerState.State.STOPPED);
+                logger.error("Start sync fatal error");
+                return createErrorResponse(ErrorCode.BP_SETUP_FAIL);
             }
-            catch (RejectedExecutionException e){
-                logger.error("Forced to stop");
+            state.setDebuggerState(RunnerState.State.SYNC_STATE);
+            debuggerEngine.setSyncSnapshot(syncSnapshot);
+            syncSnapshotHolder.addSyncSnapshot(syncSnapshot, null);
+            logger.debug("Generate state from startSync");
+            debuggerEngine.onStateChanged();
+            logger.info("~FIRST SYNC STATE~");
+            state.setDebuggerState(RunnerState.State.SYNC_STATE);
+            if (isSkipSyncPoints) {
+                nextSync();
             }
-        });
-        startSyncThread.setName("startSyncThread");
-        runningThreads.add(startSyncThread);
-        startSyncThread.start();
+        } catch (InterruptedException e) {
+            logger.warning("got InterruptedException in startSync");
+            return createErrorResponse(ErrorCode.BP_SETUP_FAIL);
+        }
+        catch (RejectedExecutionException e){
+            logger.error("Forced to stop");
+            return createErrorResponse(ErrorCode.BP_SETUP_FAIL);
+        }
         return createSuccessResponse();
     }
 
     @Override
     public BooleanResponse nextSync() {
-        if (this.state.getDebuggerState() == RunnerState.State.WAITING_FOR_EXTERNAL_EVENT)
-            return createErrorResponse(ErrorCode.WAITING_FOR_EXTERNAL_EVENT);
-        else if (this.state.getDebuggerState() == RunnerState.State.JS_DEBUG)
-            return createErrorResponse(ErrorCode.NOT_IN_BP_SYNC_STATE);
-        else if (this.state.getDebuggerState() == RunnerState.State.RUNNING)
-            return createErrorResponse(ErrorCode.ALREADY_RUNNING);
-        else if (!isStarted())
-            return createErrorResponse(ErrorCode.NOT_STARTED);
+        state.setDebuggerState(RunnerState.State.RUNNING);
+        EventSelectionStrategy eventSelectionStrategy = this.bprog.getEventSelectionStrategy();
+        Set<BEvent> possibleEvents = eventSelectionStrategy.selectableEvents(this.syncSnapshot);
+        if (possibleEvents.isEmpty()) {
+            possibleEvents = nextSyncOnNoPossibleEvents(eventSelectionStrategy, possibleEvents);
+        }
 
-        Thread nextSyncThread = createNextSyncThread();
-        nextSyncThread.setName("nextSyncThread");
-        runningThreads.add(nextSyncThread);
-        nextSyncThread.start();
+        logger.info("Possible events(internal): " + possibleEvents);
+        logger.info("External events: " + syncSnapshot.getExternalEvents());
+
+        try {
+            Optional<EventSelectionResult> eventOptional = eventSelectionStrategy.select(syncSnapshot, possibleEvents);
+            if (eventOptional.isPresent()) {
+                nextSyncOnChosenEvent(eventOptional.get());
+            }
+            else {
+                logger.info("Events queue is empty");
+            }
+        } catch (InterruptedException e) {
+            logger.warning("got InterruptedException in nextSync");
+        }
         return createSuccessResponse();
-    }
-
-    private Thread createNextSyncThread() {
-        return new Thread(() -> {
-            state.setDebuggerState(RunnerState.State.RUNNING);
-            EventSelectionStrategy eventSelectionStrategy = this.bprog.getEventSelectionStrategy();
-            Set<BEvent> possibleEvents = eventSelectionStrategy.selectableEvents(this.syncSnapshot);
-            if (possibleEvents.isEmpty()) {
-                possibleEvents = nextSyncOnNoPossibleEvents(eventSelectionStrategy, possibleEvents);
-            }
-
-            logger.info("Possible events(internal): " + possibleEvents);
-            logger.info("External events: " + syncSnapshot.getExternalEvents());
-
-            try {
-                Optional<EventSelectionResult> eventOptional = eventSelectionStrategy.select(syncSnapshot, possibleEvents);
-                if (eventOptional.isPresent()) {
-                    nextSyncOnChosenEvent(eventOptional.get());
-                }
-                else {
-                    logger.info("Events queue is empty");
-                }
-            } catch (InterruptedException e) {
-                logger.warning("got InterruptedException in nextSync");
-            }
-        });
     }
 
     private void nextSyncOnChosenEvent(EventSelectionResult eventSelectionResult) throws InterruptedException {
@@ -320,11 +303,6 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse>, Publishe
 
     @Override
     public BooleanResponse continueRun() {
-        if (!isSetup())
-            return createErrorResponse(ErrorCode.SETUP_REQUIRED);
-        if (this.state.getDebuggerState() != RunnerState.State.JS_DEBUG) {
-            return createErrorResponse(ErrorCode.NOT_IN_JS_DEBUG_STATE);
-        }
         return addCommandIfStarted(new Continue());
     }
 
@@ -371,19 +349,20 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse>, Publishe
         if (!isSetup())
             return createErrorResponse(ErrorCode.SETUP_REQUIRED);
         //todo: remove?
-        while (!execSvc.isTerminated()) {
-            runningThreads.forEach(Thread::interrupt);
-            execSvc.shutdownNow();
-            try {
-                execSvc.awaitTermination(1500, TimeUnit.MILLISECONDS);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            if (!execSvc.isTerminated()) {
-                logger.info("not yet terminated");
-            }
-        }
-        setItStarted(false);
+//        while (!execSvc.isTerminated()) {
+//            runningThreads.forEach(Thread::interrupt);
+//            execSvc.shutdownNow();
+//            try {
+//                execSvc.awaitTermination(1500, TimeUnit.MILLISECONDS);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//            if (!execSvc.isTerminated()) {
+//                logger.info("not yet terminated");
+//            }
+//        }
+        setIsStarted(false);
+        onExit();
         return new Stop().applyCommand(debuggerEngine);
     }
 

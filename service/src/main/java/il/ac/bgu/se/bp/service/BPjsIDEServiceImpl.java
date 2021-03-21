@@ -3,24 +3,34 @@ package il.ac.bgu.se.bp.service;
 import il.ac.bgu.cs.bp.bpjs.execution.BProgramRunner;
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
 import il.ac.bgu.se.bp.debugger.runner.BPjsProgramExecutor;
+import il.ac.bgu.se.bp.debugger.runner.BPjsProgramValidator;
 import il.ac.bgu.se.bp.debugger.runner.SessionHandler;
 import il.ac.bgu.se.bp.error.ErrorCode;
 import il.ac.bgu.se.bp.execution.BPJsDebuggerImpl;
 import il.ac.bgu.se.bp.logger.Logger;
 import il.ac.bgu.se.bp.rest.request.DebugRequest;
 import il.ac.bgu.se.bp.rest.request.RunRequest;
+import il.ac.bgu.se.bp.rest.request.SetBreakpointRequest;
+import il.ac.bgu.se.bp.rest.request.ToggleBreakpointsRequest;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
-import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
+import il.ac.bgu.se.bp.service.code.SourceCodeHelper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.util.StringUtils;
 
-import java.util.Map;
 
 import static il.ac.bgu.se.bp.utils.ResponseHelper.createSuccessResponse;
 
 @Service
+@EnableScheduling
 public class BPjsIDEServiceImpl implements BPjsIDEService {
+
+    @Scheduled(fixedRate = 1000)
+    public void threadsCount() {
+        logger.info("THREADS COUNT: {0}", Thread.activeCount());
+    }
 
     private static final Logger logger = new Logger(BPjsIDEServiceImpl.class);
 
@@ -29,6 +39,12 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
 
     @Autowired
     private BPjsProgramExecutor<BPJsDebugger> bPjsProgramExecutor;
+
+    @Autowired
+    private BPjsProgramValidator<BPJsDebugger> bPjsProgramValidator;
+
+    @Autowired
+    private SourceCodeHelper sourceCodeHelper;
 
     @Override
     public BooleanResponse subscribeUser(String sessionId, String userId) {
@@ -59,16 +75,17 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
             return createErrorResponse(ErrorCode.UNKNOWN_USER);
         }
 
-        String filepath = "BPJSDebuggerForTesting.js"; //createCodeFile(debugRequest.getSourceCode());
+//        String filepath = sourceCodeHelper.createCodeFile(debugRequest.getSourceCode());
+        String filepath = "BPJSDebuggerForTesting.js";
         if (StringUtils.isEmpty(filepath)) {
             return createErrorResponse(ErrorCode.INVALID_SOURCE_CODE);
         }
 
         logger.info("received debug request for user: {0}", userId);
-        return handleDebugRequest(debugRequest, userId, filepath);
+        return handleNewDebugRequest(debugRequest, userId, filepath);
     }
 
-    private BooleanResponse handleDebugRequest(DebugRequest debugRequest, String userId, String filepath) {
+    private BooleanResponse handleNewDebugRequest(DebugRequest debugRequest, String userId, String filepath) {
         BPJsDebuggerImpl bpProgramDebugger = new BPJsDebuggerImpl(userId, filepath);
         bpProgramDebugger.subscribe(sessionHandler);
 
@@ -81,6 +98,98 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
         return createSuccessResponse();
     }
 
+    @Override
+    public BooleanResponse setBreakpoint(String userId, SetBreakpointRequest setBreakpointRequest) {
+        if (setBreakpointRequest == null) {
+            return createErrorResponse(ErrorCode.INVALID_REQUEST);
+        }
+
+        BPJsDebugger<BooleanResponse> bpJsDebugger = sessionHandler.getBPjsDebuggerByUser(userId);
+        if (bpJsDebugger == null) {
+            return createErrorResponse(ErrorCode.UNKNOWN_USER);
+        }
+
+        return bpJsDebugger.setBreakpoint(setBreakpointRequest.getLineNumber(), setBreakpointRequest.isStopOnBreakpoint());
+    }
+
+    @Override
+    public BooleanResponse toggleMuteBreakpoints(String userId, ToggleBreakpointsRequest toggleBreakPointStatus) {
+        if (toggleBreakPointStatus == null) {
+            return createErrorResponse(ErrorCode.UNKNOWN_USER);
+        }
+
+        BPJsDebugger<BooleanResponse> bpJsDebugger = sessionHandler.getBPjsDebuggerByUser(userId);
+        if (bpJsDebugger == null) {
+            return createErrorResponse(ErrorCode.UNKNOWN_USER);
+        }
+
+        return bpJsDebugger.toggleMuteBreakpoints(toggleBreakPointStatus.isSkipBreakpoints());
+    }
+
+    @Override
+    public BooleanResponse stop(String userId) {
+        BPJsDebugger<BooleanResponse> bpJsDebugger = sessionHandler.getBPjsDebuggerByUser(userId);
+        if (bpJsDebugger == null) {
+            return createErrorResponse(ErrorCode.UNKNOWN_USER);
+        }
+        return bpJsDebugger.stop();
+    }
+
+    @Override
+    public BooleanResponse stepOut(String userId) {
+        BPJsDebugger<BooleanResponse> bpJsDebugger = sessionHandler.getBPjsDebuggerByUser(userId);
+        if (bpJsDebugger == null) {
+            return createErrorResponse(ErrorCode.UNKNOWN_USER);
+        }
+        return bpJsDebugger.stepOut();
+    }
+
+    @Override
+    public BooleanResponse stepInto(String userId) {
+        BPJsDebugger<BooleanResponse> bpJsDebugger = sessionHandler.getBPjsDebuggerByUser(userId);
+        if (bpJsDebugger == null) {
+            return createErrorResponse(ErrorCode.UNKNOWN_USER);
+        }
+        return bpJsDebugger.stepInto();
+    }
+
+    @Override
+    public BooleanResponse stepOver(String userId) {
+        BPJsDebugger<BooleanResponse> bpJsDebugger = sessionHandler.getBPjsDebuggerByUser(userId);
+        if (bpJsDebugger == null) {
+            return createErrorResponse(ErrorCode.UNKNOWN_USER);
+        }
+        return bpJsDebugger.stepOver();
+    }
+
+    @Override
+    public BooleanResponse continueRun(String userId) {
+        BPJsDebugger<BooleanResponse> bpJsDebugger = sessionHandler.getBPjsDebuggerByUser(userId);
+        if (bpJsDebugger == null) {
+            return createErrorResponse(ErrorCode.UNKNOWN_USER);
+        }
+
+        BooleanResponse booleanResponse = bPjsProgramValidator.validateContinueRun(bpJsDebugger);
+        if (booleanResponse.isSuccess()) {
+            bPjsProgramExecutor.continueRun(bpJsDebugger);
+        }
+        return booleanResponse;
+    }
+
+    @Override
+    public BooleanResponse nextSync(String userId) {
+        BPJsDebugger<BooleanResponse> bpJsDebugger = sessionHandler.getBPjsDebuggerByUser(userId);
+        if (bpJsDebugger == null) {
+            return createErrorResponse(ErrorCode.UNKNOWN_USER);
+        }
+
+        BooleanResponse booleanResponse = bPjsProgramValidator.validateNextSync(bpJsDebugger);
+        if (booleanResponse.isSuccess()) {
+            bPjsProgramExecutor.nextSync(bpJsDebugger);
+        }
+        return booleanResponse;
+    }
+
     private BooleanResponse createErrorResponse(ErrorCode errorCode) {
         return new BooleanResponse(false, errorCode);
     }
@@ -89,112 +198,4 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
         return !StringUtils.isEmpty(runRequest.getSourceCode());
     }
 
-    private String createCodeFile(String sourceCode) {
-        return null;
-    }
-
-    @Override
-    public BooleanResponse addBreakpoint(int lineNumber) {
-        return setBreakpoint(lineNumber, true);
-    }
-
-    @Override
-    public BooleanResponse removeBreakpoint(int lineNumber) {
-        return setBreakpoint(lineNumber, false);
-    }
-
-    @Override
-    public BooleanResponse setup(Map<Integer, Boolean> breakpoints, boolean isSkipBreakpoints, boolean isSkipSyncPoints) {
-        return null;
-    }
-
-    @Override
-    public boolean isSetup() {
-        return false;
-    }
-
-    @Override
-    public boolean isStarted() {
-        return false;
-    }
-
-    @Override
-    public BooleanResponse addExternalEvent(String externalEvent) {
-        return null;
-    }
-
-    @Override
-    public BooleanResponse removeExternalEvent(String externalEvent) {
-        return null;
-    }
-
-    @Override
-    public BooleanResponse setWaitForExternalEvents(boolean shouldWait) {
-        return null;
-    }
-
-    @Override
-    public BooleanResponse startSync(boolean isSkipBreakpoints, boolean isSkipSyncPoints) {
-        return null;
-    }
-
-    @Override
-    public BooleanResponse nextSync() {
-        return null;
-    }
-
-    @Override
-    public BooleanResponse setIsSkipSyncPoints(boolean isSkipSyncPoints) {
-        return null;
-    }
-
-    @Override
-    public GetSyncSnapshotsResponse getSyncSnapshotsHistory() {
-        return null;
-    }
-
-    @Override
-    public BooleanResponse setSyncSnapshots(long snapShotTime) {
-        return null;
-    }
-
-    @Override
-    public BooleanResponse setBreakpoint(int lineNumber, boolean stopOnBreakpoint) {
-        return null;
-    }
-
-    @Override
-    public BooleanResponse stop() {
-        return null;
-    }
-
-    @Override
-    public BooleanResponse stepOut() {
-        return null;
-    }
-
-    @Override
-    public BooleanResponse stepInto() {
-        return null;
-    }
-
-    @Override
-    public BooleanResponse stepOver() {
-        return null;
-    }
-
-    @Override
-    public BooleanResponse continueRun() {
-        return null;
-    }
-
-    @Override
-    public BooleanResponse toggleMuteBreakpoints(boolean toggleBreakPointStatus) {
-        return null;
-    }
-
-    @Override
-    public BooleanResponse getState() {
-        return null;
-    }
 }

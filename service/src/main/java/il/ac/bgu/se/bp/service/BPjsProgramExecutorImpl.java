@@ -15,8 +15,8 @@ import java.util.stream.Collectors;
 @Component
 public class BPjsProgramExecutorImpl implements BPjsProgramExecutor<BPJsDebugger> {
 
-    @Override
     @Async
+    @Override
     public void debugProgram(BPJsDebugger bProg, List<Integer> breakpoints,
                              boolean isStopOnBreakpointsToggle, boolean isStopOnSyncStateToggle) {
         Map<Integer, Boolean> breakpointsMap = breakpoints
@@ -24,5 +24,17 @@ public class BPjsProgramExecutorImpl implements BPjsProgramExecutor<BPJsDebugger
                 .collect(Collectors.toMap(Function.identity(), b -> Boolean.TRUE));
         bProg.setup(breakpointsMap, isStopOnBreakpointsToggle, isStopOnSyncStateToggle);
         bProg.startSync(isStopOnBreakpointsToggle, isStopOnSyncStateToggle);
+    }
+
+    @Async
+    @Override
+    public void nextSync(BPJsDebugger bProg) {
+        bProg.nextSync();
+    }
+
+    @Async
+    @Override
+    public void continueRun(BPJsDebugger bProg) {
+        bProg.continueRun();
     }
 }
