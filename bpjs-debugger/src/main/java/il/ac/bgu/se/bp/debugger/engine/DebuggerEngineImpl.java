@@ -6,7 +6,7 @@ import il.ac.bgu.se.bp.debugger.engine.dim.DimHelper;
 import il.ac.bgu.se.bp.debugger.engine.dim.DimHelperImpl;
 import il.ac.bgu.se.bp.debugger.engine.events.BPStateEvent;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
-import il.ac.bgu.se.bp.execution.RunnerState;
+import il.ac.bgu.se.bp.debugger.RunnerState;
 import il.ac.bgu.se.bp.logger.Logger;
 import il.ac.bgu.se.bp.utils.DebuggerStateHelper;
 import il.ac.bgu.se.bp.utils.observer.BPEvent;
@@ -89,9 +89,14 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
                 logger.info("Getting state from dispatchNextGuiEvent");
                 onStateChanged();
             }
-            DebuggerCommand debuggerCommand = queue.take();
-            logger.info("applying command " + debuggerCommand.toString());
-            debuggerCommand.applyCommand(this);
+            if (isRunning()) {
+                DebuggerCommand debuggerCommand = queue.take();
+                logger.info("applying command " + debuggerCommand.toString());
+                debuggerCommand.applyCommand(this);
+            }
+            else {
+                logger.error("IM HERE!");
+            }
         } catch (Exception e) {
             logger.error("failed on dispatchNextGuiEvent", e);
         }

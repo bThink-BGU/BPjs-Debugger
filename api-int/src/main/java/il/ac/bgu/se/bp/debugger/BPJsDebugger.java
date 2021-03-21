@@ -9,7 +9,6 @@ public interface BPJsDebugger<T> extends Debugger<T> {
     T setup(Map<Integer, Boolean> breakpoints, boolean isSkipBreakpoints, boolean isSkipSyncPoints);
 
     boolean isSetup();
-
     boolean isStarted();
 
     T addExternalEvent(String externalEvent);
@@ -23,4 +22,6 @@ public interface BPJsDebugger<T> extends Debugger<T> {
     T setIsSkipSyncPoints(boolean isSkipSyncPoints);
     GetSyncSnapshotsResponse getSyncSnapshotsHistory();
     T setSyncSnapshots(long snapShotTime);
+
+    RunnerState getDebuggerState();
 }

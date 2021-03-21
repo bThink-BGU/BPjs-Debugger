@@ -9,7 +9,7 @@ import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
 import il.ac.bgu.se.bp.socket.state.BThreadInfo;
 import il.ac.bgu.se.bp.socket.state.EventInfo;
 import il.ac.bgu.se.bp.socket.state.EventsStatus;
-import il.ac.bgu.se.bp.execution.RunnerState;
+import il.ac.bgu.se.bp.debugger.RunnerState;
 import org.mozilla.javascript.*;
 import org.mozilla.javascript.tools.debugger.Dim;
 

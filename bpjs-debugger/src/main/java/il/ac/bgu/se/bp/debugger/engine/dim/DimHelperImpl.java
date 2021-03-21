@@ -47,7 +47,6 @@ public class DimHelperImpl implements DimHelper {
     public void setBreakpoint(int lineNumber, boolean stopOnBreakpoint, String filename) {
         Dim.SourceInfo sourceInfo = dim.sourceInfo(filename);
         sourceInfo.breakpoint(lineNumber, stopOnBreakpoint);
-        System.out.println("after set breakpoint -" + " line " + lineNumber + " changed to " + stopOnBreakpoint);
     }
 
 
