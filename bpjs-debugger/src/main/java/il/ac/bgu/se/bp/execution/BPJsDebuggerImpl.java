@@ -14,7 +14,6 @@ import il.ac.bgu.se.bp.debugger.engine.DebuggerEngineImpl;
 import il.ac.bgu.se.bp.debugger.engine.SyncSnapshotHolder;
 import il.ac.bgu.se.bp.debugger.engine.SyncSnapshotHolderImpl;
 import il.ac.bgu.se.bp.debugger.engine.events.BPExitEvent;
-import il.ac.bgu.se.bp.execution.manage.ProgramValidatorImpl;
 import il.ac.bgu.se.bp.debugger.manage.ProgramValidator;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
 import il.ac.bgu.se.bp.socket.state.EventInfo;
@@ -27,15 +26,11 @@ import il.ac.bgu.se.bp.utils.DebuggerPrintStream;
 import il.ac.bgu.se.bp.utils.DebuggerStateHelper;
 import il.ac.bgu.se.bp.utils.Pair;
 import il.ac.bgu.se.bp.utils.asyncHelper.AsyncOperationRunner;
-import il.ac.bgu.se.bp.utils.asyncHelper.AsyncOperationRunnerImpl;
 import il.ac.bgu.se.bp.utils.observer.BPEvent;
-import il.ac.bgu.se.bp.utils.observer.Publisher;
 import il.ac.bgu.se.bp.utils.observer.Subscriber;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
 
-import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -46,48 +41,52 @@ import static il.ac.bgu.se.bp.utils.ResponseHelper.createErrorResponse;
 import static il.ac.bgu.se.bp.utils.ResponseHelper.createSuccessResponse;
 import static java.util.Collections.reverseOrder;
 
-//@Service
-//@Scope("prototype")
-public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse>, Publisher<BPEvent> {
+public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     private final static AtomicInteger debuggerThreadIdGenerator = new AtomicInteger(0);
 
-    private ExecutorService execSvc;
     private Logger logger;
-    private BProgram bprog;
-    private DebuggerEngine<BProgramSyncSnapshot> debuggerEngine;
-    private BProgramSyncSnapshot syncSnapshot = null;
-    private volatile boolean isBProgSetup = false; //indicated if bprog after setup
+
+    private String debuggerId;
+    private String filename;
+
+    private volatile boolean isBProgSetup = false; //indicates if bprog after setup
     private volatile boolean isSetup = false;
     private volatile boolean isStarted = false;
     private volatile boolean isSkipSyncPoints = false;
-    private RunnerState state = new RunnerState();
-    private final SyncSnapshotHolder<BProgramSyncSnapshot, BEvent> syncSnapshotHolder = new SyncSnapshotHolderImpl();
-    private DebuggerStateHelper debuggerStateHelper = new DebuggerStateHelper();
-    private final List<BProgramRunnerListener> listeners = new ArrayList<>();
-    private List<Subscriber<BPEvent>> subscribers;
-    private final String debuggerId;
-    private final DebuggerPrintStream debuggerPrintStream = new DebuggerPrintStream();
-    private ProgramValidator<BPJsDebugger> bPjsProgramValidator = new ProgramValidatorImpl();
-    private AsyncOperationRunner asyncOperationRunner = new AsyncOperationRunnerImpl();
 
+    private ExecutorService execSvc;
+    private BProgram bprog;
+    private DebuggerEngine<BProgramSyncSnapshot> debuggerEngine;
+    private BProgramSyncSnapshot syncSnapshot;
+
+    private final RunnerState state = new RunnerState();
+    private final SyncSnapshotHolder<BProgramSyncSnapshot, BEvent> syncSnapshotHolder = new SyncSnapshotHolderImpl();
+    private final DebuggerStateHelper debuggerStateHelper = new DebuggerStateHelper();
+    private final DebuggerPrintStream debuggerPrintStream = new DebuggerPrintStream();
+    private final List<BProgramRunnerListener> listeners = new ArrayList<>();
+    private final List<Subscriber<BPEvent>> subscribers = new ArrayList<>();
+
+    @Autowired
+    private ProgramValidator<BPJsDebugger> bPjsProgramValidator;
+
+    @Autowired
+    private AsyncOperationRunner asyncOperationRunner;
 
     public BPJsDebuggerImpl(String debuggerId, String filename) {
         this.debuggerId = debuggerId;
-        initDebugger(debuggerId, filename);
+        this.filename = filename;
+        initDebugger();
     }
 
-    @PostConstruct
-    private void initDebugger(String debuggerId, String filename) {
+    private void initDebugger() {
         String debuggerThreadId = "BPJsDebuggerRunner-" + debuggerThreadIdGenerator.incrementAndGet();
         execSvc = ExecutorServiceMaker.makeWithName(debuggerThreadId);
         logger = new Logger(BPJsDebuggerImpl.class, debuggerThreadId);
-        subscribers = new ArrayList<>();
         debuggerEngine = new DebuggerEngineImpl(debuggerId, filename, state, debuggerStateHelper);
         debuggerPrintStream.setDebuggerId(debuggerId);
         listeners.add(new PrintBProgramRunnerListener(debuggerPrintStream));
         listeners.add(new DebuggerBProgramRunnerListener(debuggerStateHelper));
         bprog = new ResourceBProgram(filename);
-
         bprog.setAddBThreadCallback((bp, bt) -> listeners.forEach(l -> l.bthreadAdded(bp, bt)));
     }
 

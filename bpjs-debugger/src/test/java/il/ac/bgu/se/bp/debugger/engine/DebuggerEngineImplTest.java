@@ -7,10 +7,12 @@ import il.ac.bgu.cs.bp.bpjs.model.BThreadSyncSnapshot;
 import il.ac.bgu.cs.bp.bpjs.model.ResourceBProgram;
 import il.ac.bgu.se.bp.debugger.commands.StepInto;
 import il.ac.bgu.se.bp.debugger.engine.events.BPStateEvent;
+import il.ac.bgu.se.bp.execution.manage.ProgramValidatorImpl;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
 import il.ac.bgu.se.bp.debugger.RunnerState;
 import il.ac.bgu.se.bp.utils.DebuggerStateHelper;
 import il.ac.bgu.se.bp.utils.Pair;
+import il.ac.bgu.se.bp.utils.asyncHelper.AsyncOperationRunnerImpl;
 import il.ac.bgu.se.bp.utils.observer.BPEvent;
 import il.ac.bgu.se.bp.utils.observer.Publisher;
 import org.junit.Before;
@@ -18,6 +20,7 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.mozilla.javascript.tools.debugger.Dim;
 
@@ -49,14 +52,29 @@ public class DebuggerEngineImplTest {
     @Mock
     private Publisher<BPEvent> publisher;
 
-    @InjectMocks
-    private DebuggerEngineImpl debuggerEngine = new DebuggerEngineImpl(debuggerId, TEST_FILENAME, state, debuggerStateHelper);
+    @Spy
+    private AsyncOperationRunnerImpl asyncOperationRunner;
+
+    @Spy
+    private ProgramValidatorImpl programValidator;
+
+    private DebuggerEngineImpl debuggerEngine;
 
     @Before
     public void setUp() {
         MockitoAnnotations.initMocks(this);
+        debuggerEngine = new DebuggerEngineImpl(debuggerId, TEST_FILENAME, state, debuggerStateHelper);
+        setMockPublisher();
         onStateChangedQueue.clear();
         Arrays.stream(BREAKPOINTS_LINES).forEach(lineNumber -> breakpoints.put(lineNumber, true));
+    }
+
+    private void setMockPublisher() {
+        try {
+            FieldSetter.setField(debuggerEngine, DebuggerEngineImpl.class.getDeclaredField("publisher"), publisher);
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        }
     }
 
     @Test

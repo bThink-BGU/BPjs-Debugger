@@ -2,11 +2,11 @@ package il.ac.bgu.se.bp.mains;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
-import il.ac.bgu.se.bp.mains.config.BPJsDebuggerCliRunnerConfiguration;
+import il.ac.bgu.se.bp.config.BPJsDebuggerConfiguration;
+import il.ac.bgu.se.bp.debugger.manage.DebuggerFactory;
 import il.ac.bgu.se.bp.socket.console.ConsoleMessage;
 import il.ac.bgu.se.bp.socket.exit.ProgramExit;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
-import il.ac.bgu.se.bp.execution.BPJsDebuggerImpl;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
 import il.ac.bgu.se.bp.utils.observer.BPEvent;
@@ -14,15 +14,14 @@ import il.ac.bgu.se.bp.utils.observer.Subscriber;
 import il.ac.bgu.se.bp.utils.visitor.PublisherVisitor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.concurrent.Callable;
 
 public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisitor {
 
     private static final String debuggerId = UUID.randomUUID().toString();
+    private static final String filename = "BPJSDebuggerForTesting.js";        // "BPJSDebuggerRecTest.js"
 
     private boolean isTerminated = false;
     private Scanner sc;
@@ -30,15 +29,16 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
     private boolean isSkipBreakPoints = false;
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-//    @Autowired
-    private BPJsDebuggerImpl bpJsDebugger;
+    @Autowired
+    private DebuggerFactory<BooleanResponse> debuggerFactory;
 
-    private final String filename = "BPJSDebuggerForTesting.js";        // "BPJSDebuggerRecTest.js"
+    private BPJsDebugger bpJsDebugger;
+
     private Map<Integer, Boolean> breakpoints = new HashMap<>();
 
     public static void main(String[] args) {
         AnnotationConfigApplicationContext annotationConfigApplicationContext =
-                new AnnotationConfigApplicationContext(BPJsDebuggerCliRunnerConfiguration.class);
+                new AnnotationConfigApplicationContext(BPJsDebuggerConfiguration.class);
 
         BPJsDebuggerCliRunner bpJsDebuggerCliRunner = annotationConfigApplicationContext.getBean(BPJsDebuggerCliRunner.class);
         bpJsDebuggerCliRunner.runBPJsDebuggerCliRunner();
@@ -47,19 +47,21 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
     public BPJsDebuggerCliRunner() {
     }
 
-    @PostConstruct
-    public void init() {
+    private void init() {
         System.out.println("Debugger id: " + debuggerId);
         sc = new Scanner(System.in);
-        bpJsDebugger = new BPJsDebuggerImpl(debuggerId, filename);
+        bpJsDebugger = debuggerFactory.getBPJsDebugger(debuggerId, filename);
         bpJsDebugger.subscribe(this);
     }
 
     private void runBPJsDebuggerCliRunner() {
+        init();
+
         while (!isTerminated) {
             boolean isStop = !userMenuLoop(sc, bpJsDebugger);
             isTerminated = isTerminated || isStop;
         }
+
         bpJsDebugger.stop();
         System.out.println("BPJsDebuggerCliRunner exiting..");
     }

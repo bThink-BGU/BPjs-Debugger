@@ -1,13 +1,8 @@
 package il.ac.bgu.se.bp.utils.observer;
 
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
-
 import java.util.LinkedList;
 import java.util.List;
 
-@Component
-@Scope("prototype")
 public class BPEventPublisherImpl implements Publisher<BPEvent> {
 
     private List<Subscriber<BPEvent>> subscribers = new LinkedList<>();
