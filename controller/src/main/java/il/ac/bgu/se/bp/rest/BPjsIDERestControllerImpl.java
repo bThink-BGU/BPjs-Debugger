@@ -1,10 +1,7 @@
 package il.ac.bgu.se.bp.rest;
 
 import il.ac.bgu.se.bp.rest.controller.BPjsIDERestController;
-import il.ac.bgu.se.bp.rest.request.DebugRequest;
-import il.ac.bgu.se.bp.rest.request.RunRequest;
-import il.ac.bgu.se.bp.rest.request.SetBreakpointRequest;
-import il.ac.bgu.se.bp.rest.request.ToggleBreakpointsRequest;
+import il.ac.bgu.se.bp.rest.request.*;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.service.BPjsIDEService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,8 +55,15 @@ public class BPjsIDERestControllerImpl implements BPjsIDERestController {
     @Override
     @RequestMapping(value = BREAKPOINT, method = RequestMethod.PUT)
     public @ResponseBody
-    BooleanResponse toggleMuteBreakpoints(String userId, @RequestBody ToggleBreakpointsRequest toggleBreakpointsRequest) {
+    BooleanResponse toggleMuteBreakpoints(@RequestHeader("userId") String userId, @RequestBody ToggleBreakpointsRequest toggleBreakpointsRequest) {
         return bPjsIDEService.toggleMuteBreakpoints(userId, toggleBreakpointsRequest);
+    }
+
+    @Override
+    @RequestMapping(value = SYNC_STATES, method = RequestMethod.PUT)
+    public @ResponseBody
+    BooleanResponse toggleMuteSyncPoints(@RequestHeader("userId") String userId, ToggleSyncStatesRequest toggleMuteSyncPoints) {
+        return bPjsIDEService.toggleMuteSyncPoints(userId, toggleMuteSyncPoints);
     }
 
     @Override
@@ -102,6 +106,13 @@ public class BPjsIDERestControllerImpl implements BPjsIDERestController {
     public @ResponseBody
     BooleanResponse nextSync(@RequestHeader("userId") String userId) {
         return bPjsIDEService.nextSync(userId);
+    }
+
+    @Override
+    @RequestMapping(value = EXTERNAL_EVENT, method = RequestMethod.POST)
+    public @ResponseBody
+    BooleanResponse externalEvent(@RequestHeader("userId") String userId, ExternalEventRequest externalEventRequest) {
+        return bPjsIDEService.externalEvent(userId, externalEventRequest);
     }
 
 }

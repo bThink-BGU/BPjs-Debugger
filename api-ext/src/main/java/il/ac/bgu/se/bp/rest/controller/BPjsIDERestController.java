@@ -1,9 +1,6 @@
 package il.ac.bgu.se.bp.rest.controller;
 
-import il.ac.bgu.se.bp.rest.request.DebugRequest;
-import il.ac.bgu.se.bp.rest.request.RunRequest;
-import il.ac.bgu.se.bp.rest.request.SetBreakpointRequest;
-import il.ac.bgu.se.bp.rest.request.ToggleBreakpointsRequest;
+import il.ac.bgu.se.bp.rest.request.*;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 
 import java.security.Principal;
@@ -17,6 +14,7 @@ public interface BPjsIDERestController {
 
     BooleanResponse setBreakpoint(String userId, SetBreakpointRequest setBreakpointRequest);
     BooleanResponse toggleMuteBreakpoints(String userId, ToggleBreakpointsRequest toggleBreakpointsRequest);
+    BooleanResponse toggleMuteSyncPoints(String userId, ToggleSyncStatesRequest toggleMuteSyncPoints);
 
     BooleanResponse stop(String userId);
     BooleanResponse stepOut(String userId);
@@ -25,5 +23,7 @@ public interface BPjsIDERestController {
     BooleanResponse continueRun(String userId);
 
     BooleanResponse nextSync(String userId);
+
+    BooleanResponse externalEvent(String userId, ExternalEventRequest externalEventRequest);
 
 }

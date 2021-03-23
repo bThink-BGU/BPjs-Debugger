@@ -1,9 +1,6 @@
 package il.ac.bgu.se.bp.service;
 
-import il.ac.bgu.se.bp.rest.request.DebugRequest;
-import il.ac.bgu.se.bp.rest.request.RunRequest;
-import il.ac.bgu.se.bp.rest.request.SetBreakpointRequest;
-import il.ac.bgu.se.bp.rest.request.ToggleBreakpointsRequest;
+import il.ac.bgu.se.bp.rest.request.*;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 
 public interface BPjsIDEService {
@@ -15,6 +12,7 @@ public interface BPjsIDEService {
 
     BooleanResponse setBreakpoint(String userId, SetBreakpointRequest setBreakpointRequest);
     BooleanResponse toggleMuteBreakpoints(String userId, ToggleBreakpointsRequest toggleBreakPointStatus);
+    BooleanResponse toggleMuteSyncPoints(String userId, ToggleSyncStatesRequest toggleMuteSyncPoints);
 
     BooleanResponse stop(String userId);
     BooleanResponse stepOut(String userId);
@@ -24,12 +22,9 @@ public interface BPjsIDEService {
 
     BooleanResponse nextSync(String userId);
 
+    BooleanResponse externalEvent(String userId, ExternalEventRequest externalEventRequest);
 
 //    BooleanResponse setSyncSnapshots(long snapShotTime);
-//
-//    BooleanResponse addExternalEvent(String externalEvent);
-//    BooleanResponse removeExternalEvent(String externalEvent);
 //    BooleanResponse setWaitForExternalEvents(boolean shouldWait);
-//    BooleanResponse setIsSkipSyncPoints(boolean isSkipSyncPoints);
 //    GetSyncSnapshotsResponse getSyncSnapshotsHistory();
 }

@@ -146,7 +146,7 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
             }
             case "tsp":
                 isSkipSyncPoints = !isSkipSyncPoints;
-                sendRequest(() -> bpJsDebugger.setIsSkipSyncPoints(isSkipSyncPoints));
+                sendRequest(() -> bpJsDebugger.toggleMuteSyncPoints(isSkipSyncPoints));
                 break;
             case "getss":
                 sendGetSyncSnapshotsResponse(bpJsDebugger::getSyncSnapshotsHistory);

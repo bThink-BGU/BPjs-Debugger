@@ -6,10 +6,7 @@ import il.ac.bgu.se.bp.debugger.manage.DebuggerFactory;
 import il.ac.bgu.se.bp.error.ErrorCode;
 import il.ac.bgu.se.bp.execution.BPJsDebuggerImpl;
 import il.ac.bgu.se.bp.logger.Logger;
-import il.ac.bgu.se.bp.rest.request.DebugRequest;
-import il.ac.bgu.se.bp.rest.request.RunRequest;
-import il.ac.bgu.se.bp.rest.request.SetBreakpointRequest;
-import il.ac.bgu.se.bp.rest.request.ToggleBreakpointsRequest;
+import il.ac.bgu.se.bp.rest.request.*;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.service.code.SourceCodeHelper;
 import il.ac.bgu.se.bp.service.manage.SessionHandler;
@@ -113,7 +110,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
     @Override
     public BooleanResponse toggleMuteBreakpoints(String userId, ToggleBreakpointsRequest toggleBreakPointStatus) {
         if (toggleBreakPointStatus == null) {
-            return createErrorResponse(ErrorCode.UNKNOWN_USER);
+            return createErrorResponse(ErrorCode.INVALID_REQUEST);
         }
 
         BPJsDebugger<BooleanResponse> bpJsDebugger = sessionHandler.getBPjsDebuggerByUser(userId);
@@ -122,6 +119,20 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
         }
 
         return bpJsDebugger.toggleMuteBreakpoints(toggleBreakPointStatus.isSkipBreakpoints());
+    }
+
+    @Override
+    public BooleanResponse toggleMuteSyncPoints(String userId, ToggleSyncStatesRequest toggleMuteSyncPoints) {
+        if (toggleMuteSyncPoints == null) {
+            return createErrorResponse(ErrorCode.INVALID_REQUEST);
+        }
+
+        BPJsDebugger<BooleanResponse> bpJsDebugger = sessionHandler.getBPjsDebuggerByUser(userId);
+        if (bpJsDebugger == null) {
+            return createErrorResponse(ErrorCode.UNKNOWN_USER);
+        }
+
+        return bpJsDebugger.toggleMuteSyncPoints(toggleMuteSyncPoints.isSkipSyncStates());
     }
 
     @Override
@@ -178,6 +189,22 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
         }
 
         return bpJsDebugger.nextSync();
+    }
+
+    @Override
+    public BooleanResponse externalEvent(String userId, ExternalEventRequest externalEventRequest) {
+        if (externalEventRequest == null || StringUtils.isEmpty(externalEventRequest.getExternalEvent())) {
+            return createErrorResponse(ErrorCode.INVALID_REQUEST);
+        }
+
+        BPJsDebugger<BooleanResponse> bpJsDebugger = sessionHandler.getBPjsDebuggerByUser(userId);
+        if (bpJsDebugger == null) {
+            return createErrorResponse(ErrorCode.UNKNOWN_USER);
+        }
+
+        String externalEvent = externalEventRequest.getExternalEvent();
+        return externalEventRequest.isAddEvent() ? bpJsDebugger.addExternalEvent(externalEvent) :
+                bpJsDebugger.removeExternalEvent(externalEvent);
     }
 
     private BooleanResponse createErrorResponse(ErrorCode errorCode) {

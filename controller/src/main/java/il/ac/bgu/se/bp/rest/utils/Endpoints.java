@@ -1,7 +1,5 @@
 package il.ac.bgu.se.bp.rest.utils;
 
-import il.ac.bgu.se.bp.rest.response.BooleanResponse;
-
 public class Endpoints {
 
     public static final String BASE_URI = "/bpjs";
@@ -28,6 +26,8 @@ public class Endpoints {
     public static final String CONTINUE = "/continue";
 
     public static final String NEXT_SYNC = "/nextSync";
+    public static final String SYNC_STATES = "/syncStates";
 
+    public static final String EXTERNAL_EVENT = "/externalEvent";
 
 }
