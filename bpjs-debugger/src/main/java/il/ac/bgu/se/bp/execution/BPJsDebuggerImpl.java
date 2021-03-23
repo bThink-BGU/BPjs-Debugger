@@ -20,6 +20,7 @@ import il.ac.bgu.se.bp.error.ErrorCode;
 import il.ac.bgu.se.bp.logger.Logger;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
+import il.ac.bgu.se.bp.utils.DebuggerBProgramRunnerListener;
 import il.ac.bgu.se.bp.utils.DebuggerPrintStream;
 import il.ac.bgu.se.bp.utils.DebuggerStateHelper;
 import il.ac.bgu.se.bp.utils.Pair;
@@ -75,6 +76,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse>, Publishe
         debuggerEngine = new DebuggerEngineImpl(debuggerId, filename, state, debuggerStateHelper);
         debuggerPrintStream.setDebuggerId(debuggerId);
         listeners.add(new PrintBProgramRunnerListener(debuggerPrintStream));
+        listeners.add(new DebuggerBProgramRunnerListener(debuggerStateHelper));
         bprog = new ResourceBProgram(filename);
 
         bprog.setAddBThreadCallback((bp, bt) -> listeners.forEach(l -> l.bthreadAdded(bp, bt)));
@@ -164,15 +166,6 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse>, Publishe
         return isStarted;
     }
 
-    private void updateRecentlyRegisteredBT(){
-        Set<BThreadSyncSnapshot> recentlyRegisteredBthreads = bprog.getRecentlyRegisteredBthreads();
-        Set<Pair<String, Object>> recentlyRegistered = new HashSet<>();
-        for(BThreadSyncSnapshot b: recentlyRegisteredBthreads){
-            recentlyRegistered.add(new Pair<>(b.getName(), b.getEntryPoint()));
-        }
-        debuggerStateHelper.setRecentlyRegisteredBthreads(recentlyRegistered);
-    }
-
     @Override
     public BooleanResponse startSync(boolean isSkipBreakpoints, boolean isSkipSyncPoints) {
         if (!isSetup()) {
@@ -180,7 +173,6 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse>, Publishe
         }
         setIsStarted(true);
         try {
-            updateRecentlyRegisteredBT();
             listeners.forEach(l -> l.started(bprog));
             syncSnapshot = syncSnapshot.start(execSvc);
             if ( ! syncSnapshot.isStateValid() ) {
@@ -243,7 +235,6 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse>, Publishe
             removeExternalEvents(eventSelectionResult);
         }
         logger.info("Triggering event " + event);
-        updateRecentlyRegisteredBT();
         syncSnapshot = syncSnapshot.triggerEvent(event, execSvc, listeners);
         if ( ! syncSnapshot.isStateValid() ) {
             FailedAssertion failedAssertion = syncSnapshot.getFailedAssertion();
