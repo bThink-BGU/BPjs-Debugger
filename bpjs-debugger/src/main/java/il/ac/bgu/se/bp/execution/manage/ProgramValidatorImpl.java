@@ -76,7 +76,7 @@ public class ProgramValidatorImpl implements ProgramValidator<BPJsDebugger> {
         RunnerState.State state = bProg.getDebuggerState().getDebuggerState();
 
         if (!RunnerState.State.JS_DEBUG.equals(state)) {
-            return createErrorResponse(getErrorCodeByExpectedDebuggerState(state));
+            return createErrorResponse(getErrorCodeByExpectedDebuggerState(expectedState));
         }
 
         return validateAndRun(bProg, callback);
