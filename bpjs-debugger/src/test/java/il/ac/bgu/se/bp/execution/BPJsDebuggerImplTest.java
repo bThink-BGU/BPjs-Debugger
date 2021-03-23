@@ -5,16 +5,16 @@ import il.ac.bgu.se.bp.debugger.commands.StepInto;
 import il.ac.bgu.se.bp.debugger.commands.StepOut;
 import il.ac.bgu.se.bp.debugger.commands.StepOver;
 import il.ac.bgu.se.bp.debugger.engine.DebuggerEngine;
+import il.ac.bgu.se.bp.execution.manage.ProgramValidatorImpl;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
 import il.ac.bgu.se.bp.error.ErrorCode;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
+import il.ac.bgu.se.bp.utils.asyncHelper.AsyncOperationRunnerImpl;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.Arrays;
@@ -46,6 +46,12 @@ public class BPJsDebuggerImplTest {
 
     @Mock
     private DebuggerEngine debuggerEngine;
+
+    @Spy
+    private AsyncOperationRunnerImpl asyncOperationRunner;
+
+    @Spy
+    private ProgramValidatorImpl programValidator;
 
     @Before
     public void setUp() {

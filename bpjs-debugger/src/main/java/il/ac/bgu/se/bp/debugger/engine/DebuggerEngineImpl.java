@@ -34,7 +34,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
     private BProgramSyncSnapshot syncSnapshot = null;
 
     private final BlockingQueue<DebuggerCommand> queue = new ArrayBlockingQueue<>(1);
-    private final Publisher<BPEvent> publisher = new BPEventPublisherImpl();
+    private Publisher<BPEvent> publisher = new BPEventPublisherImpl();
 
     public DebuggerEngineImpl(String debuggerId, String filename, RunnerState state, DebuggerStateHelper debuggerStateHelper) {
         this.filename = filename;
@@ -159,7 +159,6 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
     public void setSyncSnapshot(BProgramSyncSnapshot syncSnapshot) {
         this.syncSnapshot = syncSnapshot;
     }
-
 
     @Override
     public void onStateChanged() {
