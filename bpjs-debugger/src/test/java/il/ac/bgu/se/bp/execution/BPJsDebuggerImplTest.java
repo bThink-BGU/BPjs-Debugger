@@ -99,8 +99,8 @@ public class BPJsDebuggerImplTest {
     @Test
     public void setIsSkipSyncPointsTest() {
         setupDebugger();
-        assertSuccessResponse(bpJsDebugger.setIsSkipSyncPoints(true));
-        assertSuccessResponse(bpJsDebugger.setIsSkipSyncPoints(false));
+        assertSuccessResponse(bpJsDebugger.toggleMuteSyncPoints(true));
+        assertSuccessResponse(bpJsDebugger.toggleMuteSyncPoints(false));
     }
 
     @Test

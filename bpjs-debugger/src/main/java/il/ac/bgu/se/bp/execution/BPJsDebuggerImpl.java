@@ -102,7 +102,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
                 return createErrorResponse(ErrorCode.BP_SETUP_FAIL);// todo: add failed assertion message
             }
         }
-        setIsSkipSyncPoints(isSkipSyncPoints);
+        toggleMuteSyncPoints(isSkipSyncPoints);
         try {
             debuggerEngine.setupBreakpoints(breakpoints);
             debuggerEngine.toggleMuteBreakpoints(isSkipBreakpoints);
@@ -120,8 +120,8 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     }
 
     @Override
-    public synchronized BooleanResponse setIsSkipSyncPoints(boolean isSkipSyncPoints) {
-        this.isSkipSyncPoints = isSkipSyncPoints;
+    public synchronized BooleanResponse toggleMuteSyncPoints(boolean toggleMuteSyncPoints) {
+        this.isSkipSyncPoints = toggleMuteSyncPoints;
         return createSuccessResponse();
     }
 

@@ -21,7 +21,7 @@ public interface BPJsDebugger<T> extends Debugger<T>, Publisher<BPEvent> {
     T startSync(Map<Integer, Boolean> breakpointsMap, boolean isSkipSyncPoints, boolean isSkipBreakpoints);
 
     T nextSync();
-    T setIsSkipSyncPoints(boolean isSkipSyncPoints);
+    T toggleMuteSyncPoints(boolean toggleMuteSyncPoints);
     GetSyncSnapshotsResponse getSyncSnapshotsHistory();
     T setSyncSnapshots(long snapShotTime);
 
