@@ -20,7 +20,7 @@ public interface DebuggerEngine<S> extends GuiCallback, Publisher<BPEvent> {
 
     void setSyncSnapshot(S syncSnapshot);
     void setupBreakpoints(Map<Integer, Boolean> breakpoints);
-    void addCommand(DebuggerCommand command);
+    void addCommand(DebuggerCommand command) throws Exception;
 
     void onStateChanged();
 }

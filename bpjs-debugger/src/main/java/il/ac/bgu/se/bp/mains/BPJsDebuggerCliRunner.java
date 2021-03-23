@@ -2,6 +2,7 @@ package il.ac.bgu.se.bp.mains;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
+import il.ac.bgu.se.bp.mains.config.BPJsDebuggerCliRunnerConfiguration;
 import il.ac.bgu.se.bp.socket.console.ConsoleMessage;
 import il.ac.bgu.se.bp.socket.exit.ProgramExit;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
@@ -11,10 +12,12 @@ import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
 import il.ac.bgu.se.bp.utils.observer.BPEvent;
 import il.ac.bgu.se.bp.utils.observer.Subscriber;
 import il.ac.bgu.se.bp.utils.visitor.PublisherVisitor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-import java.util.Scanner;
-import java.util.UUID;
+import javax.annotation.PostConstruct;
+import java.util.*;
 import java.util.concurrent.Callable;
 
 public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisitor {
@@ -22,25 +25,33 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
     private static final String debuggerId = UUID.randomUUID().toString();
 
     private boolean isTerminated = false;
-    private Scanner sc = new Scanner(System.in);
+    private Scanner sc;
     private boolean isSkipSyncPoints = false;
     private boolean isSkipBreakPoints = false;
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
+//    @Autowired
     private BPJsDebuggerImpl bpJsDebugger;
 
-    public static void main(String[] args) {
-        final String filename = "BPJSDebuggerForTesting.js";
-//        final String filename = "BPJSDebuggerRecTest.js";
+    private final String filename = "BPJSDebuggerForTesting.js";        // "BPJSDebuggerRecTest.js"
+    private Map<Integer, Boolean> breakpoints = new HashMap<>();
 
-        System.out.println("Debugger id: " + debuggerId);
-        BPJsDebuggerCliRunner bpJsDebuggerCliRunner = new BPJsDebuggerCliRunner(new BPJsDebuggerImpl(debuggerId, filename));
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext annotationConfigApplicationContext =
+                new AnnotationConfigApplicationContext(BPJsDebuggerCliRunnerConfiguration.class);
+
+        BPJsDebuggerCliRunner bpJsDebuggerCliRunner = annotationConfigApplicationContext.getBean(BPJsDebuggerCliRunner.class);
         bpJsDebuggerCliRunner.runBPJsDebuggerCliRunner();
     }
 
-    BPJsDebuggerCliRunner(BPJsDebuggerImpl bpJsDebugger) {
+    public BPJsDebuggerCliRunner() {
+    }
+
+    @PostConstruct
+    public void init() {
+        System.out.println("Debugger id: " + debuggerId);
         sc = new Scanner(System.in);
-        this.bpJsDebugger = bpJsDebugger;
+        bpJsDebugger = new BPJsDebuggerImpl(debuggerId, filename);
         bpJsDebugger.subscribe(this);
     }
 
@@ -59,15 +70,10 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
         switch (cmd) {
             case "b":
                 if (!bpJsDebugger.isSetup()) {
-                    sendRequest(() -> bpJsDebugger.setup(
-                            Collections.singletonMap(Integer.parseInt(splat[1]), true),
-                            isSkipBreakPoints,
-                            isSkipSyncPoints));
+                    breakpoints.put(Integer.parseInt(splat[1]), true);
                 }
                 else
-                    sendRequest(() -> bpJsDebugger.setBreakpoint(
-                            Integer.parseInt(splat[1]),
-                            true));
+                    sendRequest(() -> bpJsDebugger.setBreakpoint(Integer.parseInt(splat[1]),true));
                 break;
             case "rb":
                 if (!bpJsDebugger.isSetup() || !bpJsDebugger.isStarted()) {
@@ -81,7 +87,7 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
                 break;
             case "go":
                 if (!bpJsDebugger.isStarted()) {
-                    sendRequest(() -> bpJsDebugger.startSync(isSkipBreakPoints, isSkipSyncPoints));
+                    sendRequest(() -> bpJsDebugger.startSync(breakpoints, isSkipSyncPoints, isSkipBreakPoints));
                 }
                 else {
                     sendRequest(bpJsDebugger::continueRun);

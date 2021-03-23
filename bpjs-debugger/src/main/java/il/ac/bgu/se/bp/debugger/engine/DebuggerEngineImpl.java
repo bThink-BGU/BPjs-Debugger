@@ -21,7 +21,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> {
-    private final Logger logger = new Logger(DebuggerEngineImpl.class);
+    private Logger logger;
     private DimHelper dimHelper;
     private final BlockingQueue<DebuggerCommand> queue;
     private final String filename;
@@ -39,6 +39,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
         this.state = state;
         this.debuggerStateHelper = debuggerStateHelper;
         this.debuggerId = debuggerId;
+        this.logger = new Logger(DebuggerEngineImpl.class, debuggerId);
         publisher = new BPEventPublisherImpl();
         queue = new ArrayBlockingQueue<>(1);
         initDim();
@@ -103,7 +104,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
     }
 
     @Override
-    public void addCommand(DebuggerCommand command) {
+    public void addCommand(DebuggerCommand command) throws Exception {
         queue.add(command);
     }
 

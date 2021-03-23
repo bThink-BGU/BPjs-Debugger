@@ -11,17 +11,17 @@ import il.ac.bgu.se.bp.rest.request.SetBreakpointRequest;
 import il.ac.bgu.se.bp.rest.request.ToggleBreakpointsRequest;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.service.code.SourceCodeHelper;
-import il.ac.bgu.se.bp.service.manage.BPjsProgramExecutor;
-import il.ac.bgu.se.bp.service.manage.BPjsProgramValidator;
 import il.ac.bgu.se.bp.service.manage.SessionHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.util.StringUtils;
 
 
-import static il.ac.bgu.se.bp.utils.ResponseHelper.createSuccessResponse;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 
 @Service
 @EnableScheduling
@@ -36,12 +36,6 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
 
     @Autowired
     private SessionHandler<BProgramRunner> sessionHandler;
-
-    @Autowired
-    private BPjsProgramExecutor<BPJsDebugger> bPjsProgramExecutor;
-
-    @Autowired
-    private BPjsProgramValidator<BPJsDebugger> bPjsProgramValidator;
 
     @Autowired
     private SourceCodeHelper sourceCodeHelper;
@@ -75,8 +69,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
             return createErrorResponse(ErrorCode.UNKNOWN_USER);
         }
 
-//        String filepath = sourceCodeHelper.createCodeFile(debugRequest.getSourceCode());
-        String filepath = "BPJSDebuggerForTesting.js";
+        String filepath = sourceCodeHelper.createCodeFile(debugRequest.getSourceCode());
         if (StringUtils.isEmpty(filepath)) {
             return createErrorResponse(ErrorCode.INVALID_SOURCE_CODE);
         }
@@ -92,10 +85,11 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
         sessionHandler.addNewDebugExecution(userId, bpProgramDebugger);
         sessionHandler.updateLastOperationTime(userId);
 
-        bPjsProgramExecutor.debugProgram(bpProgramDebugger, debugRequest.getBreakpoints(),
-                debugRequest.isSkipBreakpointsToggle(), debugRequest.isSkipSyncStateToggle());
+        Map<Integer, Boolean> breakpointsMap = debugRequest.getBreakpoints()
+                .stream()
+                .collect(Collectors.toMap(Function.identity(), b -> Boolean.TRUE));
 
-        return createSuccessResponse();
+        return bpProgramDebugger.startSync(breakpointsMap, debugRequest.isSkipBreakpointsToggle(), debugRequest.isSkipSyncStateToggle());
     }
 
     @Override
@@ -169,11 +163,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
             return createErrorResponse(ErrorCode.UNKNOWN_USER);
         }
 
-        BooleanResponse booleanResponse = bPjsProgramValidator.validateContinueRun(bpJsDebugger);
-        if (booleanResponse.isSuccess()) {
-            bPjsProgramExecutor.continueRun(bpJsDebugger);
-        }
-        return booleanResponse;
+        return bpJsDebugger.continueRun();
     }
 
     @Override
@@ -183,11 +173,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
             return createErrorResponse(ErrorCode.UNKNOWN_USER);
         }
 
-        BooleanResponse booleanResponse = bPjsProgramValidator.validateNextSync(bpJsDebugger);
-        if (booleanResponse.isSuccess()) {
-            bPjsProgramExecutor.nextSync(bpJsDebugger);
-        }
-        return booleanResponse;
+        return bpJsDebugger.nextSync();
     }
 
     private BooleanResponse createErrorResponse(ErrorCode errorCode) {

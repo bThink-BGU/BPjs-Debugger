@@ -23,8 +23,6 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Callable;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static org.junit.Assert.*;
@@ -119,7 +117,7 @@ public class BPJsDebuggerImplTest {
     @Test
     public void startSyncTest() throws InterruptedException {
         setupDebugger();
-        assertSuccessResponse(bpJsDebugger.startSync(false, false));
+        assertSuccessResponse(bpJsDebugger.startSync(new HashMap<>(), false, false));
 
         sleepUntil(e -> bpJsDebugger.isStarted(), 3);
         assertTrue(bpJsDebugger.isStarted());
@@ -132,7 +130,7 @@ public class BPJsDebuggerImplTest {
     @Test
     public void nextSyncTest() throws InterruptedException {
         setupDebugger();
-        assertSuccessResponse(bpJsDebugger.startSync(false, false));
+        assertSuccessResponse(bpJsDebugger.startSync(new HashMap<>(), false, false));
 
         sleepUntil(e -> bpJsDebugger.isStarted(), 3);
         assertTrue(bpJsDebugger.isStarted());
@@ -161,7 +159,7 @@ public class BPJsDebuggerImplTest {
     }
 
    // @Test
-    public void debuggerCommands() {
+    public void debuggerCommands() throws Exception {
         assertErrorResponse(bpJsDebugger.setBreakpoint(1, true), ErrorCode.SETUP_REQUIRED);
         assertErrorResponse(bpJsDebugger.stop(), ErrorCode.SETUP_REQUIRED);
         assertErrorResponse(bpJsDebugger.stepOut(), ErrorCode.SETUP_REQUIRED);
