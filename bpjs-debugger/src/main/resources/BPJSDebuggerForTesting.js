@@ -1,6 +1,14 @@
 bp.registerBThread('bt-world', function () {
     var myvar1 = 10;
     var myvar2 = 20;
+    bp.registerBThread('bt-world-son', function () {
+        bp.sync({ request: bp.Event('son-e') });
+        var myvar1 = 10;
+        var myvar2 = 20;
+        foo(3)
+        var z = myvar1 + 5
+        bp.sync({ request: bp.Event('world12121') });
+    })
     bp.sync({ request: bp.Event('aba') });
     foo(1)
     var z = myvar1 + 5
