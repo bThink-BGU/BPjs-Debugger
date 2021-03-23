@@ -21,18 +21,20 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> {
-    private Logger logger;
-    private DimHelper dimHelper;
-    private final BlockingQueue<DebuggerCommand> queue;
     private final String filename;
+    private final RunnerState state;
+    private final DebuggerStateHelper debuggerStateHelper;
+    private final String debuggerId;
+    private final Logger logger;
+
+    private DimHelper dimHelper;
     private Dim.ContextData lastContextData = null;
     private volatile boolean isRunning;
-    private final RunnerState state;
     private volatile boolean areBreakpointsMuted = false;
     private BProgramSyncSnapshot syncSnapshot = null;
-    private DebuggerStateHelper debuggerStateHelper;
-    private Publisher<BPEvent> publisher;
-    private String debuggerId;
+
+    private final BlockingQueue<DebuggerCommand> queue = new ArrayBlockingQueue<>(1);
+    private final Publisher<BPEvent> publisher = new BPEventPublisherImpl();
 
     public DebuggerEngineImpl(String debuggerId, String filename, RunnerState state, DebuggerStateHelper debuggerStateHelper) {
         this.filename = filename;
@@ -40,8 +42,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
         this.debuggerStateHelper = debuggerStateHelper;
         this.debuggerId = debuggerId;
         this.logger = new Logger(DebuggerEngineImpl.class, debuggerId);
-        publisher = new BPEventPublisherImpl();
-        queue = new ArrayBlockingQueue<>(1);
+
         initDim();
         setIsRunning(true);
     }
@@ -65,7 +66,6 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
 
     @Override
     public void enterInterrupt(Dim.StackFrame stackFrame, String s, String s1) {
-        System.out.println("Breakpoint reached- " + s + " Line no: " + stackFrame.getLineNumber());
         state.setDebuggerState(RunnerState.State.JS_DEBUG);
         lastContextData = stackFrame.contextData();
 
@@ -94,9 +94,6 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
                 DebuggerCommand debuggerCommand = queue.take();
                 logger.info("applying command " + debuggerCommand.toString());
                 debuggerCommand.applyCommand(this);
-            }
-            else {
-                logger.error("IM HERE!");
             }
         } catch (Exception e) {
             logger.error("failed on dispatchNextGuiEvent", e);

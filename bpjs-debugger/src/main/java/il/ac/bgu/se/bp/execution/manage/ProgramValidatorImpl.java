@@ -8,6 +8,7 @@ import il.ac.bgu.se.bp.logger.Logger;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.utils.asyncHelper.AsyncOperationRunner;
 import il.ac.bgu.se.bp.utils.asyncHelper.AsyncOperationRunnerImpl;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 
@@ -20,9 +21,9 @@ import static il.ac.bgu.se.bp.utils.ResponseHelper.createSuccessResponse;
 public class ProgramValidatorImpl implements ProgramValidator<BPJsDebugger> {
 
     private final static Logger logger = new Logger(ProgramValidatorImpl.class);
-    private AsyncOperationRunner asyncOperationRunner = new AsyncOperationRunnerImpl();
 
-
+    @Autowired
+    private AsyncOperationRunner asyncOperationRunner;
 
     @Override
     public BooleanResponse validateNextSync(BPJsDebugger bProg) {

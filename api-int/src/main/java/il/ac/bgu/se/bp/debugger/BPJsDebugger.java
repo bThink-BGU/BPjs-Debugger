@@ -1,10 +1,12 @@
 package il.ac.bgu.se.bp.debugger;
 
 import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
+import il.ac.bgu.se.bp.utils.observer.BPEvent;
+import il.ac.bgu.se.bp.utils.observer.Publisher;
 
 import java.util.Map;
 
-public interface BPJsDebugger<T> extends Debugger<T> {
+public interface BPJsDebugger<T> extends Debugger<T>, Publisher<BPEvent> {
 
     T setup(Map<Integer, Boolean> breakpoints, boolean isSkipBreakpoints, boolean isSkipSyncPoints);
 

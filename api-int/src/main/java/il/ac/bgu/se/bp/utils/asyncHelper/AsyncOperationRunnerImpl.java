@@ -13,26 +13,14 @@ public class AsyncOperationRunnerImpl implements AsyncOperationRunner {
 
     private final static Logger logger = new Logger(AsyncOperationRunnerImpl.class);
 
-//    @Async
-//    @Override
-//    public void runAsyncCallback(Callable callback) {
-//        try {
-//            callback.call();
-//        } catch (Exception e) {
-//            logger.error("failed running async callback", e);
-//        }
-//    }
-
     @Async
     @Override
     public void runAsyncCallback(Callable callback) {
-        new Thread( () -> {
-            try {
-                callback.call();
-            } catch (Exception e) {
-                logger.error("failed running async callback", e);
-            }
-        }).start();
+        try {
+            callback.call();
+        } catch (Exception e) {
+            logger.error("failed running async callback", e);
+        }
     }
 
 }

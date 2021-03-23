@@ -2,6 +2,7 @@ package il.ac.bgu.se.bp.service;
 
 import il.ac.bgu.cs.bp.bpjs.execution.BProgramRunner;
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
+import il.ac.bgu.se.bp.debugger.manage.DebuggerFactory;
 import il.ac.bgu.se.bp.error.ErrorCode;
 import il.ac.bgu.se.bp.execution.BPJsDebuggerImpl;
 import il.ac.bgu.se.bp.logger.Logger;
@@ -39,6 +40,9 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
 
     @Autowired
     private SourceCodeHelper sourceCodeHelper;
+
+    @Autowired
+    private DebuggerFactory<BooleanResponse> debuggerFactory;
 
     @Override
     public BooleanResponse subscribeUser(String sessionId, String userId) {
@@ -79,7 +83,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
     }
 
     private BooleanResponse handleNewDebugRequest(DebugRequest debugRequest, String userId, String filepath) {
-        BPJsDebuggerImpl bpProgramDebugger = new BPJsDebuggerImpl(userId, filepath);
+        BPJsDebugger<BooleanResponse> bpProgramDebugger = debuggerFactory.getBPJsDebugger(userId, filepath);
         bpProgramDebugger.subscribe(sessionHandler);
 
         sessionHandler.addNewDebugExecution(userId, bpProgramDebugger);
