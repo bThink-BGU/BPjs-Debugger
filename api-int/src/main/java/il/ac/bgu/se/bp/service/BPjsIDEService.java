@@ -25,7 +25,6 @@ public interface BPjsIDEService {
     BooleanResponse nextSync(String userId);
 
 
-//    BooleanResponse nextSync();
 //    BooleanResponse setSyncSnapshots(long snapShotTime);
 //
 //    BooleanResponse addExternalEvent(String externalEvent);

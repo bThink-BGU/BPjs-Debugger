@@ -16,7 +16,7 @@ public interface BPJsDebugger<T> extends Debugger<T> {
 
     T setWaitForExternalEvents(boolean shouldWait);
 
-    T startSync(boolean isSkipBreakpoints, boolean isSkipSyncPoints);
+    T startSync(Map<Integer, Boolean> breakpointsMap, boolean isSkipSyncPoints, boolean isSkipBreakpoints);
 
     T nextSync();
     T setIsSkipSyncPoints(boolean isSkipSyncPoints);

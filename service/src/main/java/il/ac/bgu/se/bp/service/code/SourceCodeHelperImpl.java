@@ -7,6 +7,6 @@ public class SourceCodeHelperImpl implements SourceCodeHelper {
 
     @Override
     public String createCodeFile(String sourceCode) {
-        return null;
+        return "BPJSDebuggerForTesting.js";
     }
 }
