@@ -19,7 +19,7 @@
     <dependencies>
         <dependency>
             <groupId>il.ac.bgu.se.bp</groupId>
-            <artifactId>bp-ide-contoller</artifactId>
+            <artifactId>bp-ide-controller</artifactId>
             <version>${project.version}</version>
         </dependency>
 
