@@ -29,5 +29,6 @@ public class Endpoints {
     public static final String SYNC_STATES = "/syncStates";
 
     public static final String EXTERNAL_EVENT = "/externalEvent";
+    public static final String SYNC_SNAPSHOT = "/syncSnapshot";
 
 }

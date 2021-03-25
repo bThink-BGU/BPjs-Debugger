@@ -4,7 +4,6 @@ import il.ac.bgu.cs.bp.bpjs.execution.BProgramRunner;
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
 import il.ac.bgu.se.bp.debugger.manage.DebuggerFactory;
 import il.ac.bgu.se.bp.error.ErrorCode;
-import il.ac.bgu.se.bp.execution.BPJsDebuggerImpl;
 import il.ac.bgu.se.bp.logger.Logger;
 import il.ac.bgu.se.bp.rest.request.*;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
@@ -14,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.util.StringUtils;
-
 
 import java.util.Map;
 import java.util.function.Function;
@@ -205,6 +203,21 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
         String externalEvent = externalEventRequest.getExternalEvent();
         return externalEventRequest.isAddEvent() ? bpJsDebugger.addExternalEvent(externalEvent) :
                 bpJsDebugger.removeExternalEvent(externalEvent);
+    }
+
+    @Override
+    public BooleanResponse setSyncSnapshot(String userId, SetSyncSnapshotRequest setSyncSnapshotRequest) {
+        if (setSyncSnapshotRequest == null) {
+            return createErrorResponse(ErrorCode.INVALID_REQUEST);
+        }
+
+        BPJsDebugger<BooleanResponse> bpJsDebugger = sessionHandler.getBPjsDebuggerByUser(userId);
+        if (bpJsDebugger == null) {
+            return createErrorResponse(ErrorCode.UNKNOWN_USER);
+        }
+
+        long snapShotTime = setSyncSnapshotRequest.getSnapShotTime();
+        return bpJsDebugger.setSyncSnapshot(snapShotTime);
     }
 
     private BooleanResponse createErrorResponse(ErrorCode errorCode) {
