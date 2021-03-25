@@ -45,7 +45,6 @@ public class DebuggerStateHelper {
 
         if (state.getDebuggerState() == RunnerState.State.JS_DEBUG) {
             bThreadInfoList.addAll(getRecentlyAddedBTInfo(state, lastContextData));
-
         } else {
             this.recentlyRegisteredBT = null;
             this.newBTInterpeterFrames = null;
@@ -73,9 +72,9 @@ public class DebuggerStateHelper {
         try {
             Object lastInterpreterFrame = getValue(cx, "lastInterpreterFrame");
             Object fnOrScript = lastInterpreterFrame == null ? null : getValue(lastInterpreterFrame, "fnOrScript");
-            for (Pair<String, Object> p : recentlyRegisteredBT) {
-                Object o = p.getRight();
-                String btName = p.getLeft();
+            for (Pair<String, Object> recentlyRegisteredPair : recentlyRegisteredBT) {
+                Object o = recentlyRegisteredPair.getRight();
+                String btName = recentlyRegisteredPair.getLeft();
                 if (o == fnOrScript) { // current running bt
                     Map<Integer, Map<String, String>> env = getEnvDebug(lastInterpreterFrame, lastContextData,btName);
                     newBTInterpeterFrames.put(btName, lastInterpreterFrame);
@@ -83,7 +82,7 @@ public class DebuggerStateHelper {
                 } else {
                     Object savedInterpreterFrame = newBTInterpeterFrames.get(btName);
                     Map<Integer, Map<String, String>> env = savedInterpreterFrame == null ? new HashMap<>() :
-                            getEnvDebug(savedInterpreterFrame, lastContextData,p.getLeft());
+                            getEnvDebug(savedInterpreterFrame, lastContextData,btName);
                     bThreadInfoList.add(new BThreadInfo(btName, env));
                 }
             }
