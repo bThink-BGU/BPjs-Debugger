@@ -29,21 +29,21 @@ Base URL is localhost:8080/bpjs
 
 Supported endpoints:
 
-| Command                     | Endpoint           | Method | Parameters                                                                                             |
-| --------------------------- | ------------------ | ------ | ------------------------------------------------------------------------------------------------------ |
-| Run                         | bpjs/run           | POST   | {sourceCode: String}                                                                                   |
-| Debug                       | bpjs/debug         | POST   | {sourceCode: String, breakpoints: int[], skipBreakpointsToggle: boolean, skipSyncStateToggle: boolean} |
-| Add / remove Breakpoint     | bpjs/breakpoint    | POST   | {lineNumber: number, stopOnBreakpoint: boolean}                                                        |
-| Toggle Mute Breakpoints     | bpjs/breakpoint    | PUT    | {skipBreakpoints: boolean}                                                                             |
-| Toggle Mute Sync States     | bpjs/syncStates    | PUT    | {skipSyncStates: boolean}                                                                              |
-| Stop                        | bpjs/stop          | GET    | None                                                                                                   |
-| Step Out                    | bpjs/stepOut       | GET    | None                                                                                                   |
-| Step Into                   | bpjs/stepInto      | GET    | None                                                                                                   |
-| Step Over                   | bpjs/stepOver      | GET    | None                                                                                                   |
-| Continue                    | bpjs/continue      | GET    | None                                                                                                   |
-| Next Sync                   | bpjs/nextSync      | GET    | None                                                                                                   |
-| Add / Remove External Event | bpjs/externalEvent | POST   | {externalEvent: String, addEvent: boolean}                                                             |
-| Set Sync Snapshot           | bpjs/syncSnapshot  | POST   | {snapShotTime: long}                                                                                   |
+| Command                     | Endpoint           | Method | Request                                                                                                | Headers |
+| --------------------------- | ------------------ | ------ | ------------------------------------------------------------------------------------------------------ | ------- |
+| Run                         | bpjs/run           | POST   | {sourceCode: String}                                                                                   | userId  |
+| Debug                       | bpjs/debug         | POST   | {sourceCode: String, breakpoints: int[], skipBreakpointsToggle: boolean, skipSyncStateToggle: boolean} | userId  |
+| Add / remove Breakpoint     | bpjs/breakpoint    | POST   | {lineNumber: number, stopOnBreakpoint: boolean}                                                        | userId  |
+| Toggle Mute Breakpoints     | bpjs/breakpoint    | PUT    | {skipBreakpoints: boolean}                                                                             | userId  |
+| Toggle Mute Sync States     | bpjs/syncStates    | PUT    | {skipSyncStates: boolean}                                                                              | userId  |
+| Stop                        | bpjs/stop          | GET    | None                                                                                                   | userId  |
+| Step Out                    | bpjs/stepOut       | GET    | None                                                                                                   | userId  |
+| Step Into                   | bpjs/stepInto      | GET    | None                                                                                                   | userId  |
+| Step Over                   | bpjs/stepOver      | GET    | None                                                                                                   | userId  |
+| Continue                    | bpjs/continue      | GET    | None                                                                                                   | userId  |
+| Next Sync                   | bpjs/nextSync      | GET    | None                                                                                                   | userId  |
+| Add / Remove External Event | bpjs/externalEvent | POST   | {externalEvent: String, addEvent: boolean}                                                             | userId  |
+| Set Sync Snapshot           | bpjs/syncSnapshot  | POST   | {snapShotTime: long}                                                                                   | userId  |
 
 
 [BP JS Framework](http://wwww.bpjside.tk)
