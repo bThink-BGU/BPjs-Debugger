@@ -38,6 +38,8 @@ public enum ErrorCode {
         this.errorCode = errorCode;
     }
 
-
-
+    @Override
+    public String toString() {
+        return name();
+    }
 }
