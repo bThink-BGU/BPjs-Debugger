@@ -115,4 +115,10 @@ public class BPjsIDERestControllerImpl implements BPjsIDERestController {
         return bPjsIDEService.externalEvent(userId, externalEventRequest);
     }
 
+    @Override
+    @RequestMapping(value = SYNC_SNAPSHOT, method = RequestMethod.POST)
+    public @ResponseBody
+    BooleanResponse setSyncSnapshot(@RequestHeader("userId") String userId, SetSyncSnapshotRequest setSyncSnapshotRequest) {
+        return bPjsIDEService.setSyncSnapshot(userId, setSyncSnapshotRequest);
+    }
 }

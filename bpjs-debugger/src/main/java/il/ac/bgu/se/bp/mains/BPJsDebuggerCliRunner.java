@@ -1,14 +1,14 @@
 package il.ac.bgu.se.bp.mains;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import il.ac.bgu.se.bp.debugger.BPJsDebugger;
 import il.ac.bgu.se.bp.config.BPJsDebuggerConfiguration;
+import il.ac.bgu.se.bp.debugger.BPJsDebugger;
 import il.ac.bgu.se.bp.debugger.manage.DebuggerFactory;
+import il.ac.bgu.se.bp.rest.response.BooleanResponse;
+import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
 import il.ac.bgu.se.bp.socket.console.ConsoleMessage;
 import il.ac.bgu.se.bp.socket.exit.ProgramExit;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
-import il.ac.bgu.se.bp.rest.response.BooleanResponse;
-import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
 import il.ac.bgu.se.bp.utils.observer.BPEvent;
 import il.ac.bgu.se.bp.utils.observer.Subscriber;
 import il.ac.bgu.se.bp.utils.visitor.PublisherVisitor;
@@ -152,7 +152,7 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
                 sendGetSyncSnapshotsResponse(bpJsDebugger::getSyncSnapshotsHistory);
                 break;
             case "sss":  // set syncsnapshot
-                sendRequest(() -> bpJsDebugger.setSyncSnapshots(Long.parseLong(splat[1])));
+                sendRequest(() -> bpJsDebugger.setSyncSnapshot(Long.parseLong(splat[1])));
                 break;
             case "stop":
                 sendRequest(bpJsDebugger::stop);

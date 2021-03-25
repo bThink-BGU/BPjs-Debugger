@@ -23,7 +23,7 @@ public interface BPJsDebugger<T> extends Debugger<T>, Publisher<BPEvent> {
     T nextSync();
     T toggleMuteSyncPoints(boolean toggleMuteSyncPoints);
     GetSyncSnapshotsResponse getSyncSnapshotsHistory();
-    T setSyncSnapshots(long snapShotTime);
+    T setSyncSnapshot(long snapShotTime);
 
     RunnerState getDebuggerState();
 }

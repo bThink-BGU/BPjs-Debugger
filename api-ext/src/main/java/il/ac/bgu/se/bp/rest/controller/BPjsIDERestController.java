@@ -25,5 +25,6 @@ public interface BPjsIDERestController {
     BooleanResponse nextSync(String userId);
 
     BooleanResponse externalEvent(String userId, ExternalEventRequest externalEventRequest);
+    BooleanResponse setSyncSnapshot(String userId, SetSyncSnapshotRequest setSyncSnapshotRequest);
 
 }

@@ -24,7 +24,7 @@ public interface BPjsIDEService {
 
     BooleanResponse externalEvent(String userId, ExternalEventRequest externalEventRequest);
 
-//    BooleanResponse setSyncSnapshots(long snapShotTime);
+    BooleanResponse setSyncSnapshot(String userId, SetSyncSnapshotRequest setSyncSnapshotRequest);
 //    BooleanResponse setWaitForExternalEvents(boolean shouldWait);
 //    GetSyncSnapshotsResponse getSyncSnapshotsHistory();
 }

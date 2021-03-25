@@ -15,12 +15,12 @@ import il.ac.bgu.se.bp.debugger.engine.SyncSnapshotHolder;
 import il.ac.bgu.se.bp.debugger.engine.SyncSnapshotHolderImpl;
 import il.ac.bgu.se.bp.debugger.engine.events.BPExitEvent;
 import il.ac.bgu.se.bp.debugger.manage.ProgramValidator;
-import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
-import il.ac.bgu.se.bp.socket.state.EventInfo;
 import il.ac.bgu.se.bp.error.ErrorCode;
 import il.ac.bgu.se.bp.logger.Logger;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
+import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
+import il.ac.bgu.se.bp.socket.state.EventInfo;
 import il.ac.bgu.se.bp.utils.DebuggerBProgramRunnerListener;
 import il.ac.bgu.se.bp.utils.DebuggerPrintStream;
 import il.ac.bgu.se.bp.utils.DebuggerStateHelper;
@@ -140,7 +140,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     }
 
     @Override
-    public BooleanResponse setSyncSnapshots(long snapShotTime) {
+    public BooleanResponse setSyncSnapshot(long snapShotTime) {
         BProgramSyncSnapshot newSnapshot = syncSnapshotHolder.popKey(snapShotTime);
         if (newSnapshot == null) {
             return createErrorResponse(ErrorCode.CANNOT_REPLACE_SNAPSHOT);
