@@ -6,6 +6,8 @@ The project contains 5 Modules:
 - service - manipulates clients and their running sessions - run/debug sessions
 - controller - responsible for the incoming HTTP/WS requests and messages
 
+---
+
 ## Running the CLI Debugger
 - under bpjs-debugger:
     - run il.ac.bgu.se.bp.mains.BPJsDebuggerCliRunner 
@@ -19,7 +21,6 @@ IntelliJ:
 Terminal:
 - cd controller
 - mvn spring-boot:run
-
 
 ---
 
@@ -45,5 +46,6 @@ Supported endpoints:
 | Add / Remove External Event | bpjs/externalEvent | POST   | {externalEvent: String, addEvent: boolean}                                                             | userId  |
 | Set Sync Snapshot           | bpjs/syncSnapshot  | POST   | {snapShotTime: long}                                                                                   | userId  |
 
+---
 
 [BP JS Framework](http://wwww.bpjside.tk)
