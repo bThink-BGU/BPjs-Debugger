@@ -3,6 +3,7 @@ package il.ac.bgu.se.bp.service.manage;
 import il.ac.bgu.cs.bp.bpjs.execution.BProgramRunner;
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
 import il.ac.bgu.se.bp.logger.Logger;
+import il.ac.bgu.se.bp.service.code.SourceCodeHelper;
 import il.ac.bgu.se.bp.service.notification.NotificationHandler;
 import il.ac.bgu.se.bp.socket.console.ConsoleMessage;
 import il.ac.bgu.se.bp.socket.exit.ProgramExit;
@@ -28,9 +29,9 @@ public class SessionHandlerImpl implements SessionHandler<BProgramRunner> {
     private static final int ONE_HOUR = 60 * 60 * 1000;
     private static final int BP_JS_PROGRAM_TTL = 3 * ONE_HOUR;
 
-    private static final Map<String, BPJsDebugger> bpDebugProgramsByUsers = new ConcurrentHashMap<>();
-    private static final Map<String, BProgramRunner> bpRunProgramsByUsers = new ConcurrentHashMap<>();
-    private static final Map<String, LocalDateTime> bpUsersLastOperationTime = new ConcurrentHashMap<>();
+    private static final Map<String, UserProgramSession<BPJsDebugger>> bpDebugProgramsByUsers = new ConcurrentHashMap<>();
+    private static final Map<String, UserProgramSession<BProgramRunner>> bpRunProgramsByUsers = new ConcurrentHashMap<>();
+    private static final Map<String, UserSession> unknownSessions = new ConcurrentHashMap<>();
 
     @Autowired
     @Qualifier("stateNotificationHandlerImpl")
@@ -40,58 +41,98 @@ public class SessionHandlerImpl implements SessionHandler<BProgramRunner> {
     @Qualifier("consoleNotificationHandlerImpl")
     private NotificationHandler consoleNotificationHandler;
 
+    @Autowired
+    private SourceCodeHelper sourceCodeHelper;
 
     @Override
-    public void addNewRunExecution(String userId, BProgramRunner bProgramRunner) {
-        bpRunProgramsByUsers.put(userId, bProgramRunner);
+    public void addUser(String sessionId, String userId) {
+        logger.info("adding user: {0}", userId);
+        unknownSessions.put(userId, new UserSession(sessionId, userId, getCurrentLocalDateTime()));
+    }
+
+    @Override
+    public void addNewRunExecution(String userId, BProgramRunner bProgramRunner, String filename) {
+        UserSession existingUserSession = unknownSessions.get(userId);
+        if (existingUserSession == null) {
+            return;
+        }
+
+        bpRunProgramsByUsers.put(userId, existingUserSession.withProgram(bProgramRunner).withFilename(filename));
         updateLastOperationTime(userId);
     }
 
     @Override
     public BProgramRunner getBPjsRunnerByUser(String userId) {
-        return bpRunProgramsByUsers.get(userId);
+        UserProgramSession<BProgramRunner> userSession = bpRunProgramsByUsers.get(userId);
+        if (userSession == null) {
+            return null;
+        }
+
+        return userSession.getProgram();
     }
 
     @Override
-    public void addNewDebugExecution(String userId, BPJsDebugger bpProgramDebugger) {
-        bpDebugProgramsByUsers.put(userId, bpProgramDebugger);
+    public void addNewDebugExecution(String userId, BPJsDebugger bpProgramDebugger, String filename) {
+        UserSession existingUserSession = unknownSessions.get(userId);
+        if (existingUserSession == null) {
+            return;
+        }
+
+        bpDebugProgramsByUsers.put(userId, existingUserSession.withProgram(bpProgramDebugger).withFilename(filename));
         updateLastOperationTime(userId);
     }
 
     @Override
     public BPJsDebugger getBPjsDebuggerByUser(String userId) {
-        return bpDebugProgramsByUsers.get(userId);
+        UserProgramSession<BPJsDebugger> userSession = bpDebugProgramsByUsers.get(userId);
+        if (userSession == null) {
+            return null;
+        }
+
+        return userSession.getProgram();
     }
 
     @Override
     public boolean validateUserId(String userId) {
         return !StringUtils.isEmpty(userId) &&
-                bpUsersLastOperationTime.containsKey(userId);
+                getUserSession(userId) != null;
     }
 
     @Override
-    public void addUser(String sessionId, String userId) {
-        logger.info("adding user: {0}", userId);
-        updateLastOperationTime(userId);
+    public UserSession getUserSession(String userId) {
+        UserSession userSession = unknownSessions.get(userId);
+        userSession = userSession == null ? bpRunProgramsByUsers.get(userId) : userSession;
+        return userSession == null ? bpDebugProgramsByUsers.get(userId) : userSession;
     }
 
     @Override
     public void updateLastOperationTime(String userId) {
-        bpUsersLastOperationTime.put(userId, getCurrentLocalDateTime());
+        UserSession userSession = getUserSession(userId);
+        if (userSession == null) {
+            return;
+        }
+
+        userSession.setLastOperationTime(getCurrentLocalDateTime());
     }
 
     @Override
     public void removeUser(String userId) {
-        bpUsersLastOperationTime.remove(userId);
+        logger.info("removing user: {0}", userId);
+        unknownSessions.remove(userId);
         removeUserPrograms(userId);
     }
 
     @Scheduled(fixedRate = BP_JS_PROGRAM_TTL)
     private void cleanProgramsReachedThreshold() {
-        LocalDateTime currentTime = getCurrentLocalDateTime();
+        verifySessionsThreshold(unknownSessions, BP_JS_PROGRAM_TTL);
+        verifySessionsThreshold(bpRunProgramsByUsers, BP_JS_PROGRAM_TTL);
+        verifySessionsThreshold(bpDebugProgramsByUsers, BP_JS_PROGRAM_TTL);
+    }
 
-        bpUsersLastOperationTime.forEach((userId, lastUpdateTime) -> {
-            if (!lastUpdateTime.plusHours(BP_JS_PROGRAM_TTL).isAfter(currentTime)) {
+    private <T> void verifySessionsThreshold(Map<String, ? extends UserSession> userSessionsByIds, int threshold) {
+        LocalDateTime currentTime = getCurrentLocalDateTime();
+        userSessionsByIds.forEach((userId, userSession) -> {
+            if (!userSession.getLastOperationTime().plusHours(threshold).isAfter(currentTime)) {
                 removeUser(userId);
             }
         });
@@ -104,7 +145,6 @@ public class SessionHandlerImpl implements SessionHandler<BProgramRunner> {
         }
         logger.debug("sending BPDebuggerState update");
         stateNotificationHandler.sendNotification(userId, debuggerState);
-//        visit(userId, new ConsoleMessage("console.log..... what a message"));      //temp
     }
 
     @Override
@@ -127,9 +167,16 @@ public class SessionHandlerImpl implements SessionHandler<BProgramRunner> {
     }
 
     private void removeUserPrograms(String userId) {
-        logger.info("removing user: {0}", userId);
-        bpDebugProgramsByUsers.remove(userId);
-        bpRunProgramsByUsers.remove(userId);
+        logger.info("removing programs associated with user: {0}", userId);
+        removeUserProgramFrom(userId, bpDebugProgramsByUsers);
+        removeUserProgramFrom(userId, bpRunProgramsByUsers);
+    }
+
+    private void removeUserProgramFrom(String userId, Map<String, ? extends UserProgramSession> programByUserId) {
+        UserProgramSession userProgramSession = programByUserId.remove(userId);
+        if (userProgramSession != null) {
+            sourceCodeHelper.removeCodeFile(userProgramSession.getFilename());
+        }
     }
 
     private LocalDateTime getCurrentLocalDateTime() {
