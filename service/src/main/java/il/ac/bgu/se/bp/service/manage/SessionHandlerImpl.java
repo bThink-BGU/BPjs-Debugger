@@ -107,13 +107,20 @@ public class SessionHandlerImpl implements SessionHandler<BProgramRunner> {
 
     @Override
     public void updateLastOperationTime(String userId) {
-        UserSession userSession = getUserSession(userId);
+        updateLastOperationTime(unknownSessions, userId);
+        updateLastOperationTime(bpRunProgramsByUsers, userId);
+        updateLastOperationTime(bpDebugProgramsByUsers, userId);
+    }
+
+    private void updateLastOperationTime(Map<String, ? extends UserSession> sessions, String userId) {
+        UserSession userSession = sessions.get(userId);
         if (userSession == null) {
             return;
         }
 
         userSession.setLastOperationTime(getCurrentLocalDateTime());
     }
+
 
     @Override
     public void removeUser(String userId) {
