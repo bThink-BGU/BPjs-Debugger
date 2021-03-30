@@ -103,6 +103,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
             return createErrorResponse(ErrorCode.UNKNOWN_USER);
         }
 
+        sessionHandler.updateLastOperationTime(userId);
         return bpJsDebugger.setBreakpoint(setBreakpointRequest.getLineNumber(), setBreakpointRequest.isStopOnBreakpoint());
     }
 
@@ -117,6 +118,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
             return createErrorResponse(ErrorCode.UNKNOWN_USER);
         }
 
+        sessionHandler.updateLastOperationTime(userId);
         return bpJsDebugger.toggleMuteBreakpoints(toggleBreakPointStatus.isSkipBreakpoints());
     }
 
@@ -131,6 +133,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
             return createErrorResponse(ErrorCode.UNKNOWN_USER);
         }
 
+        sessionHandler.updateLastOperationTime(userId);
         return bpJsDebugger.toggleMuteSyncPoints(toggleMuteSyncPoints.isSkipSyncStates());
     }
 
@@ -140,6 +143,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
         if (bpJsDebugger == null) {
             return createErrorResponse(ErrorCode.UNKNOWN_USER);
         }
+        sessionHandler.updateLastOperationTime(userId);
         return bpJsDebugger.stop();
     }
 
@@ -149,6 +153,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
         if (bpJsDebugger == null) {
             return createErrorResponse(ErrorCode.UNKNOWN_USER);
         }
+        sessionHandler.updateLastOperationTime(userId);
         return bpJsDebugger.stepOut();
     }
 
@@ -158,6 +163,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
         if (bpJsDebugger == null) {
             return createErrorResponse(ErrorCode.UNKNOWN_USER);
         }
+        sessionHandler.updateLastOperationTime(userId);
         return bpJsDebugger.stepInto();
     }
 
@@ -167,6 +173,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
         if (bpJsDebugger == null) {
             return createErrorResponse(ErrorCode.UNKNOWN_USER);
         }
+        sessionHandler.updateLastOperationTime(userId);
         return bpJsDebugger.stepOver();
     }
 
@@ -176,7 +183,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
         if (bpJsDebugger == null) {
             return createErrorResponse(ErrorCode.UNKNOWN_USER);
         }
-
+        sessionHandler.updateLastOperationTime(userId);
         return bpJsDebugger.continueRun();
     }
 
@@ -186,7 +193,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
         if (bpJsDebugger == null) {
             return createErrorResponse(ErrorCode.UNKNOWN_USER);
         }
-
+        sessionHandler.updateLastOperationTime(userId);
         return bpJsDebugger.nextSync();
     }
 
@@ -201,6 +208,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
             return createErrorResponse(ErrorCode.UNKNOWN_USER);
         }
 
+        sessionHandler.updateLastOperationTime(userId);
         String externalEvent = externalEventRequest.getExternalEvent();
         return externalEventRequest.isAddEvent() ? bpJsDebugger.addExternalEvent(externalEvent) :
                 bpJsDebugger.removeExternalEvent(externalEvent);
@@ -217,6 +225,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
             return createErrorResponse(ErrorCode.UNKNOWN_USER);
         }
 
+        sessionHandler.updateLastOperationTime(userId);
         long snapShotTime = setSyncSnapshotRequest.getSnapShotTime();
         return bpJsDebugger.setSyncSnapshot(snapShotTime);
     }
