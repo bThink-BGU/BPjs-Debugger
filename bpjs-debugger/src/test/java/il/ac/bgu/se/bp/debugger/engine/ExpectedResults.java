@@ -56,6 +56,6 @@ public class ExpectedResults {
         requested.addAll(requested2);
         bThreadInfoList.add(new BThreadInfo("bt-test-2", bt2Env, null, null, requested2));
         List<EventInfo> emptyEvents = new ArrayList<>();
-        return new BPDebuggerState(bThreadInfoList, new EventsStatus(emptyEvents, emptyEvents, requested), null);
+        return new BPDebuggerState(bThreadInfoList, new EventsStatus(emptyEvents, emptyEvents, requested));
     }
 }

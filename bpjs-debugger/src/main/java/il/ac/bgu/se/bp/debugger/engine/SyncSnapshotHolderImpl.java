@@ -3,10 +3,8 @@ package il.ac.bgu.se.bp.debugger.engine;
 import il.ac.bgu.cs.bp.bpjs.model.*;
 import il.ac.bgu.se.bp.utils.Pair;
 
-import java.util.List;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class SyncSnapshotHolderImpl implements SyncSnapshotHolder<BProgramSyncSnapshot, BEvent> {
 
@@ -44,6 +42,18 @@ public class SyncSnapshotHolderImpl implements SyncSnapshotHolder<BProgramSyncSn
     @Override
     public SortedMap<Long, Pair<BProgramSyncSnapshot, BEvent>> getAllSyncSnapshots() {
         return cloneTreeMap(snapshotsByTimeChosen);
+    }
+
+    @Override
+    public List<BEvent> getEventsHistoryStack(int from, int to) {
+        List<BEvent> eventsHistory = snapshotsByTimeChosen.values().stream().map(Pair::getRight).collect(Collectors.toList());
+        Collections.reverse(eventsHistory);
+        if(from == -1 && to == -1)
+            return eventsHistory;
+        if(from > eventsHistory.size())
+            return new LinkedList<>();
+        int endIdx = to > eventsHistory.size()? eventsHistory.size(): to;
+        return eventsHistory.subList(from,endIdx);
     }
 
     private TreeMap<Long, Pair<BProgramSyncSnapshot, BEvent>> cloneTreeMap(SortedMap<Long, Pair<BProgramSyncSnapshot, BEvent>> treeMap) {

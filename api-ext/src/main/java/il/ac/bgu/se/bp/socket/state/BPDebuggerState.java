@@ -1,45 +1,37 @@
 package il.ac.bgu.se.bp.socket.state;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class BPDebuggerState implements Serializable {
     private static final long serialVersionUID = 6320377753998745711L;
 
     private List<BThreadInfo> bThreadInfoList;
     private EventsStatus eventsStatus;
-    private EventInfo chosenEvent;
+    private List<EventInfo> eventsHistory;
     private String currentRunningBT;
     private Integer currentLineNumber;
 
 
     public BPDebuggerState() {
         this.bThreadInfoList = new ArrayList<>();
+        this.eventsHistory = new LinkedList<>();
         this.eventsStatus = new EventsStatus(new ArrayList<>(), new ArrayList<>(), new HashSet<>());
     }
 
     public BPDebuggerState(List<BThreadInfo> bThreadInfoList, EventsStatus eventsStatus) {
         this.bThreadInfoList = bThreadInfoList;
         this.eventsStatus = eventsStatus;
+        this.eventsHistory = new LinkedList<>();
     }
 
-    public BPDebuggerState(List<BThreadInfo> bThreadInfoList, EventsStatus eventsStatus, EventInfo chosenEvent) {
+    public BPDebuggerState(List<BThreadInfo> bThreadInfoList, EventsStatus eventsStatus , List<EventInfo> eventsHistory, String currentRunningBT, Integer currentLineNumber) {
         this.bThreadInfoList = bThreadInfoList;
         this.eventsStatus = eventsStatus;
-        this.chosenEvent = chosenEvent;
-    }
-
-    public BPDebuggerState(List<BThreadInfo> bThreadInfoList, EventsStatus eventsStatus, EventInfo chosenEvent, String currentRunningBT, Integer currentLineNumber) {
-        this.bThreadInfoList = bThreadInfoList;
-        this.eventsStatus = eventsStatus;
-        this.chosenEvent = chosenEvent;
+        this.eventsHistory = eventsHistory;
         this.currentRunningBT = currentRunningBT;
         this.currentLineNumber = currentLineNumber;
     }
-
     public String getCurrentRunningBT() {
         return currentRunningBT;
     }
@@ -72,14 +64,6 @@ public class BPDebuggerState implements Serializable {
         this.eventsStatus = eventsStatus;
     }
 
-    public EventInfo getChosenEvent() {
-        return chosenEvent;
-    }
-
-    public void setChosenEvent(EventInfo chosenEvent) {
-        this.chosenEvent = chosenEvent;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -91,7 +75,6 @@ public class BPDebuggerState implements Serializable {
         BPDebuggerState that = (BPDebuggerState) o;
         return bThreadInfoList.containsAll(that.bThreadInfoList) && that.bThreadInfoList.containsAll(bThreadInfoList) &&
                 Objects.equals(eventsStatus, that.eventsStatus) &&
-                Objects.equals(chosenEvent, that.chosenEvent) &&
                 Objects.equals(currentRunningBT, that.currentRunningBT) &&
                 Objects.equals(currentLineNumber, that.currentLineNumber);
     }
@@ -109,7 +92,9 @@ public class BPDebuggerState implements Serializable {
                 .append("\n")
                 .append("\tcurrentLineNumber: ").append(currentLineNumber)
                 .append("\n")
-                .append("}");
+                .append("\teventsHistory: \n");
+                eventsHistory.forEach(eventInfo -> s.append("\t"+eventInfo.toString() + "\n"));
+                s.append("}");
 
         return s.toString();
     }
@@ -119,7 +104,7 @@ public class BPDebuggerState implements Serializable {
         return "BPDebuggerState{" +
                 "bThreadInfoList=" + bThreadInfoList +
                 ", eventsStatus=" + eventsStatus +
-                ", chosenEvent=" + chosenEvent +
+                ", eventsHistory=" + eventsHistory +
                 ", currentRunningBT='" + currentRunningBT + '\'' +
                 ", currentLineNumber=" + currentLineNumber +
                 '}';
