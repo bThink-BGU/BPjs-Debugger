@@ -50,7 +50,8 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
     public BooleanResponse run(RunRequest runRequest, String userId) {
         BProgramRunner bProgramRunner = new BProgramRunner();
 
-        sessionHandler.addNewRunExecution(userId, bProgramRunner);
+        //todo
+        sessionHandler.addNewRunExecution(userId, bProgramRunner, "filename");
         sessionHandler.updateLastOperationTime(userId);
 
 
@@ -68,20 +69,20 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
             return createErrorResponse(ErrorCode.UNKNOWN_USER);
         }
 
-        String filepath = sourceCodeHelper.createCodeFile(debugRequest.getSourceCode());
-        if (StringUtils.isEmpty(filepath)) {
+        String filename = sourceCodeHelper.createCodeFile(debugRequest.getSourceCode());
+        if (StringUtils.isEmpty(filename)) {
             return createErrorResponse(ErrorCode.INVALID_SOURCE_CODE);
         }
 
         logger.info("received debug request for user: {0}", userId);
-        return handleNewDebugRequest(debugRequest, userId, filepath);
+        return handleNewDebugRequest(debugRequest, userId, filename);
     }
 
-    private BooleanResponse handleNewDebugRequest(DebugRequest debugRequest, String userId, String filepath) {
-        BPJsDebugger<BooleanResponse> bpProgramDebugger = debuggerFactory.getBPJsDebugger(userId, filepath);
+    private BooleanResponse handleNewDebugRequest(DebugRequest debugRequest, String userId, String filename) {
+        BPJsDebugger<BooleanResponse> bpProgramDebugger = debuggerFactory.getBPJsDebugger(userId, filename);
         bpProgramDebugger.subscribe(sessionHandler);
 
-        sessionHandler.addNewDebugExecution(userId, bpProgramDebugger);
+        sessionHandler.addNewDebugExecution(userId, bpProgramDebugger, filename);
         sessionHandler.updateLastOperationTime(userId);
 
         Map<Integer, Boolean> breakpointsMap = debugRequest.getBreakpoints()

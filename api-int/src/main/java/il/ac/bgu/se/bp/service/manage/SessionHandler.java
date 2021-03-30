@@ -7,10 +7,12 @@ import il.ac.bgu.se.bp.utils.observer.Subscriber;
 import il.ac.bgu.se.bp.utils.visitor.PublisherVisitor;
 
 public interface SessionHandler<T> extends PublisherVisitor, Subscriber<BPEvent> {
-    void addNewRunExecution(String userId, T bProgramRunner);
+    void addUser(String sessionId, String userId);
+
+    void addNewRunExecution(String userId, T bProgramRunner, String filename);
     T getBPjsRunnerByUser(String userId);
 
-    void addNewDebugExecution(String userId, BPJsDebugger<BooleanResponse> bpProgramDebugger);
+    void addNewDebugExecution(String userId, BPJsDebugger<BooleanResponse> bpProgramDebugger, String filename);
     BPJsDebugger<BooleanResponse> getBPjsDebuggerByUser(String userId);
 
     void updateLastOperationTime(String userId);
@@ -18,5 +20,5 @@ public interface SessionHandler<T> extends PublisherVisitor, Subscriber<BPEvent>
 
     boolean validateUserId(String userId);
 
-    void addUser(String sessionId, String userId);
+    UserSession getUserSession(String userId);
 }
