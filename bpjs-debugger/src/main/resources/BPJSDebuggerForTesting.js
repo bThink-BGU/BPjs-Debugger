@@ -1,5 +1,5 @@
 bp.registerBThread('bt-world', function () {
-    var myvar1 = 10;
+    var myvar1 = {a: 10,b: 20};
     var myvar2 = 20;
     bp.registerBThread('bt-world-son', function () {
         bp.sync({ request: bp.Event('son-e') });

@@ -145,6 +145,7 @@ public class DebuggerEngineImplTest {
         debuggerStateHelper.setRecentlyRegisteredBthreads(recentlyRegistered);
         try {
             FieldSetter.setField(debuggerStateHelper, DebuggerStateHelper.class.getDeclaredField("newBTInterpeterFrames"), new HashMap<>());
+            FieldSetter.setField(debuggerStateHelper, DebuggerStateHelper.class.getDeclaredField("syncSnapshotHolder"), new SyncSnapshotHolderImpl());
         } catch (NoSuchFieldException e) {
             e.printStackTrace();
         }

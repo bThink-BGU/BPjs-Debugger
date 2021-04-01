@@ -1,10 +1,12 @@
 package il.ac.bgu.se.bp.utils;
 
+import com.google.gson.Gson;
 import il.ac.bgu.cs.bp.bpjs.model.BEvent;
 import il.ac.bgu.cs.bp.bpjs.model.BProgramSyncSnapshot;
 import il.ac.bgu.cs.bp.bpjs.model.BThreadSyncSnapshot;
 import il.ac.bgu.cs.bp.bpjs.model.SyncStatement;
 import il.ac.bgu.cs.bp.bpjs.model.eventsets.EventSet;
+import il.ac.bgu.se.bp.debugger.engine.SyncSnapshotHolder;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
 import il.ac.bgu.se.bp.socket.state.BThreadInfo;
 import il.ac.bgu.se.bp.socket.state.EventInfo;
@@ -24,11 +26,10 @@ public class DebuggerStateHelper {
     private Set<Pair<String, Object>> recentlyRegisteredBT = null;
     private HashMap<String, Object> newBTInterpeterFrames = new HashMap<>();
     private BPDebuggerState lastState = null;
-    private BEvent lastChosenEvent;
     private String currentRunningBT = null;
-
-    public void setLastChosenEvent(BEvent lastChosenEvent) {
-        this.lastChosenEvent = lastChosenEvent;
+    private SyncSnapshotHolder<BProgramSyncSnapshot, BEvent> syncSnapshotHolder;
+    public DebuggerStateHelper(SyncSnapshotHolder syncSnapshotHolder) {
+        this.syncSnapshotHolder = syncSnapshotHolder;
     }
 
     public BPDebuggerState generateDebuggerState(BProgramSyncSnapshot syncSnapshot, RunnerState state, Dim.ContextData lastContextData) {
@@ -60,10 +61,10 @@ public class DebuggerStateHelper {
         Set<EventInfo> requestedEvents = requested.stream().map((e) -> new EventInfo(e.getName())).collect(Collectors.toSet());
 
         EventsStatus eventsStatus = new EventsStatus(waitEvents, blockedEvents, requestedEvents);
-        EventInfo chosenEvent = lastChosenEvent != null ? new EventInfo(lastChosenEvent.getName()) : null;
         Integer lineNumber = lastContextData == null? null : lastContextData.frameCount() > 0 ? lastContextData.getFrame(0).getLineNumber() : null;
+        List<EventInfo> events = this.syncSnapshotHolder.getEventsHistoryStack(0,10).stream().filter(Objects::nonNull).map(bEvent ->  new EventInfo(bEvent.name)).collect(Collectors.toList());
 
-        return new BPDebuggerState(bThreadInfoList, eventsStatus, chosenEvent, currentRunningBT, lineNumber);
+        return new BPDebuggerState(bThreadInfoList, eventsStatus, events, currentRunningBT, lineNumber);
     }
 
     private List<BThreadInfo> getRecentlyAddedBTInfo(RunnerState state, Dim.ContextData lastContextData) {
@@ -224,7 +225,9 @@ public class DebuggerStateHelper {
             myEnv.put("FUNCNAME", itsName != null ? itsName : "BTMain");
             Object[] ids = Arrays.stream(scope.getIds()).filter((p) -> !p.toString().equals("arguments") && !p.toString().equals(itsName + "param")).toArray();
             for (Object id : ids) {
-                myEnv.put(id.toString(), Objects.toString(collectJsValue(scope.get(id))));
+                Object jsValue = collectJsValue(scope.get(id));
+                Gson gson = new Gson();
+                myEnv.put(id.toString(), gson.toJson(jsValue));
             }
         } catch (NoSuchFieldException e) {
             e.printStackTrace();

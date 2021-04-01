@@ -61,7 +61,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
 
     private final RunnerState state = new RunnerState();
     private final SyncSnapshotHolder<BProgramSyncSnapshot, BEvent> syncSnapshotHolder = new SyncSnapshotHolderImpl();
-    private final DebuggerStateHelper debuggerStateHelper = new DebuggerStateHelper();
+    private final DebuggerStateHelper debuggerStateHelper = new DebuggerStateHelper(syncSnapshotHolder);
     private final DebuggerPrintStream debuggerPrintStream = new DebuggerPrintStream();
     private final List<BProgramRunnerListener> listeners = new ArrayList<>();
     private final List<Subscriber<BPEvent>> subscribers = new ArrayList<>();
@@ -132,7 +132,6 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         syncSnapshotHolder.getAllSyncSnapshots().forEach((time, bProgramSyncSnapshotBEventPair) -> {
             BPDebuggerState bpDebuggerState = debuggerStateHelper.generateDebuggerState(bProgramSyncSnapshotBEventPair.getLeft(), state, null);
             BEvent chosenEvent = bProgramSyncSnapshotBEventPair.getRight();
-            bpDebuggerState.setChosenEvent(new EventInfo(chosenEvent == null ? null : chosenEvent.getName()));
             syncSnapshotsHistory.put(time, bpDebuggerState);
         });
 
@@ -273,11 +272,10 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
             return;
         }
         state.setDebuggerState(RunnerState.State.SYNC_STATE);
+        syncSnapshotHolder.addSyncSnapshot(syncSnapshot, event);
         debuggerEngine.setSyncSnapshot(syncSnapshot);
-        debuggerStateHelper.setLastChosenEvent(event);
         logger.debug("Generate state from nextSync");
         debuggerEngine.onStateChanged();
-        syncSnapshotHolder.addSyncSnapshot(syncSnapshot, event);
         logger.info("~NEW SYNC STATE~");
         if (isSkipSyncPoints)
             nextSync();
