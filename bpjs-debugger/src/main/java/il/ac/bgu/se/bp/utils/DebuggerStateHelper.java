@@ -1,5 +1,6 @@
 package il.ac.bgu.se.bp.utils;
 
+import com.google.gson.Gson;
 import il.ac.bgu.cs.bp.bpjs.model.BEvent;
 import il.ac.bgu.cs.bp.bpjs.model.BProgramSyncSnapshot;
 import il.ac.bgu.cs.bp.bpjs.model.BThreadSyncSnapshot;
@@ -224,7 +225,9 @@ public class DebuggerStateHelper {
             myEnv.put("FUNCNAME", itsName != null ? itsName : "BTMain");
             Object[] ids = Arrays.stream(scope.getIds()).filter((p) -> !p.toString().equals("arguments") && !p.toString().equals(itsName + "param")).toArray();
             for (Object id : ids) {
-                myEnv.put(id.toString(), Objects.toString(collectJsValue(scope.get(id))));
+                Object jsValue = collectJsValue(scope.get(id));
+                Gson gson = new Gson();
+                myEnv.put(id.toString(), gson.toJson(jsValue));
             }
         } catch (NoSuchFieldException e) {
             e.printStackTrace();
