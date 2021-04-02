@@ -208,7 +208,8 @@ public class DebuggerStateHelper {
             Object[] ids = Arrays.stream(scope.getIds()).filter((p) -> !p.toString().equals("arguments") && !p.toString().equals(itsName + "param")).toArray();
             for (Object id : ids) {
                 Object jsValue = collectJsValue(scope.get(id));
-                myEnv.put(id.toString(), Objects.toString(jsValue));
+                Gson gson = new Gson();
+                myEnv.put(id.toString(), gson.toJson(jsValue));
             }
         } catch (NoSuchFieldException e) {
             e.printStackTrace();
