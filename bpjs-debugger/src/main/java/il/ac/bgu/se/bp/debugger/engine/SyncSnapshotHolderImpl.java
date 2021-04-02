@@ -50,7 +50,7 @@ public class SyncSnapshotHolderImpl implements SyncSnapshotHolder<BProgramSyncSn
         Collections.reverse(eventsHistory);
         if(from == -1 && to == -1)
             return eventsHistory;
-        if(from > eventsHistory.size())
+        if(from > eventsHistory.size() || (to > from))
             return new LinkedList<>();
         int endIdx = to > eventsHistory.size()? eventsHistory.size(): to;
         return eventsHistory.subList(from,endIdx);
