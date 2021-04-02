@@ -46,7 +46,7 @@ public class SyncSnapshotHolderImpl implements SyncSnapshotHolder<BProgramSyncSn
 
     @Override
     public List<BEvent> getEventsHistoryStack(int from, int to) {
-        List<BEvent> eventsHistory = snapshotsByTimeChosen.values().stream().map(Pair::getRight).collect(Collectors.toList());
+        List<BEvent> eventsHistory = snapshotsByTimeChosen.values().stream().map(Pair::getRight).filter(Objects::nonNull).collect(Collectors.toList());
         Collections.reverse(eventsHistory);
         if(from == -1 && to == -1)
             return eventsHistory;

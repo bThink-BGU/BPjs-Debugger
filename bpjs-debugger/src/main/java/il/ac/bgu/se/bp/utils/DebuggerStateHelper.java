@@ -62,7 +62,7 @@ public class DebuggerStateHelper {
 
         EventsStatus eventsStatus = new EventsStatus(waitEvents, blockedEvents, requestedEvents);
         Integer lineNumber = lastContextData == null? null : lastContextData.frameCount() > 0 ? lastContextData.getFrame(0).getLineNumber() : null;
-        List<EventInfo> events = this.syncSnapshotHolder.getEventsHistoryStack(0,10).stream().filter(Objects::nonNull).map(bEvent ->  new EventInfo(bEvent.name)).collect(Collectors.toList());
+        List<EventInfo> events = this.syncSnapshotHolder.getEventsHistoryStack(0,10).stream().map(bEvent ->  new EventInfo(bEvent.name)).collect(Collectors.toList());
 
         return new BPDebuggerState(bThreadInfoList, eventsStatus, events, currentRunningBT, lineNumber);
     }
