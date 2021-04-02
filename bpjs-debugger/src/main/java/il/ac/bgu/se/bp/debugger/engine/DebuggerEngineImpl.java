@@ -86,7 +86,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
     @Override
     public void dispatchNextGuiEvent() {
         try {
-            if (!debuggerStateHelper.getLastState().equals(debuggerStateHelper.peekNextState(syncSnapshot, state, lastContextData))) {
+            if (!debuggerStateHelper.getLastState().equals(debuggerStateHelper.peekNextState(syncSnapshot, state, lastContextData,dimHelper.getSourceInfo(filename)))) {
                 logger.info("Getting state from dispatchNextGuiEvent");
                 onStateChanged();
             }
@@ -162,7 +162,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
 
     @Override
     public void onStateChanged() {
-        BPDebuggerState newState = debuggerStateHelper.generateDebuggerState(syncSnapshot, state, lastContextData);
+        BPDebuggerState newState = debuggerStateHelper.generateDebuggerState(syncSnapshot, state, lastContextData, dimHelper.getSourceInfo(filename));
         notifySubscribers(new BPStateEvent(debuggerId, newState));
     }
 
