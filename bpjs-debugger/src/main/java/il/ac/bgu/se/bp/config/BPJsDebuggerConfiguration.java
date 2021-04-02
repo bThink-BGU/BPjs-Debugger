@@ -9,8 +9,10 @@ import il.ac.bgu.se.bp.utils.asyncHelper.AsyncOperationRunner;
 import il.ac.bgu.se.bp.utils.asyncHelper.AsyncOperationRunnerImpl;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.EnableAsync;
 
 @Configuration
+@EnableAsync
 public class BPJsDebuggerConfiguration {
 
     @Bean
