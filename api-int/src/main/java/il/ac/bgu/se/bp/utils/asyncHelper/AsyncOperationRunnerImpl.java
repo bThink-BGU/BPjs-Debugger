@@ -17,14 +17,7 @@ public class AsyncOperationRunnerImpl implements AsyncOperationRunner {
     @Override
     public void runAsyncCallback(Callable callback) {
         try {
-            new Thread(() -> {
-                try {
-                    callback.call();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }).start();
-//            callback.call();
+            callback.call();
         } catch (Exception e) {
             logger.error("failed running async callback", e);
         }
