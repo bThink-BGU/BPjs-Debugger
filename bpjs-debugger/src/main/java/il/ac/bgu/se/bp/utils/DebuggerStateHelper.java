@@ -63,7 +63,7 @@ public class DebuggerStateHelper {
 
         EventsStatus eventsStatus = new EventsStatus(waitEvents, blockedEvents, requestedEvents);
         Integer lineNumber = lastContextData == null ? null : lastContextData.frameCount() > 0 ? lastContextData.getFrame(0).getLineNumber() : null;
-        List<EventInfo> events = this.syncSnapshotHolder.getEventsHistoryStack(0, 10).stream().map(bEvent -> new EventInfo(bEvent.name)).collect(Collectors.toList());
+        HashMap<Long,EventInfo> events = (HashMap<Long,EventInfo>) this.syncSnapshotHolder.getEventsHistoryStack(0, 10).entrySet().stream().collect(Collectors.toMap(e -> e.getKey(), e -> new EventInfo(e.getValue().name)));
 
         return new BPDebuggerState(bThreadInfoList, eventsStatus, events, currentRunningBT, lineNumber);
     }
@@ -208,8 +208,7 @@ public class DebuggerStateHelper {
             Object[] ids = Arrays.stream(scope.getIds()).filter((p) -> !p.toString().equals("arguments") && !p.toString().equals(itsName + "param")).toArray();
             for (Object id : ids) {
                 Object jsValue = collectJsValue(scope.get(id));
-                Gson gson = new Gson();
-                myEnv.put(id.toString(), gson.toJson(jsValue));
+                myEnv.put(id.toString(), Objects.toString(jsValue));
             }
         } catch (NoSuchFieldException e) {
             e.printStackTrace();

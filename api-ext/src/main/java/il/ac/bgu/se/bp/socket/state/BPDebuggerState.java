@@ -8,24 +8,24 @@ public class BPDebuggerState implements Serializable {
 
     private List<BThreadInfo> bThreadInfoList;
     private EventsStatus eventsStatus;
-    private List<EventInfo> eventsHistory;
+    private HashMap<Long,EventInfo> eventsHistory;
     private String currentRunningBT;
     private Integer currentLineNumber;
 
 
     public BPDebuggerState() {
         this.bThreadInfoList = new ArrayList<>();
-        this.eventsHistory = new LinkedList<>();
+        this.eventsHistory = new HashMap<>();
         this.eventsStatus = new EventsStatus(new ArrayList<>(), new ArrayList<>(), new HashSet<>());
     }
 
     public BPDebuggerState(List<BThreadInfo> bThreadInfoList, EventsStatus eventsStatus) {
         this.bThreadInfoList = bThreadInfoList;
         this.eventsStatus = eventsStatus;
-        this.eventsHistory = new LinkedList<>();
+        this.eventsHistory = new HashMap<>();
     }
 
-    public BPDebuggerState(List<BThreadInfo> bThreadInfoList, EventsStatus eventsStatus , List<EventInfo> eventsHistory, String currentRunningBT, Integer currentLineNumber) {
+    public BPDebuggerState(List<BThreadInfo> bThreadInfoList, EventsStatus eventsStatus , HashMap<Long,EventInfo> eventsHistory, String currentRunningBT, Integer currentLineNumber) {
         this.bThreadInfoList = bThreadInfoList;
         this.eventsStatus = eventsStatus;
         this.eventsHistory = eventsHistory;
@@ -93,7 +93,7 @@ public class BPDebuggerState implements Serializable {
                 .append("\tcurrentLineNumber: ").append(currentLineNumber)
                 .append("\n")
                 .append("\teventsHistory: \n");
-                eventsHistory.forEach(eventInfo -> s.append("\t"+eventInfo.toString() + "\n"));
+                eventsHistory.entrySet().forEach(eventInfo -> s.append("\t"+eventInfo.toString() + "\n"));
                 s.append("}");
 
         return s.toString();
