@@ -12,6 +12,7 @@ import il.ac.bgu.se.bp.socket.state.BThreadInfo;
 import il.ac.bgu.se.bp.socket.state.EventInfo;
 import il.ac.bgu.se.bp.socket.state.EventsStatus;
 import il.ac.bgu.se.bp.debugger.RunnerState;
+import org.apache.commons.lang3.ArrayUtils;
 import org.mozilla.javascript.*;
 import org.mozilla.javascript.tools.debugger.Dim;
 
@@ -33,12 +34,12 @@ public class DebuggerStateHelper {
         this.syncSnapshotHolder = syncSnapshotHolder;
     }
 
-    public BPDebuggerState generateDebuggerState(BProgramSyncSnapshot syncSnapshot, RunnerState state, Dim.ContextData lastContextData) {
-        lastState = generateDebuggerStateInner(syncSnapshot, state, lastContextData);
+    public BPDebuggerState generateDebuggerState(BProgramSyncSnapshot syncSnapshot, RunnerState state, Dim.ContextData lastContextData, Dim.SourceInfo sourceInfo) {
+        lastState = generateDebuggerStateInner(syncSnapshot, state, lastContextData,sourceInfo);
         return lastState;
     }
 
-    private BPDebuggerState generateDebuggerStateInner(BProgramSyncSnapshot syncSnapshot, RunnerState state, Dim.ContextData lastContextData) {
+    private BPDebuggerState generateDebuggerStateInner(BProgramSyncSnapshot syncSnapshot, RunnerState state, Dim.ContextData lastContextData, Dim.SourceInfo sourceInfo) {
         Set<BThreadSyncSnapshot> bThreadSyncSnapshots = syncSnapshot.getBThreadSnapshots();
         List<BThreadInfo> bThreadInfoList = bThreadSyncSnapshots
                 .stream()
@@ -63,9 +64,19 @@ public class DebuggerStateHelper {
 
         EventsStatus eventsStatus = new EventsStatus(waitEvents, blockedEvents, requestedEvents);
         Integer lineNumber = lastContextData == null ? null : lastContextData.frameCount() > 0 ? lastContextData.getFrame(0).getLineNumber() : null;
-        HashMap<Long,EventInfo> events = (HashMap<Long,EventInfo>) this.syncSnapshotHolder.getEventsHistoryStack(0, 10).entrySet().stream().collect(Collectors.toMap(e -> e.getKey(), e -> new EventInfo(e.getValue().name)));
-
-        return new BPDebuggerState(bThreadInfoList, eventsStatus, events, currentRunningBT, lineNumber);
+        SortedMap<Long, BEvent> events = this.syncSnapshotHolder.getEventsHistoryStack(0, 10);
+        SortedMap<Long,EventInfo> eventsHistory = new TreeMap<>(Collections.reverseOrder());
+        for(Map.Entry entry : events.entrySet()){
+            eventsHistory.put((Long) entry.getKey(), new EventInfo( ((BEvent)entry.getValue()).name));
+        }
+        try{
+            boolean[] breakpoints =  (boolean[])getValue(sourceInfo, "breakpoints");
+            return new BPDebuggerState(bThreadInfoList, eventsStatus, eventsHistory, currentRunningBT, lineNumber, ArrayUtils.toObject(breakpoints));
+        }
+        catch (Exception e){
+            System.out.println(e);
+        }
+        return new BPDebuggerState(bThreadInfoList, eventsStatus, eventsHistory, currentRunningBT, lineNumber);
     }
 
     private List<BThreadInfo> getRecentlyAddedBTInfo(Dim.ContextData lastContextData) {
@@ -209,6 +220,7 @@ public class DebuggerStateHelper {
             for (Object id : ids) {
                 Object jsValue = collectJsValue(scope.get(id));
                 Gson gson = new Gson();
+
                 myEnv.put(id.toString(), gson.toJson(jsValue));
             }
         } catch (NoSuchFieldException e) {
@@ -270,7 +282,7 @@ public class DebuggerStateHelper {
         this.recentlyRegisteredBT = recentlyRegistered;
     }
 
-    public BPDebuggerState peekNextState(BProgramSyncSnapshot syncSnapshot, RunnerState state, Dim.ContextData lastContextData) {
-        return generateDebuggerStateInner(syncSnapshot, state, lastContextData);
+    public BPDebuggerState peekNextState(BProgramSyncSnapshot syncSnapshot, RunnerState state, Dim.ContextData lastContextData,Dim.SourceInfo sourceInfo ) {
+        return generateDebuggerStateInner(syncSnapshot, state, lastContextData, sourceInfo);
     }
 }

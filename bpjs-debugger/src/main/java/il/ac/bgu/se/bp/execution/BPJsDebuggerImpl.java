@@ -130,7 +130,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         SortedMap<Long, BPDebuggerState> syncSnapshotsHistory = new TreeMap<>();
 
         syncSnapshotHolder.getAllSyncSnapshots().forEach((time, bProgramSyncSnapshotBEventPair) -> {
-            BPDebuggerState bpDebuggerState = debuggerStateHelper.generateDebuggerState(bProgramSyncSnapshotBEventPair.getLeft(), state, null);
+            BPDebuggerState bpDebuggerState = debuggerStateHelper.generateDebuggerState(bProgramSyncSnapshotBEventPair.getLeft(), state, null, null);
             BEvent chosenEvent = bProgramSyncSnapshotBEventPair.getRight();
             syncSnapshotsHistory.put(time, bpDebuggerState);
         });

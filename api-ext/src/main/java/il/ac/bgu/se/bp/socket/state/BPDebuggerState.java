@@ -8,29 +8,38 @@ public class BPDebuggerState implements Serializable {
 
     private List<BThreadInfo> bThreadInfoList;
     private EventsStatus eventsStatus;
-    private HashMap<Long,EventInfo> eventsHistory;
+    private SortedMap<Long,EventInfo> eventsHistory;
     private String currentRunningBT;
     private Integer currentLineNumber;
+    private Boolean[] breakpoints;
 
 
     public BPDebuggerState() {
         this.bThreadInfoList = new ArrayList<>();
-        this.eventsHistory = new HashMap<>();
+        this.eventsHistory = new TreeMap<>();
         this.eventsStatus = new EventsStatus(new ArrayList<>(), new ArrayList<>(), new HashSet<>());
     }
 
     public BPDebuggerState(List<BThreadInfo> bThreadInfoList, EventsStatus eventsStatus) {
         this.bThreadInfoList = bThreadInfoList;
         this.eventsStatus = eventsStatus;
-        this.eventsHistory = new HashMap<>();
+        this.eventsHistory = new TreeMap<>();
     }
 
-    public BPDebuggerState(List<BThreadInfo> bThreadInfoList, EventsStatus eventsStatus , HashMap<Long,EventInfo> eventsHistory, String currentRunningBT, Integer currentLineNumber) {
+    public BPDebuggerState(List<BThreadInfo> bThreadInfoList, EventsStatus eventsStatus , SortedMap<Long,EventInfo> eventsHistory, String currentRunningBT, Integer currentLineNumber) {
         this.bThreadInfoList = bThreadInfoList;
         this.eventsStatus = eventsStatus;
         this.eventsHistory = eventsHistory;
         this.currentRunningBT = currentRunningBT;
         this.currentLineNumber = currentLineNumber;
+    }
+    public BPDebuggerState(List<BThreadInfo> bThreadInfoList, EventsStatus eventsStatus , SortedMap<Long,EventInfo> eventsHistory, String currentRunningBT, Integer currentLineNumber, Boolean[] breakpoints) {
+        this.bThreadInfoList = bThreadInfoList;
+        this.eventsStatus = eventsStatus;
+        this.eventsHistory = eventsHistory;
+        this.currentRunningBT = currentRunningBT;
+        this.currentLineNumber = currentLineNumber;
+        this.breakpoints = breakpoints;
     }
     public String getCurrentRunningBT() {
         return currentRunningBT;
@@ -92,7 +101,10 @@ public class BPDebuggerState implements Serializable {
                 .append("\n")
                 .append("\tcurrentLineNumber: ").append(currentLineNumber)
                 .append("\n")
-                .append("\teventsHistory: \n");
+                .append("\t breakpoints:");
+                s.append(Arrays.toString(breakpoints))
+                        .append("\n")
+                        .append("\teventsHistory: \n");
                 eventsHistory.entrySet().forEach(eventInfo -> s.append("\t"+eventInfo.toString() + "\n"));
                 s.append("}");
 

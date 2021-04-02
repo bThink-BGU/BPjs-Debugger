@@ -109,7 +109,7 @@ public class DebuggerEngineImplTest {
         BProgramSyncSnapshot bProgramSyncSnapshot = bProg.setup();
         debuggerEngine.setSyncSnapshot(bProgramSyncSnapshot);
         debuggerEngine.setBreakpoint(2, true);
-        when(debuggerStateHelper.generateDebuggerState(any(), any(), any())).thenAnswer(invocationOnMock -> {
+        when(debuggerStateHelper.generateDebuggerState(any(), any(), any(), any())).thenAnswer(invocationOnMock -> {
             int line = invocationOnMock.getArgument(2, Dim.ContextData.class).getFrame(0).getLineNumber();
             assertEquals(2, line);
             debuggerEngine.continueRun();
@@ -120,7 +120,7 @@ public class DebuggerEngineImplTest {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        verify(debuggerStateHelper, times(1)).generateDebuggerState(any(), any(), any());
+        verify(debuggerStateHelper, times(1)).generateDebuggerState(any(), any(), any(),any());
     }
 
     @Test
@@ -135,7 +135,7 @@ public class DebuggerEngineImplTest {
 
         doCallRealMethod().when(debuggerStateHelper).setRecentlyRegisteredBthreads(any());
         doCallRealMethod().when(debuggerStateHelper).getLastState();
-        doCallRealMethod().when(debuggerStateHelper).peekNextState(any(),any(),any());
+        doCallRealMethod().when(debuggerStateHelper).peekNextState(any(),any(),any(),any());
 
         Set<BThreadSyncSnapshot> recentlyRegisteredBThreads = bProg.getRecentlyRegisteredBthreads();
         Set<Pair<String, Object>> recentlyRegistered = new HashSet<>();
@@ -149,13 +149,13 @@ public class DebuggerEngineImplTest {
         } catch (NoSuchFieldException e) {
             e.printStackTrace();
         }
-        when(debuggerStateHelper.generateDebuggerState(any(), any(), any())).thenAnswer(invocationOnMock -> {
+        when(debuggerStateHelper.generateDebuggerState(any(), any(), any(),any())).thenAnswer(invocationOnMock -> {
             debuggerEngine.addCommand(new StepInto());
             return invocationOnMock.callRealMethod();
         });
         try {
             bProgramSyncSnapshot = bProgramSyncSnapshot.start(execSvc);
-            doCallRealMethod().when(debuggerStateHelper).generateDebuggerState(any(), any(), any());
+            doCallRealMethod().when(debuggerStateHelper).generateDebuggerState(any(), any(), any(),any());
             state.setDebuggerState(RunnerState.State.SYNC_STATE);
             debuggerEngine.setSyncSnapshot(bProgramSyncSnapshot);
             debuggerEngine.onStateChanged();
