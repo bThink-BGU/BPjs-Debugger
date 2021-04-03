@@ -84,7 +84,9 @@ public class DebuggerStateHelper {
         Context cx = Context.getCurrentContext();
         try {
             Object lastInterpreterFrame = getValue(cx, "lastInterpreterFrame");
-            Object fnOrScript = lastInterpreterFrame == null ? null : getValue(lastInterpreterFrame, "fnOrScript");
+//            Object fnOrScript = lastInterpreterFrame == null ? null : getValue(lastInterpreterFrame, "fnOrScript");
+            Object fnOrScript = lastInterpreterFrame == null ? null : getBaseFnOrScript(lastInterpreterFrame);
+
             for (Pair<String, Object> recentlyRegisteredPair : recentlyRegisteredBT) {
                 Object o = recentlyRegisteredPair.getRight();
                 String btName = recentlyRegisteredPair.getLeft();
@@ -103,6 +105,23 @@ public class DebuggerStateHelper {
             e.printStackTrace();
         }
         return bThreadInfoList;
+    }
+
+    private Object getBaseFnOrScript(Object lastInterpreterFrame) {
+        Object frame = lastInterpreterFrame;
+
+        Object parentFrame = lastInterpreterFrame;
+        try{
+            while(parentFrame!= null){
+                frame = parentFrame;
+                parentFrame = getValue(frame, "parentFrame");
+            }
+            return getValue(frame, "fnOrScript");
+        }
+        catch (Exception e){
+            return null;
+        }
+
     }
 
     private BThreadInfo createBThreadInfo(BThreadSyncSnapshot bThreadSS, RunnerState state, Dim.ContextData lastContextData) {
@@ -210,7 +229,7 @@ public class DebuggerStateHelper {
     }
 
     private Map<String, String> getScope(ScriptableObject scope) {
-        Map<String, String> myEnv = new HashMap<>();
+        Map<String, String> myEnv = new LinkedHashMap<>();
         try {
             Object function = getValue(scope, "function");
             Object interpretedData = getValue(function, "idata");
@@ -220,7 +239,6 @@ public class DebuggerStateHelper {
             for (Object id : ids) {
                 Object jsValue = collectJsValue(scope.get(id));
                 Gson gson = new Gson();
-
                 myEnv.put(id.toString(), gson.toJson(jsValue));
             }
         } catch (NoSuchFieldException e) {

@@ -152,7 +152,7 @@ public class SessionHandlerImpl implements SessionHandler<BProgramRunner> {
             return;
         }
         logger.debug("sending BPDebuggerState update");
-
+        logger.debug(gson.toJson(debuggerState));
         stateNotificationHandler.sendNotification(userId, gson.toJson(debuggerState));
     }
 
