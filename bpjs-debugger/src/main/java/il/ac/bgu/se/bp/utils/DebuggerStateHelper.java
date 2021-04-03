@@ -6,12 +6,12 @@ import il.ac.bgu.cs.bp.bpjs.model.BProgramSyncSnapshot;
 import il.ac.bgu.cs.bp.bpjs.model.BThreadSyncSnapshot;
 import il.ac.bgu.cs.bp.bpjs.model.SyncStatement;
 import il.ac.bgu.cs.bp.bpjs.model.eventsets.EventSet;
+import il.ac.bgu.se.bp.debugger.RunnerState;
 import il.ac.bgu.se.bp.debugger.engine.SyncSnapshotHolder;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
 import il.ac.bgu.se.bp.socket.state.BThreadInfo;
 import il.ac.bgu.se.bp.socket.state.EventInfo;
 import il.ac.bgu.se.bp.socket.state.EventsStatus;
-import il.ac.bgu.se.bp.debugger.RunnerState;
 import org.apache.commons.lang3.ArrayUtils;
 import org.mozilla.javascript.*;
 import org.mozilla.javascript.tools.debugger.Dim;
@@ -35,7 +35,7 @@ public class DebuggerStateHelper {
     }
 
     public BPDebuggerState generateDebuggerState(BProgramSyncSnapshot syncSnapshot, RunnerState state, Dim.ContextData lastContextData, Dim.SourceInfo sourceInfo) {
-        lastState = generateDebuggerStateInner(syncSnapshot, state, lastContextData,sourceInfo);
+        lastState = generateDebuggerStateInner(syncSnapshot, state, lastContextData, sourceInfo);
         return lastState;
     }
 

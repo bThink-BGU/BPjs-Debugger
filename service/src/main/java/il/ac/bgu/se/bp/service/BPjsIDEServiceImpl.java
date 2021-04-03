@@ -89,7 +89,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
                 .stream()
                 .collect(Collectors.toMap(Function.identity(), b -> Boolean.TRUE));
 
-        return bpProgramDebugger.startSync(breakpointsMap, debugRequest.isSkipBreakpointsToggle(), debugRequest.isSkipSyncStateToggle());
+        return bpProgramDebugger.startSync(breakpointsMap, debugRequest.isSkipSyncStateToggle(), debugRequest.isSkipBreakpointsToggle());
     }
 
     @Override

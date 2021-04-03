@@ -20,11 +20,9 @@ import il.ac.bgu.se.bp.logger.Logger;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
-import il.ac.bgu.se.bp.socket.state.EventInfo;
 import il.ac.bgu.se.bp.utils.DebuggerBProgramRunnerListener;
 import il.ac.bgu.se.bp.utils.DebuggerPrintStream;
 import il.ac.bgu.se.bp.utils.DebuggerStateHelper;
-import il.ac.bgu.se.bp.utils.Pair;
 import il.ac.bgu.se.bp.utils.asyncHelper.AsyncOperationRunner;
 import il.ac.bgu.se.bp.utils.observer.BPEvent;
 import il.ac.bgu.se.bp.utils.observer.Subscriber;
@@ -175,13 +173,13 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     @Override
     public BooleanResponse startSync(Map<Integer, Boolean> breakpointsMap, boolean isSkipSyncPoints, boolean isSkipBreakpoints) {
         if (!isSetup()) {
-            setup(breakpointsMap, isSkipSyncPoints, isSkipBreakpoints);
+            setup(breakpointsMap, isSkipBreakpoints, isSkipSyncPoints);
         }
-        asyncOperationRunner.runAsyncCallback(() -> runStartSync(breakpointsMap, isSkipSyncPoints, isSkipBreakpoints));
+        asyncOperationRunner.runAsyncCallback(() -> runStartSync(isSkipSyncPoints));
         return createSuccessResponse();
     }
 
-    private BooleanResponse runStartSync(Map<Integer, Boolean> breakpointsMap, boolean isSkipSyncPoints, boolean isSkipBreakpoints) {
+    private BooleanResponse runStartSync(boolean isSkipSyncPoints) {
         setIsStarted(true);
         try {
             listeners.forEach(l -> l.started(bprog));
