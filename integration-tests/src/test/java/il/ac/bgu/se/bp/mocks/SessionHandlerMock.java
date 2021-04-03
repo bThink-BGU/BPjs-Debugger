@@ -8,7 +8,7 @@ import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
 import java.util.LinkedList;
 import java.util.List;
 
-public class MockSessionHandler extends SessionHandlerImpl {
+public class SessionHandlerMock extends SessionHandlerImpl {
     private List<BPDebuggerState> debuggerStates = new LinkedList<>();
 
     @Override
@@ -24,6 +24,10 @@ public class MockSessionHandler extends SessionHandlerImpl {
     @Override
     public void visit(String userId, ProgramExit programExit) {
 
+    }
+
+    public void cleanMock() {
+        this.debuggerStates.clear();
     }
 
     public List<BPDebuggerState> getDebuggerStates() {

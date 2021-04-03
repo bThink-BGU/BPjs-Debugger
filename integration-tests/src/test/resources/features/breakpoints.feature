@@ -2,9 +2,9 @@ Feature: Breakpoints
   Scenario Outline: multiple valid breakpoints
     Given I have connected to websocket with <sessionId> and <userId>
     When I ask to debug with filename <filename> and toggleMuteBreakpoints <toggleMuteBreakpoints> and toggleMuteSyncPoints <toggleMuteSyncPoints> and breakpoints <breakpoints>
-    Then wait until breakpoint reached
-    And The response should be true with errorCode null
-    And I should get notification with doubles <doubleVariables> and strings <stringVariables>
+    Then The response should be true with errorCode null
+    And wait until breakpoint reached
+    And I should get notification with doubles <doubleVariables> and strings <stringVariables> and breakpoint lines <breakpoints>
 
     Examples:
       | sessionId  | userId                               | filename  | toggleMuteBreakpoints | toggleMuteSyncPoints | breakpoints | doubleVariables | stringVariables |

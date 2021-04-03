@@ -45,6 +45,12 @@ public class Utils {
         return Boolean.parseBoolean(str);
     }
 
+    public static String strToString(String str) {
+        str = str.charAt(0) == '\"' ? str.substring(1) : str;
+        str = str.charAt(str.length() - 1) == '\"' ? str.substring(0, str.length() -1) : str;
+        return str;
+    }
+
     public static Double strToDouble(String str) {
         return Double.parseDouble(str);
     }

@@ -1,6 +1,6 @@
 package il.ac.bgu.se.bp.config;
 
-import il.ac.bgu.se.bp.mocks.MockSessionHandler;
+import il.ac.bgu.se.bp.mocks.SessionHandlerMock;
 import il.ac.bgu.se.bp.mocks.testService.ControllerTestHelper;
 import il.ac.bgu.se.bp.mocks.testService.TestService;
 import org.springframework.context.annotation.Bean;
@@ -16,8 +16,8 @@ public class IDEBeforeDeploymentConfiguration {
     }
 
     @Bean
-    MockSessionHandler sessionHandler() {
-        return new MockSessionHandler();
+    SessionHandlerMock sessionHandler() {
+        return new SessionHandlerMock();
     }
 
 }

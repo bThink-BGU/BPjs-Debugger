@@ -19,20 +19,19 @@ public class CodeFilesHelper {
     private static String filename1() {
         return
                 "bp.registerBThread('bt-world', function () {\n" +
-                        "    var x = 5;\n" +
-                        "    var y = 16.7;\n" +
+                        "    var myvar1 = 10;\n" +
+                        "    var myvar2 = 20;\n" +
                         "    bp.registerBThread('bt-world-son', function () {\n" +
                         "        bp.sync({ request: bp.Event('son-e') });\n" +
-                        "        var myvar1 = 10;\n" +
-                        "        var myvar2 = 20;\n" +
+                        "        var x = 5;\n" +
+                        "        var y = 16.7;\n" +
                         "        foo(3)\n" +
                         "        var z = \"alex\"\n" +
+                        "        var tt = \"hello\"\n" +
                         "        bp.sync({ request: bp.Event('world12121') });\n" +
                         "    })\n" +
-                        "    bp.sync({ request: bp.Event('aba') });\n" +
                         "    foo(1)\n" +
                         "    var z = myvar1 + 5\n" +
-                        "    bp.sync({ request: bp.Event('world12121') });\n" +
                         "})\n" +
                         "\n" +
                         "function foo(bt) {\n" +
@@ -48,16 +47,7 @@ public class CodeFilesHelper {
                         "    var g2 = 100;\n" +
                         "    const g3 = 200\n" +
                         "}\n" +
-                        "\n" +
-                        "bp.registerBThread('bt-hello1', function () {\n" +
-                        "    var x = 50;\n" +
-                        "    var y = 100;\n" +
-                        "    foo(2)\n" +
-                        "    bp.sync({ request: bp.Event('aba') });\n" +
-                        "    foo(2)\n" +
-                        "    var z = x + 5\n" +
-                        "    bp.sync({ request: bp.Event('world12121') });\n" +
-                        "})";
+                        "\n";
     }
 
     private static String filename2() {
