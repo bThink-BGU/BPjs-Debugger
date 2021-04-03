@@ -23,9 +23,13 @@ public class SourceCodeHelperImpl implements SourceCodeHelper {
     public void onInit() {
         try {
             fileHelper.removeDirectory(getBasePath() + PROGRAMS_DIRECTORY);
-            fileHelper.createDirectory(getBasePath() + PROGRAMS_DIRECTORY);
         } catch (Exception e) {
             logger.error("onInit failed removing programs folder, error: {0}", e.getMessage());
+        }
+        try {
+            fileHelper.createDirectory(getBasePath() + PROGRAMS_DIRECTORY);
+        } catch (Exception e) {
+            logger.error("onInit failed creating programs folder, error: {0}", e.getMessage());
         }
     }
 
@@ -34,6 +38,8 @@ public class SourceCodeHelperImpl implements SourceCodeHelper {
         String filename = generateFilename();
         try {
             String filepath = getBasePath() + filename;
+            System.out.println(getBasePath());
+            System.out.println(filepath);
             fileHelper.createFile(filepath);
             fileHelper.writeTextToFile(sourceCode, filepath);
             return filename;
