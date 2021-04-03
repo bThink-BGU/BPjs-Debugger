@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
 @Configuration
-@Profile("BDT")
+@Profile({"BDT", "default"})
 public class IDEBeforeDeploymentConfiguration {
     @Bean
     TestService testService() {
