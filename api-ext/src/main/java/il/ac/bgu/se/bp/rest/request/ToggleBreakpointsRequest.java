@@ -12,6 +12,10 @@ public class ToggleBreakpointsRequest implements Serializable {
     public ToggleBreakpointsRequest() {
     }
 
+    public ToggleBreakpointsRequest(boolean skipBreakpoints) {
+        this.skipBreakpoints = skipBreakpoints;
+    }
+
     public boolean isSkipBreakpoints() {
         return skipBreakpoints;
     }

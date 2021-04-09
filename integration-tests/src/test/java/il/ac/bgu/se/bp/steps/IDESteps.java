@@ -1,0 +1,173 @@
+package il.ac.bgu.se.bp.steps;
+
+import il.ac.bgu.se.bp.config.IDECommonTestConfiguration;
+import il.ac.bgu.se.bp.mocks.SessionHandlerMock;
+import il.ac.bgu.se.bp.mocks.testService.TestService;
+import il.ac.bgu.se.bp.rest.request.DebugRequest;
+import il.ac.bgu.se.bp.rest.request.ToggleBreakpointsRequest;
+import il.ac.bgu.se.bp.rest.response.BooleanResponse;
+import il.ac.bgu.se.bp.rest.socket.StompPrincipal;
+import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
+import il.ac.bgu.se.bp.utils.Pair;
+import io.cucumber.java.en.And;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static il.ac.bgu.se.bp.code.CodeFilesHelper.getCodeByFileName;
+import static il.ac.bgu.se.bp.common.Utils.*;
+import static org.junit.Assert.*;
+
+@ContextConfiguration(classes = IDECommonTestConfiguration.class)
+public class IDESteps {
+
+    //    private String activeUserId;
+    private Map<String, String> userIdsByNames;
+    private BooleanResponse lastResponse;
+    private Map<String, Map<Integer, Boolean>> breakpointsVerifierPerUser;
+
+    @Autowired
+    private TestService testService;
+
+    @Autowired
+    private SessionHandlerMock sessionHandler;
+
+    private final static String END_OF_EXECUTION_INDICATOR_MESSAGE = "Ended";
+
+//    @Given("the current user is (.*)")
+//    public void theCurrentUserIsUserId(String userId) {
+//        activeUserId = userId;
+//    }
+
+    @Given("user (.*) has connected with userId (.*)")
+    public void userUserHasConnectedWithUserIdUserId(String userName, String userId) {
+        if (userIdsByNames == null) {
+            userIdsByNames = new HashMap<>();
+        }
+        userIdsByNames.put(userName, userId);
+    }
+
+    @Given("(.*) has connected to websocket with (.*)")
+    public void userHasConnectedToWebsocketWithSessionIdAndUserId(String userName, String sessionId) {
+        testService.subscribeUser(sessionId, new StompPrincipal(getUserIdByName(userName)));
+    }
+
+
+    @When("(.*) asks to debug with filename (.*) and toggleMuteBreakpoints (.*) and toggleMuteSyncPoints (.*) and breakpoints (.*)")
+    public void userAsksToDebugWithFilenameAndToggleMuteBreakpointsAndToggleMuteSyncPointsAndBreakpoints(String username, String filename, String toggleMuteBreakpoints, String toggleMuteSyncPoints, String breakpoints) {
+        sessionHandler.cleanUserMockData(getUserIdByName(username));
+
+        List<Integer> breakpointsList = strToIntList(breakpoints);
+        initBreakpointsVerifier(username, breakpointsList);
+        DebugRequest debugRequest = new DebugRequest(getCodeByFileName(filename), breakpointsList);
+        debugRequest.setSkipBreakpointsToggle(strToBoolean(toggleMuteBreakpoints));
+        debugRequest.setSkipSyncStateToggle(strToBoolean(toggleMuteSyncPoints));
+
+        lastResponse = testService.debug(getUserIdByName(username), debugRequest);
+    }
+
+    private void initBreakpointsVerifier(String username, List<Integer> breakpointsList) {
+        if (breakpointsVerifierPerUser == null) {
+            breakpointsVerifierPerUser = new HashMap<>();
+        }
+
+        HashMap<Integer, Boolean> breakpointsVerifier = new HashMap<>();
+        breakpointsList.forEach(breakpoint -> breakpointsVerifier.put(breakpoint, false));
+        breakpointsVerifierPerUser.put(username, breakpointsVerifier);
+    }
+
+    @When("(.*) clicks on continue")
+    public void userClicksOnContinue(String username) {
+        sessionHandler.cleanUserMockData(getUserIdByName(username));
+        lastResponse = testService.continueRun(getUserIdByName(username));
+    }
+
+    @When("(.*) toggles mute breakpoints to (.*)")
+    public void userTogglesMuteBreakpointsToOff(String username, String skipBreakpoints) {
+        lastResponse = testService.toggleMuteBreakpoints(getUserIdByName(username), new ToggleBreakpointsRequest(strToBoolean(skipBreakpoints)));
+    }
+
+    @Then("wait until program of user (.*) is over")
+    public void waitUntilTheProgramIsOver(String username) {
+        waitUntilPredicateSatisfied(() -> sessionHandler.getUsersLastConsoleMessage(getUserIdByName(username)) != null &&
+                sessionHandler.getUsersLastConsoleMessage(getUserIdByName(username)).getMessage().contains(END_OF_EXECUTION_INDICATOR_MESSAGE), 1000, 3);
+    }
+
+    @Then("The response should be (.*) with errorCode (.*)")
+    public void theResponseShouldBe(String result, String errorCode) {
+        assertEquals(strToBoolean(result), lastResponse.isSuccess());
+
+        if (isNull(errorCode)) {
+            assertNull(lastResponse.getErrorCode());
+        }
+        else {
+            assertNotNull(lastResponse.getErrorCode());
+            assertEquals(errorCode, lastResponse.getErrorCode().name());
+        }
+    }
+
+    @And("verify all breakpoints of user (.*) were reached")
+    public void verifyAllBreakpointsWereReached(String username) {
+        breakpointsVerifierPerUser.get(username)
+                .forEach((breakpoint, isReached) -> assertTrue("did not get to breakpoint " + breakpoint, isReached));
+    }
+
+    @And("verify user (.*) has reached only (.*) breakpoints")
+    public void verifyOnlyPartialBreakpointsWereReached(String username, String numOfBreakpointsReachedStr) {
+        AtomicInteger actualNumOfBreakpointsReached = new AtomicInteger(0);
+        breakpointsVerifierPerUser.get(username).values().forEach(isReached -> {
+            if (isReached) {
+                actualNumOfBreakpointsReached.incrementAndGet();
+            }
+        });
+
+        assertEquals(strToInt(numOfBreakpointsReachedStr), actualNumOfBreakpointsReached.get());
+    }
+
+    @Then("wait until user (.*) has reached breakpoint")
+    public void waitUntilBreakpointReached(String username) {
+        waitUntilPredicateSatisfied(() -> sessionHandler.getUsersLastDebuggerState(getUserIdByName(username)) != null &&
+                sessionHandler.getUsersLastDebuggerState(getUserIdByName(username)).getCurrentLineNumber() != null, 1000, 3);
+    }
+
+    @Then("(.*) should get notification with BThread (.*), doubles (.*), strings (.*) and breakpoint lines (.*)")
+    public void userShouldGetNotificationWithDoubleVariablesAndStringVariables(String username, String bThreads, String doubleVars, String stringVars, String breakpointsStr) {
+        BPDebuggerState lastDebuggerState = sessionHandler.getUsersLastDebuggerState(getUserIdByName(username));
+        assertNotNull("BPDebuggerState was not received", lastDebuggerState);
+
+        List<Integer> breakpoints = strToIntList(breakpointsStr);
+        assertCurrentLineMatches(username, breakpoints, lastDebuggerState.getCurrentLineNumber());
+
+        List<String> bThreadsOfCurrentBreakpoint = getBThreadNamesByBreakpoint(bThreads, lastDebuggerState.getCurrentLineNumber());
+        Map<String, String> actualEnv = getLastEnvOfMatchingBThread(lastDebuggerState.getbThreadInfoList(), bThreadsOfCurrentBreakpoint);
+        assertEnvVariables(actualEnv, lastDebuggerState.getCurrentLineNumber(), doubleVars, stringVars);
+    }
+
+    private void assertEnvVariables(Map<String, String> actualEnv, int currentBreakpoint, String doubleVars, String stringVars) {
+        List<Pair<String, String>> expectedStringVars = createStringEnvByBreakpoints(stringVars).get(currentBreakpoint);
+        if (expectedStringVars != null) {   // test file might not include string vars at this breakpoint
+            expectedStringVars.forEach(var -> assertEquals(var.getRight(), strToString(actualEnv.get(var.getLeft()))));
+        }
+        List<Pair<String, Double>> expectedDoubleVars = createDoubleEnvByBreakpoints(doubleVars).get(currentBreakpoint);
+        if (expectedDoubleVars != null) {   // test file might not include double vars at this breakpoint
+            expectedDoubleVars.forEach(var -> assertEquals(var.getRight(), strToDouble(actualEnv.get(var.getLeft())), 0));
+        }
+    }
+
+    private void assertCurrentLineMatches(String username, List<Integer> breakpoints, Integer currentLineNumber) {
+        assertNotNull("current line is null", currentLineNumber);
+        assertTrue(breakpoints.contains(currentLineNumber));
+        breakpointsVerifierPerUser.get(username).put(currentLineNumber, true);
+    }
+
+    private String getUserIdByName(String userName) {
+        return userIdsByNames.get(userName);
+    }
+}

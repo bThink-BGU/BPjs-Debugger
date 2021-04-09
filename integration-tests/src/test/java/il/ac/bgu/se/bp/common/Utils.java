@@ -61,7 +61,7 @@ public class Utils {
         return varsByBreakpointsMap;
     }
 
-    public static List<Pair<String, String>> strToStringVarsList(String stringVars) {
+    private static List<Pair<String, String>> strToStringVarsList(String stringVars) {
         return StringUtils.isEmpty(stringVars) ? new LinkedList<>() :
                 Arrays.stream(stringVars.split(",")).map(strVar -> Pair.of(getVar(strVar), getStrVal(strVar))).collect(Collectors.toList());
     }
@@ -78,16 +78,16 @@ public class Utils {
         return varsByBreakpointsMap;
     }
 
-    public static List<Pair<String, Double>> strToDoubleVarsList(String doubleVars) {
+    private static List<Pair<String, Double>> strToDoubleVarsList(String doubleVars) {
         return StringUtils.isEmpty(doubleVars) ? new LinkedList<>() :
                 Arrays.stream(doubleVars.split(",")).map(strVar -> Pair.of(getVar(strVar), getDoubleVal(strVar))).collect(Collectors.toList());
     }
 
-    public static String getVar(String str) {
+    private static String getVar(String str) {
         return splitAndGetBy(str, "=", 0);
     }
 
-    public static String getStrVal(String str) {
+    private static String getStrVal(String str) {
         return splitAndGetBy(str, "=", 1);
     }
 
@@ -113,11 +113,11 @@ public class Utils {
         return Double.parseDouble(str);
     }
 
-    public static Integer strToInt(String str) {
+    public static int strToInt(String str) {
         return Integer.parseInt(str);
     }
 
-    public static List<String> strToStringList(String strings) {
+    private static List<String> strToStringList(String strings) {
         return Arrays.stream(strings.split(",")).collect(Collectors.toList());
     }
 
@@ -142,7 +142,7 @@ public class Utils {
         }
     }
 
-    public static void sleep(int timeToSleep) {
+    private static void sleep(int timeToSleep) {
         try {
             Thread.sleep(timeToSleep);
         } catch (InterruptedException e) {
