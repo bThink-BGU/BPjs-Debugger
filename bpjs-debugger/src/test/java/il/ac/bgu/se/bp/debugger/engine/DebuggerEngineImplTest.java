@@ -5,11 +5,11 @@ import il.ac.bgu.cs.bp.bpjs.model.BProgram;
 import il.ac.bgu.cs.bp.bpjs.model.BProgramSyncSnapshot;
 import il.ac.bgu.cs.bp.bpjs.model.BThreadSyncSnapshot;
 import il.ac.bgu.cs.bp.bpjs.model.ResourceBProgram;
+import il.ac.bgu.se.bp.debugger.RunnerState;
 import il.ac.bgu.se.bp.debugger.commands.StepInto;
 import il.ac.bgu.se.bp.debugger.engine.events.BPStateEvent;
 import il.ac.bgu.se.bp.execution.manage.ProgramValidatorImpl;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
-import il.ac.bgu.se.bp.debugger.RunnerState;
 import il.ac.bgu.se.bp.utils.DebuggerStateHelper;
 import il.ac.bgu.se.bp.utils.Pair;
 import il.ac.bgu.se.bp.utils.asyncHelper.AsyncOperationRunnerImpl;
@@ -17,7 +17,6 @@ import il.ac.bgu.se.bp.utils.observer.BPEvent;
 import il.ac.bgu.se.bp.utils.observer.Publisher;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
@@ -133,7 +132,7 @@ public class DebuggerEngineImplTest {
 
         Arrays.stream(BREAKPOINTS_LINES).forEach(lineNumber -> debuggerEngine.setBreakpoint(lineNumber, true));
 
-        doCallRealMethod().when(debuggerStateHelper).setRecentlyRegisteredBthreads(any());
+        doCallRealMethod().when(debuggerStateHelper).setRecentlyRegisteredBThreads(any());
         doCallRealMethod().when(debuggerStateHelper).getLastState();
         doCallRealMethod().when(debuggerStateHelper).peekNextState(any(),any(),any(),any());
 
@@ -142,7 +141,7 @@ public class DebuggerEngineImplTest {
         for (BThreadSyncSnapshot b : recentlyRegisteredBThreads) {
             recentlyRegistered.add(new Pair<>(b.getName(), b.getEntryPoint()));
         }
-        debuggerStateHelper.setRecentlyRegisteredBthreads(recentlyRegistered);
+        debuggerStateHelper.setRecentlyRegisteredBThreads(recentlyRegistered);
         try {
             FieldSetter.setField(debuggerStateHelper, DebuggerStateHelper.class.getDeclaredField("newBTInterpreterFrames"), new HashMap<>());
             FieldSetter.setField(debuggerStateHelper, DebuggerStateHelper.class.getDeclaredField("syncSnapshotHolder"), new SyncSnapshotHolderImpl());

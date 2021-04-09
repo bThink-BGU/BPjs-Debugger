@@ -29,8 +29,10 @@ public class DebuggerStateHelper {
     private BPDebuggerState lastState = null;
     private String currentRunningBT = null;
     private SyncSnapshotHolder<BProgramSyncSnapshot, BEvent> syncSnapshotHolder;
+    private static final int INITIAL_INDEX_FOR_EVENTS_HISTORY_ON_SYNC_STATE = 0;
+    private static final int FINAL_INDEX_FOR_EVENTS_HISTORY_ON_SYNC_STATE = 10;
 
-    public DebuggerStateHelper(SyncSnapshotHolder syncSnapshotHolder) {
+    public DebuggerStateHelper(SyncSnapshotHolder<BProgramSyncSnapshot, BEvent> syncSnapshotHolder) {
         this.syncSnapshotHolder = syncSnapshotHolder;
     }
 
@@ -39,7 +41,27 @@ public class DebuggerStateHelper {
         return lastState;
     }
 
+    private void cleanFields() {
+        recentlyRegisteredBT = null;
+        newBTInterpreterFrames = null;
+        currentRunningBT = null;
+    }
+
     private BPDebuggerState generateDebuggerStateInner(BProgramSyncSnapshot syncSnapshot, RunnerState state, Dim.ContextData lastContextData, Dim.SourceInfo sourceInfo) {
+        List<BThreadInfo> bThreadInfoList = generateBThreadInfos(syncSnapshot, state, lastContextData);
+        EventsStatus eventsStatus = generateEventsStatus(syncSnapshot);
+        Integer lineNumber = lastContextData == null ? null : lastContextData.frameCount() > 0 ? lastContextData.getFrame(0).getLineNumber() : null;
+        SortedMap<Long, EventInfo> eventsHistory = generateEventsHistory(INITIAL_INDEX_FOR_EVENTS_HISTORY_ON_SYNC_STATE, FINAL_INDEX_FOR_EVENTS_HISTORY_ON_SYNC_STATE);
+        try {
+            boolean[] breakpoints = getValue(sourceInfo, "breakpoints", boolean[].class);
+            return new BPDebuggerState(bThreadInfoList, eventsStatus, eventsHistory, currentRunningBT, lineNumber, ArrayUtils.toObject(breakpoints));
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+        return new BPDebuggerState(bThreadInfoList, eventsStatus, eventsHistory, currentRunningBT, lineNumber);
+    }
+
+    private List<BThreadInfo> generateBThreadInfos(BProgramSyncSnapshot syncSnapshot, RunnerState state, Dim.ContextData lastContextData) {
         Set<BThreadSyncSnapshot> bThreadSyncSnapshots = syncSnapshot.getBThreadSnapshots();
         List<BThreadInfo> bThreadInfoList = bThreadSyncSnapshots
                 .stream()
@@ -48,11 +70,14 @@ public class DebuggerStateHelper {
 
         if (state.getDebuggerState() == RunnerState.State.JS_DEBUG) {
             bThreadInfoList.addAll(getRecentlyAddedBTInfo(lastContextData));
-        } else {
-            this.recentlyRegisteredBT = null;
-            this.newBTInterpreterFrames = null;
-            this.currentRunningBT = null;
         }
+        else {
+            cleanFields();
+        }
+        return bThreadInfoList;
+    }
+
+    private EventsStatus generateEventsStatus(BProgramSyncSnapshot syncSnapshot) {
         Set<SyncStatement> statements = syncSnapshot.getStatements();
 
         List<EventSet> wait = statements.stream().map(SyncStatement::getWaitFor).collect(Collectors.toList());
@@ -62,28 +87,23 @@ public class DebuggerStateHelper {
         List<EventInfo> blockedEvents = blocked.stream().map((e) -> e.equals(none) ? null : new EventInfo(((BEvent) e).getName())).filter(Objects::nonNull).collect(Collectors.toList());
         Set<EventInfo> requestedEvents = requested.stream().map((e) -> new EventInfo(e.getName())).collect(Collectors.toSet());
 
-        EventsStatus eventsStatus = new EventsStatus(waitEvents, blockedEvents, requestedEvents);
-        Integer lineNumber = lastContextData == null ? null : lastContextData.frameCount() > 0 ? lastContextData.getFrame(0).getLineNumber() : null;
-        SortedMap<Long, BEvent> events = this.syncSnapshotHolder.getEventsHistoryStack(0, 10);
-        SortedMap<Long,EventInfo> eventsHistory = new TreeMap<>(Collections.reverseOrder());
-        for(Map.Entry entry : events.entrySet()){
-            eventsHistory.put((Long) entry.getKey(), new EventInfo( ((BEvent)entry.getValue()).name));
+        return new EventsStatus(waitEvents, blockedEvents, requestedEvents);
+    }
+
+    public SortedMap<Long, EventInfo> generateEventsHistory(int from, int to) {
+        SortedMap<Long, BEvent> events = syncSnapshotHolder.getEventsHistoryStack(from, to);
+        SortedMap<Long, EventInfo> eventsHistory = new TreeMap<>(Collections.reverseOrder());
+        for (Map.Entry<Long, BEvent> entry : events.entrySet()) {
+            eventsHistory.put(entry.getKey(), new EventInfo(entry.getValue().name));
         }
-        try{
-            boolean[] breakpoints =  (boolean[])getValue(sourceInfo, "breakpoints");
-            return new BPDebuggerState(bThreadInfoList, eventsStatus, eventsHistory, currentRunningBT, lineNumber, ArrayUtils.toObject(breakpoints));
-        }
-        catch (Exception e){
-            System.out.println(e);
-        }
-        return new BPDebuggerState(bThreadInfoList, eventsStatus, eventsHistory, currentRunningBT, lineNumber);
+        return eventsHistory;
     }
 
     private List<BThreadInfo> getRecentlyAddedBTInfo(Dim.ContextData lastContextData) {
         List<BThreadInfo> bThreadInfoList = new ArrayList<>();
         Context cx = Context.getCurrentContext();
         try {
-            Object lastInterpreterFrame = getValue(cx, "lastInterpreterFrame");
+            Object lastInterpreterFrame = getValue(cx, "lastInterpreterFrame", Object.class);
 //            Object fnOrScript = lastInterpreterFrame == null ? null : getValue(lastInterpreterFrame, "fnOrScript");
             Object fnOrScript = lastInterpreterFrame == null ? null : getBaseFnOrScript(lastInterpreterFrame);
 
@@ -94,7 +114,8 @@ public class DebuggerStateHelper {
                     Map<Integer, Map<String, String>> env = getEnvDebug(lastInterpreterFrame, lastContextData, btName);
                     newBTInterpreterFrames.put(btName, lastInterpreterFrame);
                     bThreadInfoList.add(new BThreadInfo(btName, env));
-                } else {
+                }
+                else {
                     Object savedInterpreterFrame = newBTInterpreterFrames.get(btName);
                     Map<Integer, Map<String, String>> env = savedInterpreterFrame == null ? new HashMap<>() :
                             getEnvDebug(savedInterpreterFrame, lastContextData, btName);
@@ -111,24 +132,22 @@ public class DebuggerStateHelper {
         Object frame = lastInterpreterFrame;
 
         Object parentFrame = lastInterpreterFrame;
-        try{
-            while(parentFrame!= null){
+        try {
+            while (parentFrame != null) {
                 frame = parentFrame;
-                parentFrame = getValue(frame, "parentFrame");
+                parentFrame = getValue(frame, "parentFrame", Object.class);
             }
-            return getValue(frame, "fnOrScript");
-        }
-        catch (Exception e){
+            return getValue(frame, "fnOrScript", Object.class);
+        } catch (Exception e) {
             return null;
         }
-
     }
 
     private BThreadInfo createBThreadInfo(BThreadSyncSnapshot bThreadSS, RunnerState state, Dim.ContextData lastContextData) {
         ScriptableObject scope = (ScriptableObject) bThreadSS.getScope();
         try {
-            Object implementation = getValue(scope, "implementation");
-            Dim.StackFrame debuggerFrame = (Dim.StackFrame) getValue(implementation, "debuggerFrame");
+            Object implementation = getValue(scope, "implementation", Object.class);
+            Dim.StackFrame debuggerFrame = getValue(implementation, "debuggerFrame", Dim.StackFrame.class);
             Map<Integer, Map<String, String>> env = state == null ? null :
                     state.getDebuggerState() == RunnerState.State.JS_DEBUG ? getEnvDebug(implementation, lastContextData, bThreadSS.getName()) :
                             getEnv(implementation, debuggerFrame.contextData());
@@ -144,10 +163,10 @@ public class DebuggerStateHelper {
         return null;
     }
 
-    private Object getValue(Object instance, String fieldName) throws NoSuchFieldException, IllegalAccessException {
+    private <T> T getValue(Object instance, String fieldName, Class<T> clazz) throws NoSuchFieldException, IllegalAccessException {
         Field fld = instance.getClass().getDeclaredField(fieldName);
         fld.setAccessible(true);
-        return fld.get(instance);
+        return (T) fld.get(instance);
     }
 
     /**
@@ -164,13 +183,14 @@ public class DebuggerStateHelper {
         Context cx = Context.getCurrentContext();
         boolean currentRunningBT = false;
         try {
-            Object lastInterpreterFrame = getValue(cx, "lastInterpreterFrame");
-            if (lastInterpreterFrame == null)
+            Object lastInterpreterFrame = getValue(cx, "lastInterpreterFrame", Object.class);
+            if (lastInterpreterFrame == null) {
                 return getEnv(interpreterCallFrame, lastContextData);
-            Object parentFrame = getValue(lastInterpreterFrame, "parentFrame");
-            ScriptableObject interruptedScope = parentFrame != null ? (ScriptableObject) getValue(parentFrame, "scope") :
-                    (ScriptableObject) getValue(lastInterpreterFrame, "scope");
-            ScriptableObject paramScope = (ScriptableObject) getValue(interpreterCallFrame, "scope");
+            }
+            Object parentFrame = getValue(lastInterpreterFrame, "parentFrame", Object.class);
+            ScriptableObject interruptedScope = parentFrame != null ? getValue(parentFrame, "scope", ScriptableObject.class) :
+                    getValue(lastInterpreterFrame, "scope", ScriptableObject.class);
+            ScriptableObject paramScope = getValue(interpreterCallFrame, "scope", ScriptableObject.class);
             if (paramScope == interruptedScope) { //current running BT
                 currentRunningBT = true;
                 for (int i = 0; i < lastContextData.frameCount(); i++) {
@@ -183,7 +203,7 @@ public class DebuggerStateHelper {
             parentFrame = interpreterCallFrame;
             while (parentFrame != null) {
                 if (currentRunningBT) {
-                    Dim.ContextData debuggerFrame = ((Dim.StackFrame) getValue(parentFrame, "debuggerFrame")).contextData();
+                    Dim.ContextData debuggerFrame = getValue(parentFrame, "debuggerFrame", Dim.StackFrame.class).contextData();
                     if (debuggerFrame != lastContextData) {
                         for (int i = 0; i < debuggerFrame.frameCount(); i++) {
                             ScriptableObject scope = (ScriptableObject) debuggerFrame.getFrame(i).scope();
@@ -191,12 +211,13 @@ public class DebuggerStateHelper {
                         }
                         key += debuggerFrame.frameCount();
                     }
-                } else {
-                    ScriptableObject scope = (ScriptableObject) getValue(parentFrame, "scope");
+                }
+                else {
+                    ScriptableObject scope = getValue(parentFrame, "scope", ScriptableObject.class);
                     env.put(key, getScope(scope));
                     key += 1;
                 }
-                parentFrame = getValue(parentFrame, "parentFrame");
+                parentFrame = getValue(parentFrame, "parentFrame", Object.class);
             }
         } catch (NoSuchFieldException | IllegalAccessException e) {
             e.printStackTrace();
@@ -210,17 +231,16 @@ public class DebuggerStateHelper {
             ScriptableObject scope = (ScriptableObject) contextData.getFrame(i).scope();
             env.put(i, getScope(scope));
         }
-        Integer key = 1;
+        int key = 1;
         try {
-            Object lastFrame = interpreterCallFrame;
-            ScriptableObject scope = (ScriptableObject) getValue(lastFrame, "scope");
+            ScriptableObject scope = getValue(interpreterCallFrame, "scope", ScriptableObject.class);
             env.put(0, getScope(scope));
-            Object parentFrame = getValue(lastFrame, "parentFrame");
+            Object parentFrame = getValue(interpreterCallFrame, "parentFrame", Object.class);
             while (parentFrame != null) {
-                scope = (ScriptableObject) getValue(parentFrame, "scope");
+                scope = getValue(parentFrame, "scope", ScriptableObject.class);
                 env.put(key, getScope(scope));
                 key += 1;
-                parentFrame = getValue(parentFrame, "parentFrame");
+                parentFrame = getValue(parentFrame, "parentFrame", Object.class);
             }
         } catch (NoSuchFieldException | IllegalAccessException e) {
             e.printStackTrace();
@@ -231,9 +251,9 @@ public class DebuggerStateHelper {
     private Map<String, String> getScope(ScriptableObject scope) {
         Map<String, String> myEnv = new LinkedHashMap<>();
         try {
-            Object function = getValue(scope, "function");
-            Object interpretedData = getValue(function, "idata");
-            String itsName = (String) getValue(interpretedData, "itsName");
+            Object function = getValue(scope, "function", Object.class);
+            Object interpretedData = getValue(function, "idata", Object.class);
+            String itsName = getValue(interpretedData, "itsName", String.class);
             myEnv.put("FUNCNAME", itsName != null ? itsName : "BTMain");
             Object[] ids = Arrays.stream(scope.getIds()).filter((p) -> !p.toString().equals("arguments") && !p.toString().equals(itsName + "param")).toArray();
             for (Object id : ids) {
@@ -241,9 +261,7 @@ public class DebuggerStateHelper {
                 Gson gson = new Gson();
                 myEnv.put(id.toString(), gson.toJson(jsValue));
             }
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
+        } catch (NoSuchFieldException | IllegalAccessException e) {
             e.printStackTrace();
         }
         return myEnv;
@@ -263,10 +281,12 @@ public class DebuggerStateHelper {
         if (jsValue == null) {
             return null;
 
-        } else if (jsValue instanceof NativeFunction) {
+        }
+        else if (jsValue instanceof NativeFunction) {
             return ((NativeFunction) jsValue).getEncodedSource();
 
-        } else if (jsValue instanceof NativeArray) {
+        }
+        else if (jsValue instanceof NativeArray) {
             NativeArray jsArr = (NativeArray) jsValue;
             List<Object> retVal = new ArrayList<>((int) jsArr.getLength());
             for (int idx = 0; idx < jsArr.getLength(); idx++) {
@@ -274,7 +294,8 @@ public class DebuggerStateHelper {
             }
             return retVal;
 
-        } else if (jsValue instanceof ScriptableObject) {
+        }
+        else if (jsValue instanceof ScriptableObject) {
             ScriptableObject jsObj = (ScriptableObject) jsValue;
             Map<Object, Object> retVal = new HashMap<>();
             for (Object key : jsObj.getIds()) {
@@ -282,25 +303,28 @@ public class DebuggerStateHelper {
             }
             return retVal;
 
-        } else if (jsValue instanceof ConsString) {
+        }
+        else if (jsValue instanceof ConsString) {
             return ((ConsString) jsValue).toString();
 
-        } else if (jsValue instanceof NativeJavaObject) {
+        }
+        else if (jsValue instanceof NativeJavaObject) {
             NativeJavaObject jsJavaObj = (NativeJavaObject) jsValue;
             Object obj = jsJavaObj.unwrap();
             return obj;
 
-        } else {
+        }
+        else {
             return jsValue;
         }
 
     }
 
-    public void setRecentlyRegisteredBthreads(Set<Pair<String, Object>> recentlyRegistered) {
+    public void setRecentlyRegisteredBThreads(Set<Pair<String, Object>> recentlyRegistered) {
         this.recentlyRegisteredBT = recentlyRegistered;
     }
 
-    public BPDebuggerState peekNextState(BProgramSyncSnapshot syncSnapshot, RunnerState state, Dim.ContextData lastContextData,Dim.SourceInfo sourceInfo ) {
+    public BPDebuggerState peekNextState(BProgramSyncSnapshot syncSnapshot, RunnerState state, Dim.ContextData lastContextData, Dim.SourceInfo sourceInfo) {
         return generateDebuggerStateInner(syncSnapshot, state, lastContextData, sourceInfo);
     }
 }

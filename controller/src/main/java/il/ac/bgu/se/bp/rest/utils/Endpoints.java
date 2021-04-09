@@ -28,6 +28,7 @@ public class Endpoints {
     public static final String NEXT_SYNC = "/nextSync";
     public static final String SYNC_STATES = "/syncStates";
 
+    public static final String EVENTS = "/events";
     public static final String EXTERNAL_EVENT = "/externalEvent";
     public static final String SYNC_SNAPSHOT = "/syncSnapshot";
 

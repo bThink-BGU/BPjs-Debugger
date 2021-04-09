@@ -17,7 +17,7 @@ public class DebuggerBProgramRunnerListener implements BProgramRunnerListener {
     }
     @Override
     public void starting(BProgram bprog) {
-        this.debuggerStateHelper.setRecentlyRegisteredBthreads(recentlyRegisteredBT);
+        this.debuggerStateHelper.setRecentlyRegisteredBThreads(recentlyRegisteredBT);
         this.recentlyRegisteredBT.clear();
     }
 
@@ -58,7 +58,7 @@ public class DebuggerBProgramRunnerListener implements BProgramRunnerListener {
 
     @Override
     public void eventSelected(BProgram bp, BEvent theEvent) {
-        this.debuggerStateHelper.setRecentlyRegisteredBthreads(recentlyRegisteredBT);
+        this.debuggerStateHelper.setRecentlyRegisteredBThreads(recentlyRegisteredBT);
         this.recentlyRegisteredBT.clear();
     }
 

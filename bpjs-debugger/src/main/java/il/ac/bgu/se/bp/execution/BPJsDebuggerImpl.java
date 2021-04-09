@@ -20,6 +20,7 @@ import il.ac.bgu.se.bp.logger.Logger;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
+import il.ac.bgu.se.bp.socket.state.EventInfo;
 import il.ac.bgu.se.bp.utils.DebuggerBProgramRunnerListener;
 import il.ac.bgu.se.bp.utils.DebuggerPrintStream;
 import il.ac.bgu.se.bp.utils.DebuggerStateHelper;
@@ -129,7 +130,6 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
 
         syncSnapshotHolder.getAllSyncSnapshots().forEach((time, bProgramSyncSnapshotBEventPair) -> {
             BPDebuggerState bpDebuggerState = debuggerStateHelper.generateDebuggerState(bProgramSyncSnapshotBEventPair.getLeft(), state, null, null);
-            BEvent chosenEvent = bProgramSyncSnapshotBEventPair.getRight();
             syncSnapshotsHistory.put(time, bpDebuggerState);
         });
 
@@ -150,6 +150,14 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     @Override
     public RunnerState getDebuggerState() {
         return state;
+    }
+
+    @Override
+    public SortedMap<Long, EventInfo> getEventsHistory(int from, int to) {
+        if (from < 0 || to < 0 || to < from) {
+            return null;
+        }
+        return debuggerStateHelper.generateEventsHistory(from, to);
     }
 
     private synchronized void setIsStarted(boolean isStarted) {

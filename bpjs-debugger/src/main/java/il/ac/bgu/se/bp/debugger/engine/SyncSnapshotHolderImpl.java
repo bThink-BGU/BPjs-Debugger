@@ -47,15 +47,15 @@ public class SyncSnapshotHolderImpl implements SyncSnapshotHolder<BProgramSyncSn
     @Override
     public SortedMap<Long, BEvent> getEventsHistoryStack(int from, int to) {
         SortedMap<Long, BEvent> events = new TreeMap<>(Collections.reverseOrder());
-        if(from > this.snapshotsByTimeChosen.size() || (from > to))
+        if(from > snapshotsByTimeChosen.size() || from > to)
             return events;
         List<BEvent> eventsHistory = snapshotsByTimeChosen.values().stream().map(Pair::getRight).filter(Objects::nonNull).collect(Collectors.toList());
         List<Long> eventsTime = snapshotsByTimeChosen.keySet().stream().skip(1).collect(Collectors.toList());
 
         Collections.reverse(eventsHistory);
         Collections.reverse(eventsTime);
-        int startIdx = from < 0? 0: from;
-        int endIdx = to > eventsHistory.size()? eventsHistory.size(): to  < 0 ? 0 : to;
+        int startIdx = Math.max(from, 0);
+        int endIdx = to > eventsHistory.size()? eventsHistory.size() : Math.max(to, 0);
         for (int i = startIdx; i < endIdx; i ++ ){
             events.put(eventsTime.get(i), eventsHistory.get(i));
         }

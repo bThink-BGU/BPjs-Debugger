@@ -1,10 +1,12 @@
 package il.ac.bgu.se.bp.debugger;
 
 import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
+import il.ac.bgu.se.bp.socket.state.EventInfo;
 import il.ac.bgu.se.bp.utils.observer.BPEvent;
 import il.ac.bgu.se.bp.utils.observer.Publisher;
 
 import java.util.Map;
+import java.util.SortedMap;
 
 public interface BPJsDebugger<T> extends Debugger<T>, Publisher<BPEvent> {
 
@@ -26,4 +28,6 @@ public interface BPJsDebugger<T> extends Debugger<T>, Publisher<BPEvent> {
     T setSyncSnapshot(long snapShotTime);
 
     RunnerState getDebuggerState();
+
+    SortedMap<Long, EventInfo> getEventsHistory(int from, int to);
 }

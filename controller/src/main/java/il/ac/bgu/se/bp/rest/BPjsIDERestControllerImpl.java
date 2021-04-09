@@ -3,6 +3,7 @@ package il.ac.bgu.se.bp.rest;
 import il.ac.bgu.se.bp.rest.controller.BPjsIDERestController;
 import il.ac.bgu.se.bp.rest.request.*;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
+import il.ac.bgu.se.bp.rest.response.EventsHistoryResponse;
 import il.ac.bgu.se.bp.service.BPjsIDEService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.Header;
@@ -120,5 +121,14 @@ public class BPjsIDERestControllerImpl implements BPjsIDERestController {
     public @ResponseBody
     BooleanResponse setSyncSnapshot(@RequestHeader("userId") String userId, SetSyncSnapshotRequest setSyncSnapshotRequest) {
         return bPjsIDEService.setSyncSnapshot(userId, setSyncSnapshotRequest);
+    }
+
+    @Override
+    @RequestMapping(value = EVENTS, method = RequestMethod.GET)
+    public @ResponseBody
+    EventsHistoryResponse getEventsHistory(@RequestHeader("userId") String userId,
+                                           @RequestParam(name = "from") int from,
+                                           @RequestParam(name = "to") int to) {
+        return bPjsIDEService.getEventsHistory(userId, from, to);
     }
 }

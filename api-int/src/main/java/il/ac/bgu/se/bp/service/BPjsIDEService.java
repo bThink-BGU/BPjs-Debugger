@@ -2,10 +2,11 @@ package il.ac.bgu.se.bp.service;
 
 import il.ac.bgu.se.bp.rest.request.*;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
+import il.ac.bgu.se.bp.rest.response.EventsHistoryResponse;
 
 public interface BPjsIDEService {
 
-    BooleanResponse subscribeUser(String sessionId, String userId);
+    void subscribeUser(String sessionId, String userId);
 
     BooleanResponse run(RunRequest runRequest, String userId);
     BooleanResponse debug(DebugRequest debugRequest, String userId);
@@ -23,8 +24,7 @@ public interface BPjsIDEService {
     BooleanResponse nextSync(String userId);
 
     BooleanResponse externalEvent(String userId, ExternalEventRequest externalEventRequest);
-
     BooleanResponse setSyncSnapshot(String userId, SetSyncSnapshotRequest setSyncSnapshotRequest);
-//    BooleanResponse setWaitForExternalEvents(boolean shouldWait);
-//    GetSyncSnapshotsResponse getSyncSnapshotsHistory();
+
+    EventsHistoryResponse getEventsHistory(String userId, int from, int to);
 }

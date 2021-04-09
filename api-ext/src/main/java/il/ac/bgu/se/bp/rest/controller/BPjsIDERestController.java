@@ -2,6 +2,7 @@ package il.ac.bgu.se.bp.rest.controller;
 
 import il.ac.bgu.se.bp.rest.request.*;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
+import il.ac.bgu.se.bp.rest.response.EventsHistoryResponse;
 
 import java.security.Principal;
 
@@ -26,5 +27,7 @@ public interface BPjsIDERestController {
 
     BooleanResponse externalEvent(String userId, ExternalEventRequest externalEventRequest);
     BooleanResponse setSyncSnapshot(String userId, SetSyncSnapshotRequest setSyncSnapshotRequest);
+
+    EventsHistoryResponse getEventsHistory(String userId, int from, int to);
 
 }
