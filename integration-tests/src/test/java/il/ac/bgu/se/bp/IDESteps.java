@@ -7,12 +7,15 @@ import il.ac.bgu.se.bp.rest.request.DebugRequest;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.socket.StompPrincipal;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
+import il.ac.bgu.se.bp.utils.Pair;
+import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -32,6 +35,8 @@ public class IDESteps {
     @Autowired
     private SessionHandlerMock sessionHandler;
 
+    private Map<Integer, Boolean> breakpointsVerifier;
+
     @Given("I have connected to websocket with (.*) and (.*)")
     public void iHaveConnectedToWebsocketWithSessionIdAndUserId(String sessionId, String userId) {
         this.userId = userId;
@@ -44,11 +49,29 @@ public class IDESteps {
         boolean toggleMuteBreakpointsBoolean = strToBoolean(toggleMuteBreakpoints);
         boolean toggleMuteSyncPointsBoolean = strToBoolean(toggleMuteSyncPoints);
 
-        DebugRequest debugRequest = new DebugRequest(getCodeByFileName(filename), strToIntList(breakpoints));
+        List<Integer> breakpointsList = strToIntList(breakpoints);
+        initBreakpointsVerifier(breakpointsList);
+        DebugRequest debugRequest = new DebugRequest(getCodeByFileName(filename), breakpointsList);
         debugRequest.setSkipBreakpointsToggle(toggleMuteBreakpointsBoolean);
         debugRequest.setSkipSyncStateToggle(toggleMuteSyncPointsBoolean);
 
         lastResponse = testService.debug(userId, debugRequest);
+    }
+
+    private void initBreakpointsVerifier(List<Integer> breakpointsList) {
+        breakpointsVerifier = new HashMap<>();
+        breakpointsList.forEach(breakpoint -> breakpointsVerifier.put(breakpoint, false));
+    }
+
+    @When("I click on continue")
+    public void iClickOnContinue() {
+        sessionHandler.cleanMock();
+        lastResponse = testService.continueRun(userId);
+    }
+
+    @And("verify all breakpoints were reached")
+    public void verifyAllBreakpointsWereReached() {
+        breakpointsVerifier.forEach((breakpoint, isReached) -> assertTrue("did not get to breakpoint " + breakpoint, isReached));
     }
 
     @Then("wait until breakpoint reached")
@@ -70,21 +93,33 @@ public class IDESteps {
         }
     }
 
-    @Then("I should get notification with doubles (.*) and strings (.*) and breakpoint lines (.*)")
-    public void iShouldGetNotificationWithDoubleVariablesAndStringVariables(String doubleVars, String stringVars, String breakpointsStr) {
+    @Then("I should get notification with BThread (.*), doubles (.*), strings (.*) and breakpoint lines (.*)")
+    public void iShouldGetNotificationWithDoubleVariablesAndStringVariables(String bThreads, String doubleVars, String stringVars, String breakpointsStr) {
         BPDebuggerState lastDebuggerState = sessionHandler.getLastDebuggerStates();
         assertNotNull("BPDebuggerState was not received", lastDebuggerState);
-        Map<String, String> env = lastDebuggerState.getbThreadInfoList().get(0).getEnv().get(0);
 
         List<Integer> breakpoints = strToIntList(breakpointsStr);
         assertCurrentLineMatches(breakpoints, lastDebuggerState.getCurrentLineNumber());
-        strToStringVarsList(stringVars).forEach(var -> assertEquals(var.getRight(), strToString(env.get(var.getLeft()))));
-        strToDoubleVarsList(doubleVars).forEach(var -> assertEquals(var.getRight(), strToDouble(env.get(var.getLeft())), 0));
+
+        List<String> bThreadsOfCurrentBreakpoint = getBThreadNamesByBreakpoint(bThreads, lastDebuggerState.getCurrentLineNumber());
+        Map<String, String> actualEnv = getLastEnvOfMatchingBThread(lastDebuggerState.getbThreadInfoList(), bThreadsOfCurrentBreakpoint);
+        assertEnvVariables(actualEnv, lastDebuggerState.getCurrentLineNumber(), doubleVars, stringVars);
+    }
+
+    private void assertEnvVariables(Map<String, String> actualEnv, int currentBreakpoint, String doubleVars, String stringVars) {
+        List<Pair<String, String>> expectedStringVars = createStringEnvByBreakpoints(stringVars).get(currentBreakpoint);
+        if (expectedStringVars != null) {   // test file might not include string vars at this breakpoint
+            expectedStringVars.forEach(var -> assertEquals(var.getRight(), strToString(actualEnv.get(var.getLeft()))));
+        }
+        List<Pair<String, Double>> expectedDoubleVars = createDoubleEnvByBreakpoints(doubleVars).get(currentBreakpoint);
+        if (expectedDoubleVars != null) {   // test file might not include double vars at this breakpoint
+            expectedDoubleVars.forEach(var -> assertEquals(var.getRight(), strToDouble(actualEnv.get(var.getLeft())), 0));
+        }
     }
 
     private void assertCurrentLineMatches(List<Integer> breakpoints, Integer currentLineNumber) {
         assertNotNull("current line is null", currentLineNumber);
-        assertTrue(breakpoints.stream().reduce(false, (matches, breakpointLine) -> matches || breakpointLine.equals(currentLineNumber), Boolean::logicalOr));
+        assertTrue(breakpoints.contains(currentLineNumber));
+        breakpointsVerifier.put(currentLineNumber, true);
     }
-
 }

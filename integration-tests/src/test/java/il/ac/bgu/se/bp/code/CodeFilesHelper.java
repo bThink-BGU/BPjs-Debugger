@@ -5,39 +5,39 @@ public class CodeFilesHelper {
     public static String getCodeByFileName(String filename) {
         switch (filename) {
             case "testFile1":
-                return filename1();
+                return testFile1();
             case "testFile2":
-                return filename2();
+                return testFile2();
             case "testFile3":
-                return filename3();
+                return testFile3();
             case "testFile4":
-                return filename4();
+                return testFile4();
         }
         return null;
     }
 
-    private static String filename1() {
+    private static String testFile1() {
         return
                 "bp.registerBThread('bt-world', function () {\n" +
                         "    var myvar1 = 10;\n" +
                         "    var myvar2 = 20;\n" +
                         "    bp.registerBThread('bt-world-son', function () {\n" +
-                        "        bp.sync({ request: bp.Event('son-e') });\n" +
+                        "        bp.sync({ request: bp.Event('son-e') });\n" +          // L5
                         "        var x = 5;\n" +
                         "        var y = 16.7;\n" +
                         "        foo(3)\n" +
                         "        var z = \"alex\"\n" +
-                        "        var tt = \"hello\"\n" +
+                        "        var tt = \"hello\"\n" +                                // L10
                         "        bp.sync({ request: bp.Event('world12121') });\n" +
                         "    })\n" +
                         "    foo(1)\n" +
                         "    var z = myvar1 + 5\n" +
-                        "})\n" +
+                        "})\n" +                                                        // L15
                         "\n" +
                         "function foo(bt) {\n" +
                         "    var m = 50;\n" +
                         "    var n = 100;\n" +
-                        "    var p = m + n;\n" +
+                        "    var p = m + n;\n" +                                        // L20
                         "    goo()\n" +
                         "    const t = 200\n" +
                         "}\n" +
@@ -50,26 +50,27 @@ public class CodeFilesHelper {
                         "\n";
     }
 
-    private static String filename2() {
+    private static String testFile2() {
         return
                 "bp.registerBThread(\"Thread1\",function(){\n" +
                         "    var t = 6;\n" +
                         "    bp.sync({request:bp.Event(\"Thread1-EVENT\")});\n" +
-                        "    var innerVarT1After = 2;\n" +
+                        "    var innerVarT1After = 2;\n" +                              // 4
                         "})\n" +
                         "\n" +
                         "bp.registerBThread(\"Thread2\", function(){\n" +
-                        "    var innerVarT2Before = 1;\n" +
-                        "    bp.sync({request:bp.Event(\"Thread2-EVENT\")});\n" +
-                        "    var innerVarT2After = 2;\n" +
+                        "    var varT2B = 1;\n" +
+                        "    bp.sync({request:bp.Event(\"Thread2-EVENT\")});\n" +       // 9
+                        "    var var2 = \"alex\";\n" +
+                        "    var var3 = 2;\n" +
                         "})";
     }
 
-    private static String filename3() {
+    private static String testFile3() {
         return null;
     }
 
-    private static String filename4() {
+    private static String testFile4() {
         return null;
     }
 }
