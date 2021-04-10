@@ -23,4 +23,6 @@ public interface DebuggerEngine<S> extends GuiCallback, Publisher<BPEvent> {
     void addCommand(DebuggerCommand command) throws Exception;
 
     void onStateChanged();
+
+    boolean[] getBreakpoints();
 }

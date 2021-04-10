@@ -26,7 +26,7 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
 
     private boolean isTerminated = false;
     private Scanner sc;
-    private boolean isSkipSyncPoints = false;
+    private boolean isSkipSyncPoints = true;
     private boolean isSkipBreakPoints = false;
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -71,23 +71,22 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
         String[] splat = getUserInput(sc);
         String cmd = splat[0];
         switch (cmd) {
-            case "b":
+            case "b": {
+                int lineNumber = Integer.parseInt(splat[1]);
                 if (!bpJsDebugger.isSetup()) {
-                    breakpoints.put(Integer.parseInt(splat[1]), true);
-                }
-                else
-                    sendRequest(() -> bpJsDebugger.setBreakpoint(Integer.parseInt(splat[1]),true));
+                    breakpoints.put(lineNumber, true);
+                } else
+                    sendRequest(() -> bpJsDebugger.setBreakpoint(lineNumber, true));
                 break;
-            case "rb":
-                if (!bpJsDebugger.isSetup() || !bpJsDebugger.isStarted()) {
-                    sendRequest(() -> bpJsDebugger.setup(
-                            Collections.singletonMap(Integer.parseInt(splat[1]), false),
-                            isSkipBreakPoints,
-                            isSkipSyncPoints));
-                }
-                else
-                    sendRequest(() -> bpJsDebugger.setBreakpoint(Integer.parseInt(splat[1]), false));
+            }
+            case "rb": {
+                int lineNumber = Integer.parseInt(splat[1]);
+                if (!bpJsDebugger.isSetup()) {
+                    breakpoints.remove(lineNumber);
+                } else
+                    sendRequest(() -> bpJsDebugger.setBreakpoint(lineNumber, false));
                 break;
+            }
             case "go":
                 if (!bpJsDebugger.isStarted()) {
                     sendRequest(() -> bpJsDebugger.startSync(breakpoints, isSkipSyncPoints, isSkipBreakPoints));

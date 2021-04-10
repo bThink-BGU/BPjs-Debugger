@@ -91,14 +91,14 @@ public class DebuggerEngineImplTest {
         bProgramSyncSnapshot.start(execSvc);
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testSetBreakpointIllegalArgument() {
-        expectedState = new BPDebuggerState(new LinkedList<>(), null);
-        BProgram bProg = new ResourceBProgram(TEST_FILENAME);
-        BProgramSyncSnapshot bProgramSyncSnapshot = bProg.setup();
-
-        debuggerEngine.setBreakpoint(50, true);
-    }
+//    @Test(expected = IllegalArgumentException.class)
+//    public void testSetBreakpointIllegalArgument() {
+//        expectedState = new BPDebuggerState(new LinkedList<>(), null);
+//        BProgram bProg = new ResourceBProgram(TEST_FILENAME);
+//        BProgramSyncSnapshot bProgramSyncSnapshot = bProg.setup();
+//
+//        debuggerEngine.setBreakpoint(50, true);
+//    }
 
     @Test
     public void testSetBreakpointPositive() {

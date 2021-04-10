@@ -47,18 +47,23 @@ public class DebuggerStateHelper {
         currentRunningBT = null;
     }
 
+    public boolean[] getBreakpoints(Dim.SourceInfo sourceInfo){
+        try {
+            boolean[] breakpoints = getValue(sourceInfo, "breakpoints", boolean[].class);
+            return breakpoints;
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+        return new boolean[0];
+    }
+
     private BPDebuggerState generateDebuggerStateInner(BProgramSyncSnapshot syncSnapshot, RunnerState state, Dim.ContextData lastContextData, Dim.SourceInfo sourceInfo) {
         List<BThreadInfo> bThreadInfoList = generateBThreadInfos(syncSnapshot, state, lastContextData);
         EventsStatus eventsStatus = generateEventsStatus(syncSnapshot);
         Integer lineNumber = lastContextData == null ? null : lastContextData.frameCount() > 0 ? lastContextData.getFrame(0).getLineNumber() : null;
         SortedMap<Long, EventInfo> eventsHistory = generateEventsHistory(INITIAL_INDEX_FOR_EVENTS_HISTORY_ON_SYNC_STATE, FINAL_INDEX_FOR_EVENTS_HISTORY_ON_SYNC_STATE);
-        try {
-            boolean[] breakpoints = getValue(sourceInfo, "breakpoints", boolean[].class);
-            return new BPDebuggerState(bThreadInfoList, eventsStatus, eventsHistory, currentRunningBT, lineNumber, ArrayUtils.toObject(breakpoints));
-        } catch (Exception e) {
-            System.out.println(e);
-        }
-        return new BPDebuggerState(bThreadInfoList, eventsStatus, eventsHistory, currentRunningBT, lineNumber);
+        boolean[] breakpoints = getBreakpoints(sourceInfo);
+        return new BPDebuggerState(bThreadInfoList, eventsStatus, eventsHistory, currentRunningBT, lineNumber, ArrayUtils.toObject(breakpoints));
     }
 
     private List<BThreadInfo> generateBThreadInfos(BProgramSyncSnapshot syncSnapshot, RunnerState state, Dim.ContextData lastContextData) {

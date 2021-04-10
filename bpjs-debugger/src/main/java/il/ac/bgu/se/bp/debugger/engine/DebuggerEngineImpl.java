@@ -152,7 +152,8 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
 
     @Override
     public void setBreakpoint(int lineNumber, boolean stopOnBreakpoint) throws IllegalArgumentException {
-        dimHelper.setBreakpoint(lineNumber, stopOnBreakpoint, filename);
+        if(isBreakpointAllowed(lineNumber))
+            dimHelper.setBreakpoint(lineNumber, stopOnBreakpoint, filename);
     }
 
     @Override
@@ -164,6 +165,11 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
     public void onStateChanged() {
         BPDebuggerState newState = debuggerStateHelper.generateDebuggerState(syncSnapshot, state, lastContextData, dimHelper.getSourceInfo(filename));
         notifySubscribers(new BPStateEvent(debuggerId, newState));
+    }
+
+    @Override
+    public boolean[] getBreakpoints() {
+        return debuggerStateHelper.getBreakpoints(dimHelper.getSourceInfo(filename));
     }
 
     @Override
