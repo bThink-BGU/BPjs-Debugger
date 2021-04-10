@@ -154,6 +154,8 @@ public class BPJsDebuggerImplTest {
         assertNotNull(syncSnapshotsHistory);
         assertFalse(syncSnapshotsHistory.isEmpty());
 
+        //todo: assert actual values
+
         assertSuccessResponse(bpJsDebugger.stop());
         sleepUntil(e -> !bpJsDebugger.isStarted(), 3);
         assertFalse(bpJsDebugger.isStarted());

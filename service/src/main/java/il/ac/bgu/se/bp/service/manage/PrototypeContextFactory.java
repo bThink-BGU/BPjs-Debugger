@@ -17,7 +17,6 @@ public class PrototypeContextFactory extends ContextFactory {
 
     public Context enterContext() {
         final String threadId = Thread.currentThread().getName();
-        System.out.println("enterContext current THREAD: " + threadId);
         contextByThreadId.putIfAbsent(threadId, Context.enter());
         return this.enterContext(contextByThreadId.get(threadId));
     }
