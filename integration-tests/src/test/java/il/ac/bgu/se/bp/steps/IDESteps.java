@@ -16,6 +16,7 @@ import io.cucumber.java.en.When;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -143,7 +144,7 @@ public class IDESteps {
         assertNotNull("BPDebuggerState was not received", lastDebuggerState);
 
         List<Integer> breakpoints = strToIntList(breakpointsStr);
-        assertCurrentLineMatches(username, breakpoints, lastDebuggerState.getCurrentLineNumber());
+        assertBreakpoints(username, breakpoints, lastDebuggerState);
 
         List<String> bThreadsOfCurrentBreakpoint = getBThreadNamesByBreakpoint(bThreads, lastDebuggerState.getCurrentLineNumber());
         Map<String, String> actualEnv = getLastEnvOfMatchingBThread(lastDebuggerState.getbThreadInfoList(), bThreadsOfCurrentBreakpoint);
@@ -161,10 +162,16 @@ public class IDESteps {
         }
     }
 
-    private void assertCurrentLineMatches(String username, List<Integer> breakpoints, Integer currentLineNumber) {
-        assertNotNull("current line is null", currentLineNumber);
-        assertTrue(breakpoints.contains(currentLineNumber));
-        breakpointsVerifierPerUser.get(username).put(currentLineNumber, true);
+    private void assertBreakpoints(String username, List<Integer> breakpoints, BPDebuggerState bpDebuggerState) {
+        Integer currentBreakpoint = bpDebuggerState.getCurrentLineNumber();
+        assertNotNull("current line is null", currentBreakpoint);
+        assertTrue(breakpoints.contains(currentBreakpoint));
+        breakpointsVerifierPerUser.get(username).put(currentBreakpoint, true);
+
+        Boolean[] actualBreakpointsLines = bpDebuggerState.getBreakpoints();
+        breakpoints.forEach(breakpointLine -> assertTrue("breakpoint not set on line: " + breakpointLine, actualBreakpointsLines[breakpointLine]));
+        int actualNumOfBreakpoints = Arrays.stream(actualBreakpointsLines).reduce(0, (acc, curr) -> acc += curr ? 1 : 0, Integer::sum);
+        assertEquals(breakpoints.size(), actualNumOfBreakpoints);
     }
 
     private String getUserIdByName(String userName) {
