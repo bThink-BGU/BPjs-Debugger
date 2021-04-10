@@ -53,7 +53,7 @@ public class BpLog implements java.io.Serializable {
     public BpLog() {
         this( System.out );
     }
-    public void setLoggerOutputStreamer(PrintStream printStream){
+    public void setLoggerPrintStream(PrintStream printStream){
         out=printStream;
     }
     LogLevel level = LogLevel.Info;
