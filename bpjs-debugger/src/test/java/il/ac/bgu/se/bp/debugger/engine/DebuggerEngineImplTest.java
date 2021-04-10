@@ -62,7 +62,7 @@ public class DebuggerEngineImplTest {
     @Before
     public void setUp() {
         MockitoAnnotations.initMocks(this);
-        debuggerEngine = new DebuggerEngineImpl(debuggerId, TEST_FILENAME, state, debuggerStateHelper);
+        debuggerEngine = new DebuggerEngineImpl(debuggerId, TEST_FILENAME, state, debuggerStateHelper, "debuggerTestId");
         setMockPublisher();
         onStateChangedQueue.clear();
         Arrays.stream(BREAKPOINTS_LINES).forEach(lineNumber -> breakpoints.put(lineNumber, true));

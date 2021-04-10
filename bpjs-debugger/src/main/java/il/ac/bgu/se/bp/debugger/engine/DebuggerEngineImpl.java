@@ -1,5 +1,6 @@
 package il.ac.bgu.se.bp.debugger.engine;
 
+import il.ac.bgu.cs.bp.bpjs.internal.ExecutorServiceMaker;
 import il.ac.bgu.cs.bp.bpjs.model.BProgramSyncSnapshot;
 import il.ac.bgu.se.bp.debugger.RunnerState;
 import il.ac.bgu.se.bp.debugger.commands.DebuggerCommand;
@@ -19,6 +20,7 @@ import org.mozilla.javascript.tools.debugger.Dim;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
 
 public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> {
     private final String filename;
@@ -26,6 +28,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
     private final DebuggerStateHelper debuggerStateHelper;
     private final String debuggerId;
     private final Logger logger;
+    private final ExecutorService execSvc;
 
     private DimHelper dimHelper;
     private Dim.ContextData lastContextData = null;
@@ -36,12 +39,13 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
     private final BlockingQueue<DebuggerCommand> queue = new ArrayBlockingQueue<>(1);
     private Publisher<BPEvent> publisher = new BPEventPublisherImpl();
 
-    public DebuggerEngineImpl(String debuggerId, String filename, RunnerState state, DebuggerStateHelper debuggerStateHelper) {
+    public DebuggerEngineImpl(String debuggerId, String filename, RunnerState state, DebuggerStateHelper debuggerStateHelper, String debuggerThreadId) {
         this.filename = filename;
         this.state = state;
         this.debuggerStateHelper = debuggerStateHelper;
         this.debuggerId = debuggerId;
         this.logger = new Logger(DebuggerEngineImpl.class, debuggerId);
+        this.execSvc = ExecutorServiceMaker.makeWithName(debuggerThreadId);
 
         initDim();
         setIsRunning(true);
@@ -163,8 +167,12 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
 
     @Override
     public void onStateChanged() {
-        BPDebuggerState newState = debuggerStateHelper.generateDebuggerState(syncSnapshot, state, lastContextData, dimHelper.getSourceInfo(filename));
-        notifySubscribers(new BPStateEvent(debuggerId, newState));
+        try {
+            BPDebuggerState newState = debuggerStateHelper.generateDebuggerState(syncSnapshot, state, lastContextData, dimHelper.getSourceInfo(filename));
+            execSvc.submit(() -> notifySubscribers(new BPStateEvent(debuggerId, newState))).get();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

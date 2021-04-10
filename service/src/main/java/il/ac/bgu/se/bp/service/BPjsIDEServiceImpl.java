@@ -9,11 +9,14 @@ import il.ac.bgu.se.bp.rest.request.*;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.response.EventsHistoryResponse;
 import il.ac.bgu.se.bp.service.code.SourceCodeHelper;
+import il.ac.bgu.se.bp.service.manage.PrototypeContextFactory;
 import il.ac.bgu.se.bp.service.manage.SessionHandler;
+import org.mozilla.javascript.ContextFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.util.StringUtils;
 
+import javax.annotation.PostConstruct;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -32,6 +35,14 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
 
     @Autowired
     private DebuggerFactory<BooleanResponse> debuggerFactory;
+
+    @Autowired
+    private PrototypeContextFactory prototypeContextFactory;
+
+    @PostConstruct
+    public void setUp() {
+        ContextFactory.initGlobal(prototypeContextFactory);
+    }
 
     @Override
     public void subscribeUser(String sessionId, String userId) {

@@ -34,6 +34,7 @@ import org.springframework.util.StringUtils;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -48,6 +49,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
 
     private String debuggerId;
     private String filename;
+    private String debuggerExecutorId;
 
     private volatile boolean isBProgSetup = false; //indicates if bprog after setup
     private volatile boolean isSetup = false;
@@ -79,14 +81,19 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     }
 
     private void initDebugger() {
-        String debuggerThreadId = "BPJsDebuggerRunner-" + debuggerThreadIdGenerator.incrementAndGet();
-        execSvc = ExecutorServiceMaker.makeWithName(debuggerThreadId);
+        debuggerExecutorId = "BPJsDebuggerRunner-" + debuggerThreadIdGenerator.incrementAndGet();
+        execSvc = ExecutorServiceMaker.makeWithName(debuggerExecutorId);
         logger = new Logger(BPJsDebuggerImpl.class, debuggerId);
-        debuggerEngine = new DebuggerEngineImpl(debuggerId, filename, state, debuggerStateHelper);
+//        ContextFactory.getGlobalSetter().setContextFactoryGlobal(new ContextFactory());
+        debuggerEngine = new DebuggerEngineImpl(debuggerId, filename, state, debuggerStateHelper, debuggerExecutorId);
         debuggerPrintStream.setDebuggerId(debuggerId);
+        bprog = new ResourceBProgram(filename);
+        initListeners(bprog);
+    }
+
+    private void initListeners(BProgram bprog) {
         listeners.add(new PrintBProgramRunnerListener(debuggerPrintStream));
         listeners.add(new DebuggerBProgramRunnerListener(debuggerStateHelper));
-        bprog = new ResourceBProgram(filename);
         bprog.setAddBThreadCallback((bp, bt) -> listeners.forEach(l -> l.bthreadAdded(bp, bt)));
     }
 
@@ -94,7 +101,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     public DebugResponse setup(Map<Integer, Boolean> breakpoints, boolean isSkipBreakpoints, boolean isSkipSyncPoints) {
         if (!isBProgSetup) { // may get twice to setup - must do bprog setup first time only
             listeners.forEach(l -> l.starting(bprog));
-            syncSnapshot = bprog.setup();
+            syncSnapshot = awaitForExecutorServiceToFinishTask(bprog::setup);
             bprog.setLoggerOutputStreamer(debuggerPrintStream);
             syncSnapshot.getBThreadSnapshots().forEach(sn->listeners.forEach( l -> l.bthreadAdded(bprog, sn)) );
             isBProgSetup = true;
@@ -147,6 +154,11 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     @Override
     public RunnerState getDebuggerState() {
         return state;
+    }
+
+    @Override
+    public String getDebuggerExecutorId() {
+        return debuggerExecutorId;
     }
 
     @Override
@@ -319,6 +331,16 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         esr.getIndicesToRemove().stream().sorted(reverseOrder())
                 .forEach(idxObj -> updatedExternals.remove(idxObj.intValue()));
         syncSnapshot = syncSnapshot.copyWith(updatedExternals);
+    }
+
+    private <T> T awaitForExecutorServiceToFinishTask(Callable<T> callable) {
+        try {
+            Future<T> setupFuture = execSvc.submit(callable);
+            return setupFuture.get();
+        } catch (Exception e) {
+            logger.error("failed setting up BProgram, error: {0}", e, e.getMessage());
+        }
+        return null;
     }
 
     @Override

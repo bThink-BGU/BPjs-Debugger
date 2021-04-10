@@ -8,8 +8,9 @@ public class UserProgramSession<T> extends UserSession {
     private T program;
     private String filename;
 
-    public UserProgramSession(String sessionId, String userId, LocalDateTime lastOperationTime) {
+    public UserProgramSession(String sessionId, String userId, LocalDateTime lastOperationTime, String threadId) {
         super(sessionId, userId, lastOperationTime);
+        setThreadId(threadId);
     }
 
     UserProgramSession<T> withFilename(String filename) {

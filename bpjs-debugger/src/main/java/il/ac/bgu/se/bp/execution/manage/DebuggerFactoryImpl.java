@@ -3,6 +3,7 @@ package il.ac.bgu.se.bp.execution.manage;
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
 import il.ac.bgu.se.bp.debugger.manage.DebuggerFactory;
 import il.ac.bgu.se.bp.execution.BPJsDebuggerImpl;
+import il.ac.bgu.se.bp.logger.Logger;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
@@ -14,9 +15,11 @@ import org.springframework.stereotype.Component;
 public class DebuggerFactoryImpl implements DebuggerFactory<BooleanResponse>, ApplicationContextAware {
 
     private static ApplicationContext applicationContext;
+    private static final Logger logger = new Logger(DebuggerFactoryImpl.class);
 
     @Override
     public BPJsDebugger<BooleanResponse> getBPJsDebugger(String debuggerId, String filename) {
+        logger.info("generating new debugger for debuggerId: {0}, with filename: {1}", debuggerId, filename);
         BPJsDebugger<BooleanResponse> bpJsDebugger = new BPJsDebuggerImpl(debuggerId, filename);
 
         AutowireCapableBeanFactory factory = applicationContext.getAutowireCapableBeanFactory();

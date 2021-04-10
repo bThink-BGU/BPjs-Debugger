@@ -7,6 +7,7 @@ public class UserSession {
 
     private String sessionId;
     private String userId;
+    private String threadId;
     private LocalDateTime lastOperationTime;
 
     public UserSession(String sessionId, String userId, LocalDateTime lastOperationTime) {
@@ -39,8 +40,16 @@ public class UserSession {
         this.lastOperationTime = lastOperationTime;
     }
 
+    public String getThreadId() {
+        return threadId;
+    }
+
+    public void setThreadId(String threadId) {
+        this.threadId = threadId;
+    }
+
     public <T> UserProgramSession<T> withProgram(T program) {
-        UserProgramSession<T> newUserSession = new UserProgramSession<>(sessionId, userId, lastOperationTime);
+        UserProgramSession<T> newUserSession = new UserProgramSession<>(sessionId, userId, lastOperationTime, threadId);
         newUserSession.setProgram(program);
         return newUserSession;
     }
@@ -56,12 +65,13 @@ public class UserSession {
         UserSession that = (UserSession) o;
         return Objects.equals(sessionId, that.sessionId) &&
                 Objects.equals(userId, that.userId) &&
+                Objects.equals(threadId, that.threadId) &&
                 Objects.equals(lastOperationTime, that.lastOperationTime);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(sessionId, userId, lastOperationTime);
+        return Objects.hash(sessionId, userId, threadId, lastOperationTime);
     }
 
     @Override
@@ -69,6 +79,7 @@ public class UserSession {
         return "UserSession{" +
                 "sessionId='" + sessionId + '\'' +
                 ", userId='" + userId + '\'' +
+                ", threadId='" + threadId + '\'' +
                 ", lastOperationTime=" + lastOperationTime +
                 '}';
     }

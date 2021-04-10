@@ -33,7 +33,8 @@ public class SessionHandlerImpl implements SessionHandler<BProgramRunner> {
     private static final Map<String, UserProgramSession<BPJsDebugger>> bpDebugProgramsByUsers = new ConcurrentHashMap<>();
     private static final Map<String, UserProgramSession<BProgramRunner>> bpRunProgramsByUsers = new ConcurrentHashMap<>();
     private static final Map<String, UserSession> unknownSessions = new ConcurrentHashMap<>();
-    private final  Gson gson = new Gson();
+    private final Gson gson = new Gson();
+
     @Autowired
     @Qualifier("stateNotificationHandlerImpl")
     private NotificationHandler stateNotificationHandler;
@@ -44,6 +45,9 @@ public class SessionHandlerImpl implements SessionHandler<BProgramRunner> {
 
     @Autowired
     private SourceCodeHelper sourceCodeHelper;
+
+    @Autowired
+    private PrototypeContextFactory prototypeContextFactory;
 
     @Override
     public void addUser(String sessionId, String userId) {
@@ -58,6 +62,8 @@ public class SessionHandlerImpl implements SessionHandler<BProgramRunner> {
             return;
         }
 
+        //todo: add thread id
+//        existingUserSession.setThreadId(bProgramRunner.getDebuggerExecutorId());
         bpRunProgramsByUsers.put(userId, existingUserSession.withProgram(bProgramRunner).withFilename(filename));
         updateLastOperationTime(userId);
     }
@@ -79,6 +85,7 @@ public class SessionHandlerImpl implements SessionHandler<BProgramRunner> {
             return;
         }
 
+        existingUserSession.setThreadId(bpProgramDebugger.getDebuggerExecutorId());
         bpDebugProgramsByUsers.put(userId, existingUserSession.withProgram(bpProgramDebugger).withFilename(filename));
         updateLastOperationTime(userId);
     }
@@ -184,6 +191,7 @@ public class SessionHandlerImpl implements SessionHandler<BProgramRunner> {
     private void removeUserProgramFrom(String userId, Map<String, ? extends UserProgramSession> programByUserId) {
         UserProgramSession userProgramSession = programByUserId.remove(userId);
         if (userProgramSession != null) {
+            prototypeContextFactory.removeThread(userProgramSession.getThreadId());
             sourceCodeHelper.removeCodeFile(userProgramSession.getFilename());
         }
     }
