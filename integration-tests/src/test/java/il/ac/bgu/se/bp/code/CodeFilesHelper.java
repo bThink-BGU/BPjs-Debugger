@@ -39,6 +39,7 @@ public class CodeFilesHelper {
                         "    var n = 100;\n" +
                         "    var p = m + n;\n" +                                        // L20
                         "    goo()\n" +
+                        "    bp.log.info('grrrrrr')\n" +
                         "    const t = 200\n" +
                         "}\n" +
                         "\n" +

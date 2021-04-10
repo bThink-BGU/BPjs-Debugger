@@ -135,13 +135,13 @@ public class IDESteps {
     @Then("wait until user (.*) has reached breakpoint")
     public void waitUntilBreakpointReached(String username) {
         waitUntilPredicateSatisfied(() -> sessionHandler.getUsersLastDebuggerState(getUserIdByName(username)) != null &&
-                sessionHandler.getUsersLastDebuggerState(getUserIdByName(username)).getCurrentLineNumber() != null, 1000, 3);
+                sessionHandler.getUsersLastDebuggerState(getUserIdByName(username)).getCurrentLineNumber() != null, 2000, 3);
     }
 
     @Then("(.*) should get notification with BThread (.*), doubles (.*), strings (.*) and breakpoint lines (.*)")
     public void userShouldGetNotificationWithDoubleVariablesAndStringVariables(String username, String bThreads, String doubleVars, String stringVars, String breakpointsStr) {
         BPDebuggerState lastDebuggerState = sessionHandler.getUsersLastDebuggerState(getUserIdByName(username));
-        assertNotNull("BPDebuggerState was not received", lastDebuggerState);
+        assertNotNull("BPDebuggerState was not received for user: " + username, lastDebuggerState);
 
         List<Integer> breakpoints = strToIntList(breakpointsStr);
         assertBreakpoints(username, breakpoints, lastDebuggerState);

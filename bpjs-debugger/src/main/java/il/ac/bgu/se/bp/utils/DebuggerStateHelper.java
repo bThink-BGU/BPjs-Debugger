@@ -8,6 +8,7 @@ import il.ac.bgu.cs.bp.bpjs.model.SyncStatement;
 import il.ac.bgu.cs.bp.bpjs.model.eventsets.EventSet;
 import il.ac.bgu.se.bp.debugger.RunnerState;
 import il.ac.bgu.se.bp.debugger.engine.SyncSnapshotHolder;
+import il.ac.bgu.se.bp.logger.Logger;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
 import il.ac.bgu.se.bp.socket.state.BThreadInfo;
 import il.ac.bgu.se.bp.socket.state.EventInfo;
@@ -24,6 +25,7 @@ import static il.ac.bgu.cs.bp.bpjs.model.eventsets.EventSets.none;
 
 
 public class DebuggerStateHelper {
+    private static final Logger logger = new Logger(DebuggerStateHelper.class);
     private Set<Pair<String, Object>> recentlyRegisteredBT = null;
     private HashMap<String, Object> newBTInterpreterFrames = new HashMap<>();
     private BPDebuggerState lastState = null;
@@ -52,7 +54,7 @@ public class DebuggerStateHelper {
             boolean[] breakpoints = getValue(sourceInfo, "breakpoints", boolean[].class);
             return breakpoints;
         } catch (Exception e) {
-            System.out.println(e);
+            logger.error("failed to get breakpoints, e: {0}", e, e.getMessage());
         }
         return new boolean[0];
     }
@@ -128,7 +130,7 @@ public class DebuggerStateHelper {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("failed to get recently added BThread info, e: {0}", e, e.getMessage());
         }
         return bThreadInfoList;
     }
@@ -155,15 +157,15 @@ public class DebuggerStateHelper {
             Dim.StackFrame debuggerFrame = getValue(implementation, "debuggerFrame", Dim.StackFrame.class);
             Map<Integer, Map<String, String>> env = state == null ? null :
                     state.getDebuggerState() == RunnerState.State.JS_DEBUG ? getEnvDebug(implementation, lastContextData, bThreadSS.getName()) :
-                            getEnv(implementation, debuggerFrame.contextData());
+                            getEnv(implementation, debuggerFrame != null ? debuggerFrame.contextData() : null);
             EventSet waitFor = bThreadSS.getSyncStatement().getWaitFor();
             EventInfo waitEvent = waitFor.equals(none) ? null : new EventInfo(((BEvent) waitFor).getName());
             EventSet blocked = bThreadSS.getSyncStatement().getBlock();
             EventInfo blockedEvent = blocked.equals(none) ? null : new EventInfo(((BEvent) blocked).getName());
             Set<EventInfo> requested = new ArrayList<>(bThreadSS.getSyncStatement().getRequest()).stream().map((r) -> new EventInfo(r.getName())).collect(Collectors.toSet());
             return new BThreadInfo(bThreadSS.getName(), env, waitEvent, blockedEvent, requested);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            logger.error("failed to create BThread info, e: {0}", e, e.getMessage());
         }
         return null;
     }
@@ -225,16 +227,18 @@ public class DebuggerStateHelper {
                 parentFrame = getValue(parentFrame, "parentFrame", Object.class);
             }
         } catch (NoSuchFieldException | IllegalAccessException e) {
-            e.printStackTrace();
+            logger.error("getEnvDebug: failed to get env, e: {0}", e, e.getMessage());
         }
         return env;
     }
 
     private Map<Integer, Map<String, String>> getEnv(Object interpreterCallFrame, Dim.ContextData contextData) {
         Map<Integer, Map<String, String>> env = new HashMap<>();
-        for (int i = 0; i < contextData.frameCount(); i++) {
-            ScriptableObject scope = (ScriptableObject) contextData.getFrame(i).scope();
-            env.put(i, getScope(scope));
+        if (contextData != null) {
+            for (int i = 0; i < contextData.frameCount(); i++) {
+                ScriptableObject scope = (ScriptableObject) contextData.getFrame(i).scope();
+                env.put(i, getScope(scope));
+            }
         }
         int key = 1;
         try {
@@ -247,8 +251,8 @@ public class DebuggerStateHelper {
                 key += 1;
                 parentFrame = getValue(parentFrame, "parentFrame", Object.class);
             }
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            logger.error("getEnv: failed to get env, e: {0}", e, e.getMessage());
         }
         return env;
     }
@@ -267,7 +271,7 @@ public class DebuggerStateHelper {
                 myEnv.put(id.toString(), gson.toJson(jsValue));
             }
         } catch (NoSuchFieldException | IllegalAccessException e) {
-            e.printStackTrace();
+            logger.error("failed to get scope, e: {0}", e, e.getMessage());
         }
         return myEnv;
     }

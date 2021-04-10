@@ -80,7 +80,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     private void initDebugger() {
         String debuggerThreadId = "BPJsDebuggerRunner-" + debuggerThreadIdGenerator.incrementAndGet();
         execSvc = ExecutorServiceMaker.makeWithName(debuggerThreadId);
-        logger = new Logger(BPJsDebuggerImpl.class, debuggerThreadId);
+        logger = new Logger(BPJsDebuggerImpl.class, debuggerId);
         debuggerEngine = new DebuggerEngineImpl(debuggerId, filename, state, debuggerStateHelper);
         debuggerPrintStream.setDebuggerId(debuggerId);
         listeners.add(new PrintBProgramRunnerListener(debuggerPrintStream));

@@ -5,14 +5,14 @@ import il.ac.bgu.se.bp.socket.console.ConsoleMessage;
 import il.ac.bgu.se.bp.socket.exit.ProgramExit;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
 
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public class SessionHandlerMock extends SessionHandlerImpl {
-    private Map<String, List<BPDebuggerState>> debuggerStatesPerUser = new HashMap<>();
-    private Map<String, List<ConsoleMessage>> consoleMessagesPerUser = new HashMap<>();
+    private ConcurrentMap<String, List<BPDebuggerState>> debuggerStatesPerUser = new ConcurrentHashMap<>();
+    private ConcurrentMap<String, List<ConsoleMessage>> consoleMessagesPerUser = new ConcurrentHashMap<>();
 
     @Override
     public void visit(String userId, BPDebuggerState debuggerState) {
@@ -22,6 +22,7 @@ public class SessionHandlerMock extends SessionHandlerImpl {
 
     @Override
     public void visit(String userId, ConsoleMessage consoleMessage) {
+        System.out.println(userId + ": " + consoleMessage.getMessage());
         consoleMessagesPerUser.putIfAbsent(userId, new LinkedList<>());
         consoleMessagesPerUser.get(userId).add(consoleMessage);
     }

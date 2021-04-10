@@ -1,22 +1,22 @@
 package il.ac.bgu.se.bp.debugger.engine;
 
 import il.ac.bgu.cs.bp.bpjs.model.BProgramSyncSnapshot;
+import il.ac.bgu.se.bp.debugger.RunnerState;
 import il.ac.bgu.se.bp.debugger.commands.DebuggerCommand;
 import il.ac.bgu.se.bp.debugger.engine.dim.DimHelper;
 import il.ac.bgu.se.bp.debugger.engine.dim.DimHelperImpl;
 import il.ac.bgu.se.bp.debugger.engine.events.BPStateEvent;
-import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
-import il.ac.bgu.se.bp.debugger.RunnerState;
 import il.ac.bgu.se.bp.logger.Logger;
+import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
 import il.ac.bgu.se.bp.utils.DebuggerStateHelper;
 import il.ac.bgu.se.bp.utils.observer.BPEvent;
-import il.ac.bgu.se.bp.utils.observer.Publisher;
 import il.ac.bgu.se.bp.utils.observer.BPEventPublisherImpl;
+import il.ac.bgu.se.bp.utils.observer.Publisher;
 import il.ac.bgu.se.bp.utils.observer.Subscriber;
-import org.mozilla.javascript.*;
+import org.mozilla.javascript.ContextFactory;
 import org.mozilla.javascript.tools.debugger.Dim;
 
-import java.util.*;
+import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
@@ -69,7 +69,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
         state.setDebuggerState(RunnerState.State.JS_DEBUG);
         lastContextData = stackFrame.contextData();
 
-        logger.debug("Get state from enterInterrupt");
+        logger.debug("Get state from enterInterrupt, line number: {0}", stackFrame.getLineNumber());
         if (areBreakpointsMuted) {
             continueRun();
         }
