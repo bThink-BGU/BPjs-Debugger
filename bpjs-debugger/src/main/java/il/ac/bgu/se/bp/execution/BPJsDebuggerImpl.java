@@ -102,17 +102,13 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
             }
         }
         toggleMuteSyncPoints(isSkipSyncPoints);
-        try {
-            debuggerEngine.setupBreakpoints(breakpoints);
-            debuggerEngine.toggleMuteBreakpoints(isSkipBreakpoints);
-        }
-        catch (IllegalArgumentException e){
-            logger.error("cant set breakpoint line {0} to true ", e.getMessage());
-            return createErrorResponse(ErrorCode.BREAKPOINT_NOT_ALLOWED);
-        }
+        debuggerEngine.setupBreakpoints(breakpoints);
+        debuggerEngine.toggleMuteBreakpoints(isSkipBreakpoints);
+
         debuggerEngine.setSyncSnapshot(syncSnapshot);
         setIsSetup(true);
         state.setDebuggerState(RunnerState.State.STOPPED);
+        boolean[] actualBreakpoints = debuggerEngine.getBreakpoints();
 
 //        this.bProg.setWaitForExternalEvents(true);        //todo: add wait for external event toggle
         return createSuccessResponse();
@@ -181,7 +177,9 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     @Override
     public BooleanResponse startSync(Map<Integer, Boolean> breakpointsMap, boolean isSkipSyncPoints, boolean isSkipBreakpoints) {
         if (!isSetup()) {
-            setup(breakpointsMap, isSkipBreakpoints, isSkipSyncPoints);
+           BooleanResponse setupResponse =  setup(breakpointsMap, isSkipBreakpoints, isSkipSyncPoints);
+           if(!setupResponse.isSuccess())
+               return setupResponse;
         }
         asyncOperationRunner.runAsyncCallback(() -> runStartSync(isSkipSyncPoints));
         return createSuccessResponse();
