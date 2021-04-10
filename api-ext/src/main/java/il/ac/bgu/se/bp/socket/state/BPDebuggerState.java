@@ -73,6 +73,14 @@ public class BPDebuggerState implements Serializable {
         this.eventsStatus = eventsStatus;
     }
 
+    public Boolean[] getBreakpoints() {
+        return breakpoints;
+    }
+
+    public void setBreakpoints(Boolean[] breakpoints) {
+        this.breakpoints = breakpoints;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
