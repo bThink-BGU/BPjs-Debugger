@@ -30,7 +30,7 @@ Base URL is localhost:8080/bpjs
 
 Supported endpoints:
 
-| Command                     | Endpoint           | Method | Request                                                                                                | Headers |
+| Command                     | Endpoint           | Method | Request / Params                                                                                       | Headers |
 | --------------------------- | ------------------ | ------ | ------------------------------------------------------------------------------------------------------ | ------- |
 | Run                         | bpjs/run           | POST   | {sourceCode: String}                                                                                   | userId  |
 | Debug                       | bpjs/debug         | POST   | {sourceCode: String, breakpoints: int[], skipBreakpointsToggle: boolean, skipSyncStateToggle: boolean} | userId  |
@@ -45,6 +45,7 @@ Supported endpoints:
 | Next Sync                   | bpjs/nextSync      | GET    | None                                                                                                   | userId  |
 | Add / Remove External Event | bpjs/externalEvent | POST   | {externalEvent: String, addEvent: boolean}                                                             | userId  |
 | Set Sync Snapshot           | bpjs/syncSnapshot  | POST   | {snapShotTime: long}                                                                                   | userId  |
+| Get Events History          | bpjs/events        | GET    | from={int}&to{int}                                                                                     | userId  |
 
 ---
 
