@@ -90,7 +90,7 @@ public abstract class BProgram {
     private BProgramJsProxy jsProxy;
     
     private BpLog.LogLevel preSetLogLevel = null;
-
+    private PrintStream preSetPrintStream = null;
     /**
      * Objects that client code wishes to put in scope before the scope is
      * initialized are collected here.
@@ -200,9 +200,7 @@ public abstract class BProgram {
         return evaluate(script, scriptName);
     }
 
-    public void setLoggerOutputStreamer(PrintStream printStream){
-        jsProxy.log.setLoggerOutputStreamer(printStream);
-    }
+
     /**
      * Runs the passed code in the passed scope.
      *
@@ -328,6 +326,9 @@ public abstract class BProgram {
         jsProxy = new BProgramJsProxy(this);
         if ( preSetLogLevel != null ) {
             jsProxy.log.setLevel(preSetLogLevel.name());
+        }
+        if ( preSetPrintStream != null ) {
+            jsProxy.log.setLoggerPrintStream(preSetPrintStream);
         }
         programScope.put("bp", programScope, Context.javaToJS(jsProxy, programScope));
 
@@ -513,7 +514,13 @@ public abstract class BProgram {
             preSetLogLevel = aLevel;
         }
     }
-    
+    public void setLoggerOutputStreamer(PrintStream printStream){
+        if ( jsProxy != null ) {
+            jsProxy.log.setLoggerPrintStream(printStream);
+        } else {
+            preSetPrintStream = printStream;
+        }
+    }
     public BpLog.LogLevel getLogLevel() {
         return (jsProxy != null ) ? BpLog.LogLevel.valueOf(jsProxy.log.getLevel()) : null;
     }

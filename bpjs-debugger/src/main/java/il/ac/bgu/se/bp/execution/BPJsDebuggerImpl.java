@@ -18,6 +18,7 @@ import il.ac.bgu.se.bp.debugger.manage.ProgramValidator;
 import il.ac.bgu.se.bp.error.ErrorCode;
 import il.ac.bgu.se.bp.logger.Logger;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
+import il.ac.bgu.se.bp.rest.response.DebugResponse;
 import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
 import il.ac.bgu.se.bp.socket.state.EventInfo;
@@ -90,7 +91,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     }
 
     @Override
-    public BooleanResponse setup(Map<Integer, Boolean> breakpoints, boolean isSkipBreakpoints, boolean isSkipSyncPoints) {
+    public DebugResponse setup(Map<Integer, Boolean> breakpoints, boolean isSkipBreakpoints, boolean isSkipSyncPoints) {
         if (!isBProgSetup) { // may get twice to setup - must do bprog setup first time only
             listeners.forEach(l -> l.starting(bprog));
             syncSnapshot = bprog.setup();
@@ -98,7 +99,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
             syncSnapshot.getBThreadSnapshots().forEach(sn->listeners.forEach( l -> l.bthreadAdded(bprog, sn)) );
             isBProgSetup = true;
             if (syncSnapshot.getFailedAssertion() != null) {
-                return createErrorResponse(ErrorCode.BP_SETUP_FAIL);// todo: add failed assertion message
+                return new DebugResponse(false, ErrorCode.BP_SETUP_FAIL, new boolean[0]);
             }
         }
         toggleMuteSyncPoints(isSkipSyncPoints);
@@ -111,7 +112,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         boolean[] actualBreakpoints = debuggerEngine.getBreakpoints();
 
 //        this.bProg.setWaitForExternalEvents(true);        //todo: add wait for external event toggle
-        return createSuccessResponse();
+        return new DebugResponse(true, actualBreakpoints);
     }
 
     @Override
@@ -175,14 +176,12 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     }
 
     @Override
-    public BooleanResponse startSync(Map<Integer, Boolean> breakpointsMap, boolean isSkipSyncPoints, boolean isSkipBreakpoints) {
-        if (!isSetup()) {
-           BooleanResponse setupResponse =  setup(breakpointsMap, isSkipBreakpoints, isSkipSyncPoints);
-           if(!setupResponse.isSuccess())
-               return setupResponse;
-        }
+    public DebugResponse startSync(Map<Integer, Boolean> breakpointsMap, boolean isSkipSyncPoints, boolean isSkipBreakpoints) {
+        DebugResponse setupResponse =  setup(breakpointsMap, isSkipBreakpoints, isSkipSyncPoints);
+        if(!setupResponse.isSuccess())
+            return setupResponse;
         asyncOperationRunner.runAsyncCallback(() -> runStartSync(isSkipSyncPoints));
-        return createSuccessResponse();
+        return setupResponse;
     }
 
     private BooleanResponse runStartSync(boolean isSkipSyncPoints) {

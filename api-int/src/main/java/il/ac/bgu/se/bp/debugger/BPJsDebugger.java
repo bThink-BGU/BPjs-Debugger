@@ -1,5 +1,6 @@
 package il.ac.bgu.se.bp.debugger;
 
+import il.ac.bgu.se.bp.rest.response.DebugResponse;
 import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
 import il.ac.bgu.se.bp.socket.state.EventInfo;
 import il.ac.bgu.se.bp.utils.observer.BPEvent;
@@ -20,7 +21,7 @@ public interface BPJsDebugger<T> extends Debugger<T>, Publisher<BPEvent> {
 
     T setWaitForExternalEvents(boolean shouldWait);
 
-    T startSync(Map<Integer, Boolean> breakpointsMap, boolean isSkipSyncPoints, boolean isSkipBreakpoints);
+    DebugResponse startSync(Map<Integer, Boolean> breakpointsMap, boolean isSkipSyncPoints, boolean isSkipBreakpoints);
 
     T nextSync();
     T toggleMuteSyncPoints(boolean toggleMuteSyncPoints);
