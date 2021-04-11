@@ -34,7 +34,6 @@ import org.springframework.util.StringUtils;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -84,7 +83,6 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         debuggerExecutorId = "BPJsDebuggerRunner-" + debuggerThreadIdGenerator.incrementAndGet();
         execSvc = ExecutorServiceMaker.makeWithName(debuggerExecutorId);
         logger = new Logger(BPJsDebuggerImpl.class, debuggerId);
-//        ContextFactory.getGlobalSetter().setContextFactoryGlobal(new ContextFactory());
         debuggerEngine = new DebuggerEngineImpl(debuggerId, filename, state, debuggerStateHelper, debuggerExecutorId);
         debuggerPrintStream.setDebuggerId(debuggerId);
         bprog = new ResourceBProgram(filename);
@@ -335,10 +333,9 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
 
     private <T> T awaitForExecutorServiceToFinishTask(Callable<T> callable) {
         try {
-            Future<T> setupFuture = execSvc.submit(callable);
-            return setupFuture.get();
+            return execSvc.submit(callable).get();
         } catch (Exception e) {
-            logger.error("failed setting up BProgram, error: {0}", e, e.getMessage());
+            logger.error("failed running callable task via executor service, error: {0}", e, e.getMessage());
         }
         return null;
     }
