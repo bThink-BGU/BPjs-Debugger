@@ -3,6 +3,7 @@ package il.ac.bgu.se.bp.mocks.testService;
 import il.ac.bgu.se.bp.rest.controller.BPjsIDERestController;
 import il.ac.bgu.se.bp.rest.request.*;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
+import il.ac.bgu.se.bp.rest.response.DebugResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.security.Principal;
@@ -23,7 +24,7 @@ public class ControllerTestHelper implements TestService {
     }
 
     @Override
-    public BooleanResponse debug(String userId, DebugRequest code) {
+    public DebugResponse debug(String userId, DebugRequest code) {
         return bPjsIDERestController.debug(userId, code);
     }
 

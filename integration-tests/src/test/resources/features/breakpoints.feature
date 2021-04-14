@@ -3,7 +3,7 @@ Feature: Breakpoints
     Given user <username> has connected with userId <userId>
     And <username> has connected to websocket with <sessionId>
     When <username> asks to debug with filename <filename> and toggleMuteBreakpoints <toggleMuteBreakpoints> and toggleMuteSyncPoints <toggleMuteSyncPoints> and breakpoints <breakpoints>
-    Then The response should be true with errorCode null
+    Then The debug response should be true with errorCode null and breakpoints <breakpoints> for user <username>
     And wait until user <username> has reached breakpoint
     And <username> should get notification with BThread <bThreadNameByBreakpoint>, doubles <doubleVariables>, strings <stringVariables> and breakpoint lines <breakpoints>
     When <username> clicks on continue
@@ -25,7 +25,7 @@ Feature: Breakpoints
     Given user <username> has connected with userId <userId>
     And <username> has connected to websocket with <sessionId>
     When <username> asks to debug with filename <filename> and toggleMuteBreakpoints <toggleMuteBreakpoints> and toggleMuteSyncPoints <toggleMuteSyncPoints> and breakpoints <breakpoints>
-    Then The response should be true with errorCode null
+    Then The debug response should be true with errorCode null and breakpoints <breakpoints> for user <username>
     And wait until user <username> has reached breakpoint
     And <username> should get notification with BThread <bThreadNameByBreakpoint>, doubles <doubleVariables>, strings <stringVariables> and breakpoint lines <breakpoints>
     When <username> toggles mute breakpoints to true
@@ -49,10 +49,10 @@ Feature: Breakpoints
     Given alex has connected to websocket with alex-session
     And ron has connected to websocket with ron-session
 
-    When alex asks to debug with filename testFile1 and toggleMuteBreakpoints false and toggleMuteSyncPoints true and breakpoints 10,21
-    Then The response should be true with errorCode null
-    When ron asks to debug with filename testFile2 and toggleMuteBreakpoints false and toggleMuteSyncPoints true and breakpoints 4,9,11
-    Then The response should be true with errorCode null
+    When alex asks to debug with filename testFile1 and toggleMuteBreakpoints false and toggleMuteSyncPoints true and breakpoints 10,21,30,50,-1,16
+    Then The debug response should be true with errorCode null and breakpoints 10,21 for user alex
+    When ron asks to debug with filename testFile2 and toggleMuteBreakpoints false and toggleMuteSyncPoints true and breakpoints 4,9,11,30,50,-1,6
+    Then The debug response should be true with errorCode null and breakpoints 4,9,11 for user ron
 
     Then wait until user alex has reached breakpoint
     And wait until user ron has reached breakpoint
@@ -63,10 +63,10 @@ Feature: Breakpoints
     Given avishai has connected to websocket with avishai-session
     And tal has connected to websocket with tal-session
 
-    When avishai asks to debug with filename testFile1 and toggleMuteBreakpoints false and toggleMuteSyncPoints true and breakpoints 10,21
-    Then The response should be true with errorCode null
-    When tal asks to debug with filename testFile2 and toggleMuteBreakpoints false and toggleMuteSyncPoints true and breakpoints 4,9,11
-    Then The response should be true with errorCode null
+    When avishai asks to debug with filename testFile1 and toggleMuteBreakpoints false and toggleMuteSyncPoints true and breakpoints 10,21,30,50,-1,16
+    Then The debug response should be true with errorCode null and breakpoints 10,21 for user avishai
+    When tal asks to debug with filename testFile2 and toggleMuteBreakpoints false and toggleMuteSyncPoints true and breakpoints 4,9,11,30,50,-1,6
+    Then The debug response should be true with errorCode null and breakpoints 4,9,11 for user tal
 
     And wait until user avishai has reached breakpoint
     And wait until user tal has reached breakpoint

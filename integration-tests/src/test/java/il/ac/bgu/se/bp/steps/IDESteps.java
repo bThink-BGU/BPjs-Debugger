@@ -6,6 +6,7 @@ import il.ac.bgu.se.bp.mocks.testService.TestService;
 import il.ac.bgu.se.bp.rest.request.DebugRequest;
 import il.ac.bgu.se.bp.rest.request.ToggleBreakpointsRequest;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
+import il.ac.bgu.se.bp.rest.response.DebugResponse;
 import il.ac.bgu.se.bp.rest.socket.StompPrincipal;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
 import il.ac.bgu.se.bp.utils.Pair;
@@ -32,6 +33,7 @@ public class IDESteps {
     //    private String activeUserId;
     private Map<String, String> userIdsByNames;
     private BooleanResponse lastResponse;
+    private DebugResponse lastDebugResponse;
     private Map<String, Map<Integer, Boolean>> breakpointsVerifierPerUser;
 
     @Autowired
@@ -65,23 +67,11 @@ public class IDESteps {
     public void userAsksToDebugWithFilenameAndToggleMuteBreakpointsAndToggleMuteSyncPointsAndBreakpoints(String username, String filename, String toggleMuteBreakpoints, String toggleMuteSyncPoints, String breakpoints) {
         sessionHandler.cleanUserMockData(getUserIdByName(username));
 
-        List<Integer> breakpointsList = strToIntList(breakpoints);
-        initBreakpointsVerifier(username, breakpointsList);
-        DebugRequest debugRequest = new DebugRequest(getCodeByFileName(filename), breakpointsList);
+        DebugRequest debugRequest = new DebugRequest(getCodeByFileName(filename), strToIntList(breakpoints));
         debugRequest.setSkipBreakpointsToggle(strToBoolean(toggleMuteBreakpoints));
         debugRequest.setSkipSyncStateToggle(strToBoolean(toggleMuteSyncPoints));
 
-        lastResponse = testService.debug(getUserIdByName(username), debugRequest);
-    }
-
-    private void initBreakpointsVerifier(String username, List<Integer> breakpointsList) {
-        if (breakpointsVerifierPerUser == null) {
-            breakpointsVerifierPerUser = new HashMap<>();
-        }
-
-        HashMap<Integer, Boolean> breakpointsVerifier = new HashMap<>();
-        breakpointsList.forEach(breakpoint -> breakpointsVerifier.put(breakpoint, false));
-        breakpointsVerifierPerUser.put(username, breakpointsVerifier);
+        lastDebugResponse = testService.debug(getUserIdByName(username), debugRequest);
     }
 
     @When("(.*) clicks on continue")
@@ -103,14 +93,40 @@ public class IDESteps {
 
     @Then("The response should be (.*) with errorCode (.*)")
     public void theResponseShouldBe(String result, String errorCode) {
-        assertEquals(strToBoolean(result), lastResponse.isSuccess());
+        assertBooleanResponse(lastResponse, strToBoolean(result), errorCode);
+    }
+
+    @Then("The debug response should be (.*) with errorCode (.*) and breakpoints (.*) for user (.*)")
+    public void theDebugResponseShouldBeTrueWithErrorCodeNull(String result, String errorCode, String breakpoints, String username) {
+        assertBooleanResponse(lastDebugResponse, strToBoolean(result), errorCode);
+        List<Integer> expectedBreakpoints = strToIntList(breakpoints);
+        boolean[] actualBreakpoints = lastDebugResponse.getBreakpoints();
+        for (int i = 0; i < actualBreakpoints.length; i++) {
+            assertEquals(expectedBreakpoints.contains(i), actualBreakpoints[i]);
+        }
+        expectedBreakpoints.forEach(breakpoint -> assertTrue(actualBreakpoints[breakpoint]));
+        initBreakpointsVerifier(username, expectedBreakpoints);
+    }
+
+    private void initBreakpointsVerifier(String username, List<Integer> breakpointsList) {
+        if (breakpointsVerifierPerUser == null) {
+            breakpointsVerifierPerUser = new HashMap<>();
+        }
+
+        HashMap<Integer, Boolean> breakpointsVerifier = new HashMap<>();
+        breakpointsList.forEach(breakpoint -> breakpointsVerifier.put(breakpoint, false));
+        breakpointsVerifierPerUser.put(username, breakpointsVerifier);
+    }
+
+    private void assertBooleanResponse(BooleanResponse booleanResponse, boolean expectedResult, String errorCode) {
+        assertEquals(expectedResult, booleanResponse.isSuccess());
 
         if (isNull(errorCode)) {
-            assertNull(lastResponse.getErrorCode());
+            assertNull(booleanResponse.getErrorCode());
         }
         else {
-            assertNotNull(lastResponse.getErrorCode());
-            assertEquals(errorCode, lastResponse.getErrorCode().name());
+            assertNotNull(booleanResponse.getErrorCode());
+            assertEquals(errorCode, booleanResponse.getErrorCode().name());
         }
     }
 

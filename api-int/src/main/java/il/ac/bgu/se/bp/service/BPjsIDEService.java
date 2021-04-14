@@ -2,6 +2,7 @@ package il.ac.bgu.se.bp.service;
 
 import il.ac.bgu.se.bp.rest.request.*;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
+import il.ac.bgu.se.bp.rest.response.DebugResponse;
 import il.ac.bgu.se.bp.rest.response.EventsHistoryResponse;
 
 public interface BPjsIDEService {
@@ -9,7 +10,7 @@ public interface BPjsIDEService {
     void subscribeUser(String sessionId, String userId);
 
     BooleanResponse run(RunRequest runRequest, String userId);
-    BooleanResponse debug(DebugRequest debugRequest, String userId);
+    DebugResponse debug(DebugRequest debugRequest, String userId);
 
     BooleanResponse setBreakpoint(String userId, SetBreakpointRequest setBreakpointRequest);
     BooleanResponse toggleMuteBreakpoints(String userId, ToggleBreakpointsRequest toggleBreakPointStatus);

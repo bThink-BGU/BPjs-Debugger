@@ -187,14 +187,13 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
 
     @Override
     public DebugResponse startSync(Map<Integer, Boolean> breakpointsMap, boolean isSkipSyncPoints, boolean isSkipBreakpoints) {
-        DebugResponse setupResponse =  setup(breakpointsMap, isSkipBreakpoints, isSkipSyncPoints);
-        if(!setupResponse.isSuccess())
-            return setupResponse;
-        asyncOperationRunner.runAsyncCallback(() -> runStartSync(isSkipSyncPoints));
+        DebugResponse setupResponse = setup(breakpointsMap, isSkipBreakpoints, isSkipSyncPoints);
+        if(setupResponse.isSuccess())
+            asyncOperationRunner.runAsyncCallback(this::runStartSync);
         return setupResponse;
     }
 
-    private BooleanResponse runStartSync(boolean isSkipSyncPoints) {
+    private BooleanResponse runStartSync() {
         setIsStarted(true);
         try {
             listeners.forEach(l -> l.started(bprog));

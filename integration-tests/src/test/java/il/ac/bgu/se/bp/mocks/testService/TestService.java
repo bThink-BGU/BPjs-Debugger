@@ -2,6 +2,7 @@ package il.ac.bgu.se.bp.mocks.testService;
 
 import il.ac.bgu.se.bp.rest.request.*;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
+import il.ac.bgu.se.bp.rest.response.DebugResponse;
 
 import java.security.Principal;
 
@@ -9,7 +10,7 @@ public interface TestService {
     void subscribeUser(String sessionId, Principal principal);
 
     BooleanResponse run(String userId, RunRequest code);
-    BooleanResponse debug(String userId, DebugRequest code);
+    DebugResponse debug(String userId, DebugRequest code);
 
     BooleanResponse setBreakpoint(String userId, SetBreakpointRequest setBreakpointRequest);
     BooleanResponse toggleMuteBreakpoints(String userId, ToggleBreakpointsRequest toggleBreakpointsRequest);

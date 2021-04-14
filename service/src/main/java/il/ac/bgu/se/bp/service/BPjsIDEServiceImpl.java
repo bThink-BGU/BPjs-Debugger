@@ -7,6 +7,7 @@ import il.ac.bgu.se.bp.error.ErrorCode;
 import il.ac.bgu.se.bp.logger.Logger;
 import il.ac.bgu.se.bp.rest.request.*;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
+import il.ac.bgu.se.bp.rest.response.DebugResponse;
 import il.ac.bgu.se.bp.rest.response.EventsHistoryResponse;
 import il.ac.bgu.se.bp.service.code.SourceCodeHelper;
 import il.ac.bgu.se.bp.service.manage.PrototypeContextFactory;
@@ -64,25 +65,25 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
     }
 
     @Override
-    public BooleanResponse debug(DebugRequest debugRequest, String userId) {
+    public DebugResponse debug(DebugRequest debugRequest, String userId) {
         if (!validateRequest(debugRequest)) {
-            return createErrorResponse(ErrorCode.INVALID_REQUEST);
+            return new DebugResponse(createErrorResponse(ErrorCode.INVALID_REQUEST));
         }
 
         if (!sessionHandler.validateUserId(userId)) {
-            return createErrorResponse(ErrorCode.UNKNOWN_USER);
+            return new DebugResponse(createErrorResponse(ErrorCode.UNKNOWN_USER));
         }
 
         String filename = sourceCodeHelper.createCodeFile(debugRequest.getSourceCode());
         if (StringUtils.isEmpty(filename)) {
-            return createErrorResponse(ErrorCode.INVALID_SOURCE_CODE);
+            return new DebugResponse(createErrorResponse(ErrorCode.INVALID_SOURCE_CODE));
         }
 
         logger.info("received debug request for user: {0}", userId);
         return handleNewDebugRequest(debugRequest, userId, filename);
     }
 
-    private BooleanResponse handleNewDebugRequest(DebugRequest debugRequest, String userId, String filename) {
+    private DebugResponse handleNewDebugRequest(DebugRequest debugRequest, String userId, String filename) {
         BPJsDebugger<BooleanResponse> bpProgramDebugger = debuggerFactory.getBPJsDebugger(userId, filename);
         bpProgramDebugger.subscribe(sessionHandler);
 

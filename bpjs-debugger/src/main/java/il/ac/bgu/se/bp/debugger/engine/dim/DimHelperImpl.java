@@ -41,8 +41,11 @@ public class DimHelperImpl implements DimHelper {
     public Dim.SourceInfo getSourceInfo(String filename){
         return dim.sourceInfo(filename);
     }
+
     @Override
     public boolean isBreakpointAllowed(int lineNumber, String filename) {
+        if (lineNumber < 0)
+            return false;
         Dim.SourceInfo sourceInfo = dim.sourceInfo(filename);
         return sourceInfo.breakableLine(lineNumber);
     }

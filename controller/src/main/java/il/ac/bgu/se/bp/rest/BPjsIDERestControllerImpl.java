@@ -3,6 +3,7 @@ package il.ac.bgu.se.bp.rest;
 import il.ac.bgu.se.bp.rest.controller.BPjsIDERestController;
 import il.ac.bgu.se.bp.rest.request.*;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
+import il.ac.bgu.se.bp.rest.response.DebugResponse;
 import il.ac.bgu.se.bp.rest.response.EventsHistoryResponse;
 import il.ac.bgu.se.bp.service.BPjsIDEService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,7 +42,7 @@ public class BPjsIDERestControllerImpl implements BPjsIDERestController {
     @Override
     @RequestMapping(value = DEBUG, method = RequestMethod.POST)
     public @ResponseBody
-    BooleanResponse debug(@RequestHeader("userId") String userId, @RequestBody DebugRequest code) {
+    DebugResponse debug(@RequestHeader("userId") String userId, @RequestBody DebugRequest code) {
         return bPjsIDEService.debug(code, userId);
     }
 

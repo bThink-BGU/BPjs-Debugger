@@ -2,6 +2,7 @@ package il.ac.bgu.se.bp.mocks.testService;
 
 import il.ac.bgu.se.bp.rest.request.*;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
+import il.ac.bgu.se.bp.rest.response.DebugResponse;
 import il.ac.bgu.se.bp.rest.utils.Endpoints;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
@@ -31,11 +32,11 @@ public class RestServiceTestHelper implements TestService {
     }
 
     @Override
-    public BooleanResponse debug(String userId, DebugRequest code) {
+    public DebugResponse debug(String userId, DebugRequest code) {
         Response response = RestAssured.with().header(new Header(USER_ID, userId)).body(code)
                 .contentType(ContentType.JSON).when().post(BASE_URI + DEBUG);
         response.then().statusCode(200);
-        return response.getBody().as(BooleanResponse.class);
+        return response.getBody().as(DebugResponse.class);
     }
 
     @Override
