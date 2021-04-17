@@ -135,7 +135,7 @@ public class DebuggerEngineImplTest {
         doCallRealMethod().when(debuggerStateHelper).setRecentlyRegisteredBThreads(any());
         doCallRealMethod().when(debuggerStateHelper).getLastState();
         doCallRealMethod().when(debuggerStateHelper).peekNextState(any(),any(),any(),any());
-
+        doCallRealMethod().when(debuggerStateHelper).cleanFields();
         Set<BThreadSyncSnapshot> recentlyRegisteredBThreads = bProg.getRecentlyRegisteredBthreads();
         Set<Pair<String, Object>> recentlyRegistered = new HashSet<>();
         for (BThreadSyncSnapshot b : recentlyRegisteredBThreads) {
@@ -169,9 +169,10 @@ public class DebuggerEngineImplTest {
         expectedState = ExpectedResults.testEnvChangedInBreakPoints_ENV2();
         assertEquals(expectedState, state);
         debuggerEngine.onStateChanged();
-        onStateChangedQueue.take();
+
+        state= onStateChangedQueue.take();
         state = onStateChangedQueue.take();
-        expectedState = ExpectedResults.testEnvChangedInBreakPoints_ENV3();
+      expectedState = ExpectedResults.testEnvChangedInBreakPoints_ENV3();
         assertEquals(expectedState, state);
     }
 

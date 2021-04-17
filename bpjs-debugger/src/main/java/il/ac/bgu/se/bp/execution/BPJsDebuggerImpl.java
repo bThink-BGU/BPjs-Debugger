@@ -116,7 +116,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         state.setDebuggerState(RunnerState.State.STOPPED);
         boolean[] actualBreakpoints = debuggerEngine.getBreakpoints();
 
-//        this.bProg.setWaitForExternalEvents(true);        //todo: add wait for external event toggle
+        bprog.setWaitForExternalEvents(true);        //todo: add wait for external event toggle
         return new DebugResponse(true, actualBreakpoints);
     }
 
@@ -146,6 +146,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         }
 
         syncSnapshot = newSnapshot;
+        this.debuggerStateHelper.cleanFields();
         return nextSync();
     }
 
@@ -308,6 +309,9 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
             BEvent next = bprog.takeExternalEvent(); // and now we wait for external event
             state.setDebuggerState(RunnerState.State.RUNNING);
             if (next == null) {
+                logger.info("Event queue empty, not need to wait to external event. terminating....");
+                listeners.forEach(l->l.ended(bprog));
+                onExit();
                 return possibleEvents;
             }
 
@@ -397,6 +401,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
             return createErrorResponse(ErrorCode.INVALID_EVENT);
         }
         bprog.enqueueExternalEvent(new BEvent(externalEvent));
+        debuggerEngine.onStateChanged();
         return createSuccessResponse();
     }
 
@@ -408,6 +413,8 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         List<BEvent> updatedExternals = new ArrayList<>(syncSnapshot.getExternalEvents());
         updatedExternals.removeIf(bEvent -> bEvent.getName().equals(externalEvent));
         syncSnapshot = syncSnapshot.copyWith(updatedExternals);
+        debuggerEngine.setSyncSnapshot(syncSnapshot);
+        debuggerEngine.onStateChanged();
         return createSuccessResponse();
     }
 

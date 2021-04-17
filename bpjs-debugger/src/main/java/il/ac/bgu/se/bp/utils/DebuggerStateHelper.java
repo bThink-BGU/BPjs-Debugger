@@ -44,7 +44,7 @@ public class DebuggerStateHelper {
         return lastState;
     }
 
-    private void cleanFields() {
+    public void cleanFields() {
         recentlyRegisteredBT = null;
         newBTInterpreterFrames = null;
         currentRunningBT = null;
@@ -95,10 +95,11 @@ public class DebuggerStateHelper {
         List<EventInfo> waitEvents = wait.stream().map((e) -> e.equals(none) ? null : new EventInfo(((BEvent) e).getName())).filter(Objects::nonNull).collect(Collectors.toList());
         List<EventInfo> blockedEvents = blocked.stream().map((e) -> e.equals(none) ? null : new EventInfo(((BEvent) e).getName())).filter(Objects::nonNull).collect(Collectors.toList());
         Set<EventInfo> requestedEvents = requested.stream().map((e) -> new EventInfo(e.getName())).collect(Collectors.toSet());
+        List<EventInfo> externalEvents = syncSnapshot.getExternalEvents().stream().map((e) -> e.equals(none) ? null : new EventInfo(((BEvent) e).getName())).filter(Objects::nonNull).collect(Collectors.toList());
         if(currentEvent == null)
-            return new EventsStatus(waitEvents, blockedEvents, requestedEvents);
+            return new EventsStatus(waitEvents, blockedEvents, requestedEvents, externalEvents);
         else
-            return new EventsStatus(waitEvents, blockedEvents, requestedEvents, new EventInfo(currentEvent));
+            return new EventsStatus(waitEvents, blockedEvents, requestedEvents, externalEvents, new EventInfo(currentEvent));
     }
 
     public SortedMap<Long, EventInfo> generateEventsHistory(int from, int to) {
@@ -344,4 +345,6 @@ public class DebuggerStateHelper {
     public void updateCurrentEvent(String name) {
         this.currentEvent = name;
     }
+
+
 }

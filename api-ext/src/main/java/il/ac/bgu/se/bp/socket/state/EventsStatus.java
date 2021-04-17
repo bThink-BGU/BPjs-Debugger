@@ -9,23 +9,27 @@ public class EventsStatus implements Serializable {
     private List<EventInfo> wait;
     private List<EventInfo> blocked;
     private Set<EventInfo> requested;
+    private List<EventInfo> externalEvents;
     private EventInfo currentEvent = null;
 
     public EventsStatus() {
         this.wait = new ArrayList<>();
         this.blocked = new ArrayList<>();
         this.requested = new HashSet<>();
+        this.externalEvents = new LinkedList<>();
     }
 
-    public EventsStatus(List<EventInfo> wait, List<EventInfo> blocked, Set<EventInfo> requested) {
+    public EventsStatus(List<EventInfo> wait, List<EventInfo> blocked, Set<EventInfo> requested, List<EventInfo> externalEvents) {
         this.wait = wait;
         this.blocked = blocked;
         this.requested = requested;
+        this.externalEvents = externalEvents;
     }
-    public EventsStatus(List<EventInfo> wait, List<EventInfo> blocked, Set<EventInfo> requested, EventInfo currentEvent) {
+    public EventsStatus(List<EventInfo> wait, List<EventInfo> blocked, Set<EventInfo> requested, List<EventInfo> externalEvents,  EventInfo currentEvent) {
         this.wait = wait;
         this.blocked = blocked;
         this.requested = requested;
+        this.externalEvents = externalEvents;
         this.currentEvent= currentEvent;
     }
     public List<EventInfo> getWait() {
@@ -74,8 +78,25 @@ public class EventsStatus implements Serializable {
                 pref + "\twait=" + wait + ",\n" +
                 pref + "\tblocked=" + blocked + ",\n" +
                 pref + "\trequested=" + requested + ",\n" +
+                pref + "\texternalEvents=" + externalEvents + ",\n" +
                 pref + "\tcurrentEvent=" + currentEvent + ",\n" +
                 pref + '}';
+    }
+
+    public List<EventInfo> getExternalEvents() {
+        return externalEvents;
+    }
+
+    public void setExternalEvents(List<EventInfo> externalEvents) {
+        this.externalEvents = externalEvents;
+    }
+
+    public EventInfo getCurrentEvent() {
+        return currentEvent;
+    }
+
+    public void setCurrentEvent(EventInfo currentEvent) {
+        this.currentEvent = currentEvent;
     }
 
     @Override
@@ -84,6 +105,7 @@ public class EventsStatus implements Serializable {
                 "wait=" + wait +
                 ", blocked=" + blocked +
                 ", requested=" + requested +
+                ", externalEvents=" + externalEvents +
                 ", currentEvent="+ Objects.toString(currentEvent)+
                 '}';
     }
