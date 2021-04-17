@@ -278,6 +278,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
             removeExternalEvents(eventSelectionResult);
         }
         logger.info("Triggering event " + event);
+        debuggerStateHelper.updateCurrentEvent(event.getName());
         syncSnapshot = syncSnapshot.triggerEvent(event, execSvc, listeners);
         if (!syncSnapshot.isStateValid()) {
             onInvalidStateError("Next Sync fatal error");

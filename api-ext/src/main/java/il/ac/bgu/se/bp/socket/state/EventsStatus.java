@@ -9,6 +9,7 @@ public class EventsStatus implements Serializable {
     private List<EventInfo> wait;
     private List<EventInfo> blocked;
     private Set<EventInfo> requested;
+    private EventInfo currentEvent = null;
 
     public EventsStatus() {
         this.wait = new ArrayList<>();
@@ -21,7 +22,12 @@ public class EventsStatus implements Serializable {
         this.blocked = blocked;
         this.requested = requested;
     }
-
+    public EventsStatus(List<EventInfo> wait, List<EventInfo> blocked, Set<EventInfo> requested, EventInfo currentEvent) {
+        this.wait = wait;
+        this.blocked = blocked;
+        this.requested = requested;
+        this.currentEvent= currentEvent;
+    }
     public List<EventInfo> getWait() {
         return wait;
     }
@@ -53,7 +59,8 @@ public class EventsStatus implements Serializable {
         EventsStatus that = (EventsStatus) o;
         return wait.containsAll(that.wait) && that.wait.containsAll(wait) &&
                 blocked.containsAll(that.blocked) && that.blocked.containsAll(blocked) &&
-                requested.equals(that.requested);
+                requested.equals(that.requested) &&
+                Objects.equals(currentEvent, that.currentEvent);
     }
 
     @Override
@@ -67,6 +74,7 @@ public class EventsStatus implements Serializable {
                 pref + "\twait=" + wait + ",\n" +
                 pref + "\tblocked=" + blocked + ",\n" +
                 pref + "\trequested=" + requested + ",\n" +
+                pref + "\tcurrentEvent=" + currentEvent + ",\n" +
                 pref + '}';
     }
 
@@ -76,6 +84,7 @@ public class EventsStatus implements Serializable {
                 "wait=" + wait +
                 ", blocked=" + blocked +
                 ", requested=" + requested +
+                ", currentEvent="+ Objects.toString(currentEvent)+
                 '}';
     }
 }
