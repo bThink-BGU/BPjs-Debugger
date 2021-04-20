@@ -113,14 +113,14 @@ public class BPjsIDERestControllerImpl implements BPjsIDERestController {
     @Override
     @RequestMapping(value = EXTERNAL_EVENT, method = RequestMethod.POST)
     public @ResponseBody
-    BooleanResponse externalEvent(@RequestHeader("userId") String userId, ExternalEventRequest externalEventRequest) {
+    BooleanResponse externalEvent(@RequestHeader("userId") String userId,@RequestBody ExternalEventRequest externalEventRequest) {
         return bPjsIDEService.externalEvent(userId, externalEventRequest);
     }
 
     @Override
     @RequestMapping(value = SYNC_SNAPSHOT, method = RequestMethod.POST)
     public @ResponseBody
-    BooleanResponse setSyncSnapshot(@RequestHeader("userId") String userId, SetSyncSnapshotRequest setSyncSnapshotRequest) {
+    BooleanResponse setSyncSnapshot(@RequestHeader("userId") String userId,@RequestBody SetSyncSnapshotRequest setSyncSnapshotRequest) {
         return bPjsIDEService.setSyncSnapshot(userId, setSyncSnapshotRequest);
     }
 

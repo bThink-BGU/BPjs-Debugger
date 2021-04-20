@@ -31,6 +31,7 @@ public class DebuggerStateHelper {
     private BPDebuggerState lastState = null;
     private String currentRunningBT = null;
     private SyncSnapshotHolder<BProgramSyncSnapshot, BEvent> syncSnapshotHolder;
+    private String currentEvent = null;
     private static final int INITIAL_INDEX_FOR_EVENTS_HISTORY_ON_SYNC_STATE = 0;
     private static final int FINAL_INDEX_FOR_EVENTS_HISTORY_ON_SYNC_STATE = 10;
 
@@ -43,10 +44,11 @@ public class DebuggerStateHelper {
         return lastState;
     }
 
-    private void cleanFields() {
+    public void cleanFields() {
         recentlyRegisteredBT = null;
         newBTInterpreterFrames = null;
         currentRunningBT = null;
+        currentEvent = null;
     }
 
     public boolean[] getBreakpoints(Dim.SourceInfo sourceInfo){
@@ -93,8 +95,11 @@ public class DebuggerStateHelper {
         List<EventInfo> waitEvents = wait.stream().map((e) -> e.equals(none) ? null : new EventInfo(((BEvent) e).getName())).filter(Objects::nonNull).collect(Collectors.toList());
         List<EventInfo> blockedEvents = blocked.stream().map((e) -> e.equals(none) ? null : new EventInfo(((BEvent) e).getName())).filter(Objects::nonNull).collect(Collectors.toList());
         Set<EventInfo> requestedEvents = requested.stream().map((e) -> new EventInfo(e.getName())).collect(Collectors.toSet());
-
-        return new EventsStatus(waitEvents, blockedEvents, requestedEvents);
+        List<EventInfo> externalEvents = syncSnapshot.getExternalEvents().stream().map((e) -> e.equals(none) ? null : new EventInfo(((BEvent) e).getName())).filter(Objects::nonNull).collect(Collectors.toList());
+        if(currentEvent == null)
+            return new EventsStatus(waitEvents, blockedEvents, requestedEvents, externalEvents);
+        else
+            return new EventsStatus(waitEvents, blockedEvents, requestedEvents, externalEvents, new EventInfo(currentEvent));
     }
 
     public SortedMap<Long, EventInfo> generateEventsHistory(int from, int to) {
@@ -337,4 +342,10 @@ public class DebuggerStateHelper {
     public BPDebuggerState peekNextState(BProgramSyncSnapshot syncSnapshot, RunnerState state, Dim.ContextData lastContextData, Dim.SourceInfo sourceInfo) {
         return generateDebuggerStateInner(syncSnapshot, state, lastContextData, sourceInfo);
     }
+
+    public void updateCurrentEvent(String name) {
+        this.currentEvent = name;
+    }
+
+
 }
