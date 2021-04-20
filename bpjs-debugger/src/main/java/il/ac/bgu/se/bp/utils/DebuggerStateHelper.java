@@ -51,7 +51,7 @@ public class DebuggerStateHelper {
 
     public boolean[] getBreakpoints(Dim.SourceInfo sourceInfo){
         try {
-            boolean[] breakpoints = getValue(sourceInfo, "breakpoints", boolean[].class);
+            boolean[] breakpoints = getValue(sourceInfo, "breakpoints");
             return breakpoints;
         } catch (Exception e) {
             logger.error("failed to get breakpoints, e: {0}", e, e.getMessage());
@@ -110,7 +110,7 @@ public class DebuggerStateHelper {
         List<BThreadInfo> bThreadInfoList = new ArrayList<>();
         Context cx = Context.getCurrentContext();
         try {
-            Object lastInterpreterFrame = getValue(cx, "lastInterpreterFrame", Object.class);
+            Object lastInterpreterFrame = getValue(cx, "lastInterpreterFrame");
 //            Object fnOrScript = lastInterpreterFrame == null ? null : getValue(lastInterpreterFrame, "fnOrScript");
             Object fnOrScript = lastInterpreterFrame == null ? null : getBaseFnOrScript(lastInterpreterFrame);
 
@@ -142,9 +142,9 @@ public class DebuggerStateHelper {
         try {
             while (parentFrame != null) {
                 frame = parentFrame;
-                parentFrame = getValue(frame, "parentFrame", Object.class);
+                parentFrame = getValue(frame, "parentFrame");
             }
-            return getValue(frame, "fnOrScript", Object.class);
+            return getValue(frame, "fnOrScript");
         } catch (Exception e) {
             return null;
         }
@@ -153,8 +153,8 @@ public class DebuggerStateHelper {
     private BThreadInfo createBThreadInfo(BThreadSyncSnapshot bThreadSS, RunnerState state, Dim.ContextData lastContextData) {
         ScriptableObject scope = (ScriptableObject) bThreadSS.getScope();
         try {
-            Object implementation = getValue(scope, "implementation", Object.class);
-            Dim.StackFrame debuggerFrame = getValue(implementation, "debuggerFrame", Dim.StackFrame.class);
+            Object implementation = getValue(scope, "implementation");
+            Dim.StackFrame debuggerFrame = getValue(implementation, "debuggerFrame");
             Map<Integer, Map<String, String>> env = state == null ? null :
                     state.getDebuggerState() == RunnerState.State.JS_DEBUG ? getEnvDebug(implementation, lastContextData, bThreadSS.getName()) :
                             getEnv(implementation, debuggerFrame != null ? debuggerFrame.contextData() : null);
@@ -170,7 +170,7 @@ public class DebuggerStateHelper {
         return null;
     }
 
-    private <T> T getValue(Object instance, String fieldName, Class<T> clazz) throws NoSuchFieldException, IllegalAccessException {
+    private <T> T getValue(Object instance, String fieldName) throws NoSuchFieldException, IllegalAccessException {
         Field fld = instance.getClass().getDeclaredField(fieldName);
         fld.setAccessible(true);
         return (T) fld.get(instance);
@@ -190,14 +190,14 @@ public class DebuggerStateHelper {
         Context cx = Context.getCurrentContext();
         boolean currentRunningBT = false;
         try {
-            Object lastInterpreterFrame = getValue(cx, "lastInterpreterFrame", Object.class);
+            Object lastInterpreterFrame = getValue(cx, "lastInterpreterFrame");
             if (lastInterpreterFrame == null) {
                 return getEnv(interpreterCallFrame, lastContextData);
             }
-            Object parentFrame = getValue(lastInterpreterFrame, "parentFrame", Object.class);
-            ScriptableObject interruptedScope = parentFrame != null ? getValue(parentFrame, "scope", ScriptableObject.class) :
-                    getValue(lastInterpreterFrame, "scope", ScriptableObject.class);
-            ScriptableObject paramScope = getValue(interpreterCallFrame, "scope", ScriptableObject.class);
+            Object parentFrame = getValue(lastInterpreterFrame, "parentFrame");
+            ScriptableObject interruptedScope = parentFrame != null ? getValue(parentFrame, "scope") :
+                    getValue(lastInterpreterFrame, "scope");
+            ScriptableObject paramScope = getValue(interpreterCallFrame, "scope");
             if (paramScope == interruptedScope) { //current running BT
                 currentRunningBT = true;
                 for (int i = 0; i < lastContextData.frameCount(); i++) {
@@ -210,7 +210,8 @@ public class DebuggerStateHelper {
             parentFrame = interpreterCallFrame;
             while (parentFrame != null) {
                 if (currentRunningBT) {
-                    Dim.ContextData debuggerFrame = getValue(parentFrame, "debuggerFrame", Dim.StackFrame.class).contextData();
+                    Dim.StackFrame stackFrame = getValue(parentFrame, "debuggerFrame");
+                    Dim.ContextData debuggerFrame = stackFrame.contextData();
                     if (debuggerFrame != lastContextData) {
                         for (int i = 0; i < debuggerFrame.frameCount(); i++) {
                             ScriptableObject scope = (ScriptableObject) debuggerFrame.getFrame(i).scope();
@@ -220,11 +221,11 @@ public class DebuggerStateHelper {
                     }
                 }
                 else {
-                    ScriptableObject scope = getValue(parentFrame, "scope", ScriptableObject.class);
+                    ScriptableObject scope = getValue(parentFrame, "scope");
                     env.put(key, getScope(scope));
                     key += 1;
                 }
-                parentFrame = getValue(parentFrame, "parentFrame", Object.class);
+                parentFrame = getValue(parentFrame, "parentFrame");
             }
         } catch (NoSuchFieldException | IllegalAccessException e) {
             logger.error("getEnvDebug: failed to get env, e: {0}", e, e.getMessage());
@@ -242,14 +243,14 @@ public class DebuggerStateHelper {
         }
         int key = 1;
         try {
-            ScriptableObject scope = getValue(interpreterCallFrame, "scope", ScriptableObject.class);
+            ScriptableObject scope = getValue(interpreterCallFrame, "scope");
             env.put(0, getScope(scope));
-            Object parentFrame = getValue(interpreterCallFrame, "parentFrame", Object.class);
+            Object parentFrame = getValue(interpreterCallFrame, "parentFrame");
             while (parentFrame != null) {
-                scope = getValue(parentFrame, "scope", ScriptableObject.class);
+                scope = getValue(parentFrame, "scope");
                 env.put(key, getScope(scope));
                 key += 1;
-                parentFrame = getValue(parentFrame, "parentFrame", Object.class);
+                parentFrame = getValue(parentFrame, "parentFrame");
             }
         } catch (Exception e) {
             logger.error("getEnv: failed to get env, e: {0}", e, e.getMessage());
@@ -260,9 +261,9 @@ public class DebuggerStateHelper {
     private Map<String, String> getScope(ScriptableObject scope) {
         Map<String, String> myEnv = new LinkedHashMap<>();
         try {
-            Object function = getValue(scope, "function", Object.class);
-            Object interpretedData = getValue(function, "idata", Object.class);
-            String itsName = getValue(interpretedData, "itsName", String.class);
+            Object function = getValue(scope, "function");
+            Object interpretedData = getValue(function, "idata");
+            String itsName = getValue(interpretedData, "itsName");
             myEnv.put("FUNCNAME", itsName != null ? itsName : "BTMain");
             Object[] ids = Arrays.stream(scope.getIds()).filter((p) -> !p.toString().equals("arguments") && !p.toString().equals(itsName + "param")).toArray();
             for (Object id : ids) {
