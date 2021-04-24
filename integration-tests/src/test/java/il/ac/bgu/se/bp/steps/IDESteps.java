@@ -21,7 +21,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 import static il.ac.bgu.se.bp.code.CodeFilesHelper.getCodeByFileName;
 import static il.ac.bgu.se.bp.common.Utils.*;
@@ -106,7 +108,7 @@ public class IDESteps {
     @Then("wait until program of user (.*) is over")
     public void waitUntilTheProgramIsOver(String username) {
         waitUntilPredicateSatisfied(() -> sessionHandler.getUsersLastConsoleMessage(getUserIdByName(username)) != null &&
-                sessionHandler.getUsersLastConsoleMessage(getUserIdByName(username)).getMessage().contains(END_OF_EXECUTION_INDICATOR_MESSAGE), 4000, 3);
+                sessionHandler.getUsersLastConsoleMessage(getUserIdByName(username)).getMessage().contains(END_OF_EXECUTION_INDICATOR_MESSAGE), 1000, 3);
     }
 
     @Then("The response should be (.*) with errorCode (.*)")
@@ -178,12 +180,40 @@ public class IDESteps {
                 sessionHandler.getUsersLastDebuggerState(getUserIdByName(username)).getCurrentLineNumber() != null, 2000, 3);
     }
 
-    @Then("(.*) should get sync state notification wait events (.*), blocked events (.*), requested events (.*), current event (.*), and b-threads info list (.*)")
-    public void userShouldGetSyncStateNotificationWaitEventsBlankBlockedEventsBlankRequestedEventsBlankCurrentEventBlankAndBThreadsInfoListBlank(String username, String waitEventsStr, String blockedEventsStr,
-                                                                                                                                                 String requestedEventsStr, String currentEventStr, String bThreadInfoListStr) {
+    @Then("(.*) should get optional sync state notification wait events (.*), blocked events (.*), requested events (.*), current event (.*), b-threads info list (.*), and events history (.*)")
+    public void userShouldGetOptionalSyncStateNotification(String username, String waitEventsStr, String blockedEventsStr,
+                                                           String requestedEventsStr, String currentEventStr,
+                                                           String bThreadInfoListStr, String eventsHistoryStr) {
+        String[] optionalWaitEventsStr = waitEventsStr.split("\\|");
+        String[] optionalBlockedEventsStr = blockedEventsStr.split("\\|");
+        String[] optionalRequestedEventsStr = requestedEventsStr.split("\\|");
+        String[] optionalCurrentEventStr = currentEventStr.split("\\|");
+        String[] optionalBThreadInfoListStr = bThreadInfoListStr.split("\\|");
+        String[] optionalEventsHistoryStr = eventsHistoryStr.split("\\|");
+
+        int numOfOptions = optionalBlockedEventsStr.length;
+        for (int i = 0; i < numOfOptions; i++) {
+            try {
+                userShouldGetSyncStateNotification(username, optionalWaitEventsStr[i], optionalBlockedEventsStr[i],
+                        optionalRequestedEventsStr[i], optionalCurrentEventStr[i],
+                        optionalBThreadInfoListStr[i], optionalEventsHistoryStr[i]);
+                return;
+            } catch (Exception ignored) {
+                System.out.println("ASDASD");
+                System.out.println(ignored.getMessage());
+            }
+        }
+        fail("all optional sync states are not matching actual sync state");
+    }
+
+    @Then("(.*) should get sync state notification wait events (.*), blocked events (.*), requested events (.*), current event (.*), b-threads info list (.*), and events history (.*)")
+    public void userShouldGetSyncStateNotification(String username, String waitEventsStr, String blockedEventsStr,
+                                                   String requestedEventsStr, String currentEventStr,
+                                                   String bThreadInfoListStr, String eventsHistoryStr) {
         List<String> expectedWaitEvents = strToStringList(waitEventsStr);
         List<String> expectedBlockedEvents = strToStringList(blockedEventsStr);
         List<String> expectedRequestedEvents = strToStringList(requestedEventsStr);
+        List<String> expectedEventsHistory = strToStringList(eventsHistoryStr);
         String expectedCurrentEventName = strToString(currentEventStr);
         EventInfo expectedCurrentEvent = expectedCurrentEventName.isEmpty() ? null : new EventInfo(expectedCurrentEventName);
         List<BThreadInfo> expectedBThreadInfoList = strToBThreadInfo(bThreadInfoListStr);
@@ -191,36 +221,59 @@ public class IDESteps {
         BPDebuggerState actualDebuggerState = sessionHandler.getUsersLastDebuggerState(getUserIdByName(username));
         EventsStatus actualEventsStatus = actualDebuggerState.getEventsStatus();
 
-        assertBThreadEvents(expectedWaitEvents, expectedBlockedEvents, expectedRequestedEvents, expectedCurrentEvent, expectedBThreadInfoList, actualDebuggerState, actualEventsStatus);
-    }
-
-    private void assertBThreadEvents(List<String> expectedWaitEvents, List<String> expectedBlockedEvents,
-                                     List<String> expectedRequestedEvents, EventInfo expectedCurrentEvent,
-                                     List<BThreadInfo> expectedBThreadInfoList, BPDebuggerState actualDebuggerState,
-                                     EventsStatus actualEventsStatus) {
         assertEventInfoEquals(expectedWaitEvents, actualEventsStatus.getWait());
         assertEventInfoEquals(expectedBlockedEvents, actualEventsStatus.getBlocked());
         assertEventInfoEquals(expectedRequestedEvents, new LinkedList<>(actualEventsStatus.getRequested()));
         assertEquals(expectedCurrentEvent, actualEventsStatus.getCurrentEvent());
+        assertBTreadInfoList(expectedBThreadInfoList, actualDebuggerState.getbThreadInfoList());
+        assertEventsHistory(expectedEventsHistory, actualDebuggerState.getEventsHistory());
+    }
 
-        List<BThreadInfo> actualBThreadInfoList = actualDebuggerState.getbThreadInfoList();
-        assertEquals(expectedBThreadInfoList.size(), actualBThreadInfoList.size());
+    private void assertBTreadInfoList(List<BThreadInfo> expectedBThreadInfoList, List<BThreadInfo> actualBThreadInfoList) {
+        assertIntEqual(expectedBThreadInfoList.size(), actualBThreadInfoList.size());
         for (int i = 0; i < expectedBThreadInfoList.size(); i++) {
             BThreadInfo expectedBThreadInfo = expectedBThreadInfoList.get(i);
             BThreadInfo actualBThreadInfo = actualBThreadInfoList.get(i);
 
-            assertEquals(expectedBThreadInfo.getName(), actualBThreadInfo.getName());
-            assertEquals(expectedBThreadInfo.getWait(), actualBThreadInfo.getWait());
-            assertEquals(expectedBThreadInfo.getBlocked(), actualBThreadInfo.getBlocked());
-            assertEquals(expectedBThreadInfo.getRequested(), actualBThreadInfo.getRequested());
+            throwNotEquals(expectedBThreadInfo.getName(), actualBThreadInfo.getName());
+            throwNotEquals(expectedBThreadInfo.getWait(), actualBThreadInfo.getWait());
+            throwNotEquals(expectedBThreadInfo.getBlocked(), actualBThreadInfo.getBlocked());
+            throwNotEquals(expectedBThreadInfo.getRequested(), actualBThreadInfo.getRequested());
         }
     }
 
-    private void assertEventInfoEquals(List<String> expectedEvents, List<EventInfo> actualEventsInfo) {
-        assertEquals(expectedEvents.size(), actualEventsInfo.size());
-        actualEventsInfo.forEach(eventInfo -> assertTrue(expectedEvents.contains(eventInfo.getName())));
+    private void assertEventsHistory(List<String> expectedEventsHistory, SortedMap<Long, EventInfo> actualEventsHistory) {
+        Function<Integer, String> getNextEvent = expectedEventsHistory::get;
+        AtomicInteger index = new AtomicInteger(0);
+        actualEventsHistory.values().forEach(eventInfo -> {
+            throwNotEquals(getNextEvent.apply(index.get()), eventInfo.getName());
+            index.incrementAndGet();
+        });
     }
 
+    private void throwNotEquals(Object expected, Object actual) {
+        if ((expected == null && actual == null) || expected.equals(actual)) {
+            return;
+        }
+        String actualString = "\nactual: " + actual.toString();
+        String expectedString = "\nexpected: " + expected.toString();
+        throw new RuntimeException("not equals" + actualString + expectedString);
+    }
+
+    private void assertEventInfoEquals(List<String> expectedEvents, List<EventInfo> actualEventsInfo) {
+        assertIntEqual(expectedEvents.size(), actualEventsInfo.size());
+        actualEventsInfo.forEach(eventInfo -> {
+            if (!expectedEvents.contains(eventInfo.getName())) {
+                throw new RuntimeException("unexpected event: " + eventInfo.getName());
+            }
+        });
+    }
+
+    private void assertIntEqual(int expected, int actual) {
+        if (expected != actual) {
+            throw new RuntimeException("expected != actual\n" + "actual: " + actual + "\nexpected: " + expected);
+        }
+    }
 
     @Then("(.*) should get breakpoint notification with BThread (.*), doubles (.*), strings (.*) and breakpoint lines (.*)")
     public void userShouldGetNotificationWithDoubleVariablesAndStringVariables(String username, String bThreads, String doubleVars, String stringVars, String breakpointsStr) {

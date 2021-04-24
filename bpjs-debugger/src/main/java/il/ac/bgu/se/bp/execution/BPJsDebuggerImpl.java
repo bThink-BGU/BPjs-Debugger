@@ -116,7 +116,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         state.setDebuggerState(RunnerState.State.STOPPED);
         boolean[] actualBreakpoints = debuggerEngine.getBreakpoints();
 
-        bprog.setWaitForExternalEvents(true);        //todo: add wait for external event toggle
+        bprog.setWaitForExternalEvents(false);        //todo: add wait for external event toggle
         return new DebugResponse(true, actualBreakpoints);
     }
 

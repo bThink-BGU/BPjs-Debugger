@@ -81,6 +81,14 @@ public class BPDebuggerState implements Serializable {
         this.breakpoints = breakpoints;
     }
 
+    public SortedMap<Long, EventInfo> getEventsHistory() {
+        return eventsHistory;
+    }
+
+    public void setEventsHistory(SortedMap<Long, EventInfo> eventsHistory) {
+        this.eventsHistory = eventsHistory;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {

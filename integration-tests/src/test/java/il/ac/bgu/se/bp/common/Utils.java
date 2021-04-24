@@ -153,7 +153,7 @@ public class Utils {
         } catch (Exception e) {
             e.printStackTrace();
         }
-//        fail("predicate was not satisfied after " + maxToTry + " retries");
+        fail("predicate was not satisfied after " + maxToTry + " retries");
     }
 
     private static void sleep(int timeToSleep) {
