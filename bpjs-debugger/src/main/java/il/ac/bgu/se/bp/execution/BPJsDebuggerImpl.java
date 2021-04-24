@@ -400,14 +400,17 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         if (StringUtils.isEmpty(externalEvent)) {
             return createErrorResponse(ErrorCode.INVALID_EVENT);
         }
+        logger.info("Adding external event: " +externalEvent);
         BEvent bEvent= new BEvent(externalEvent);
         bprog.enqueueExternalEvent(bEvent);
 
-        List<BEvent> updatedExternals = new ArrayList<>(syncSnapshot.getExternalEvents());
-        updatedExternals.add(bEvent);
-        syncSnapshot = syncSnapshot.copyWith(updatedExternals);
-        debuggerEngine.setSyncSnapshot(syncSnapshot);
-        debuggerEngine.onStateChanged();
+        if(this.state.getDebuggerState() != RunnerState.State.WAITING_FOR_EXTERNAL_EVENT) {
+            List<BEvent> updatedExternals = new ArrayList<>(syncSnapshot.getExternalEvents());
+            updatedExternals.add(bEvent);
+            syncSnapshot = syncSnapshot.copyWith(updatedExternals);
+            debuggerEngine.setSyncSnapshot(syncSnapshot);
+            debuggerEngine.onStateChanged();
+        }
         return createSuccessResponse();
     }
 
