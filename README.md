@@ -33,10 +33,11 @@ Supported endpoints:
 | Command                     | Endpoint           | Method | Request / Params                                                                                       | Headers |
 | --------------------------- | ------------------ | ------ | ------------------------------------------------------------------------------------------------------ | ------- |
 | Run                         | bpjs/run           | POST   | {sourceCode: String}                                                                                   | userId  |
-| Debug                       | bpjs/debug         | POST   | {sourceCode: String, breakpoints: int[], skipBreakpointsToggle: boolean, skipSyncStateToggle: boolean} | userId  |
+| Debug                       | bpjs/debug         | POST   | {sourceCode: String, breakpoints: int[], skipBreakpointsToggle: boolean, skipSyncStateToggle: boolean, waitForExternalEvents: boolean} | userId  |
 | Add / remove Breakpoint     | bpjs/breakpoint    | POST   | {lineNumber: number, stopOnBreakpoint: boolean}                                                        | userId  |
 | Toggle Mute Breakpoints     | bpjs/breakpoint    | PUT    | {skipBreakpoints: boolean}                                                                             | userId  |
 | Toggle Mute Sync States     | bpjs/syncStates    | PUT    | {skipSyncStates: boolean}                                                                              | userId  |
+| Toggle Wait for external events   | bpjs/waitExternal   | PUT    | {waitForExternal: boolean}                                                                              | userId  |
 | Stop                        | bpjs/stop          | GET    | None                                                                                                   | userId  |
 | Step Out                    | bpjs/stepOut       | GET    | None                                                                                                   | userId  |
 | Step Into                   | bpjs/stepInto      | GET    | None                                                                                                   | userId  |
