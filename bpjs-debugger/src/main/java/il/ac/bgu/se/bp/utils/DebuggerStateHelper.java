@@ -77,7 +77,7 @@ public class DebuggerStateHelper {
                 .map(bThreadSyncSnapshot -> createBThreadInfo(bThreadSyncSnapshot, state, lastContextData))
                 .collect(Collectors.toList());
 
-        if (state.getDebuggerState() == RunnerState.State.JS_DEBUG) {
+        if (state.getDebuggerState() == RunnerState.State.JS_DEBUG && Context.getCurrentContext() != null) {
             bThreadInfoList.addAll(getRecentlyAddedBTInfo(lastContextData));
         }
         else {
@@ -161,7 +161,7 @@ public class DebuggerStateHelper {
             Object implementation = getValue(scope, "implementation", Object.class);
             Dim.StackFrame debuggerFrame = getValue(implementation, "debuggerFrame", Dim.StackFrame.class);
             Map<Integer, Map<String, String>> env = state == null ? null :
-                    state.getDebuggerState() == RunnerState.State.JS_DEBUG ? getEnvDebug(implementation, lastContextData, bThreadSS.getName()) :
+                    (state.getDebuggerState() == RunnerState.State.JS_DEBUG &&  Context.getCurrentContext() != null)? getEnvDebug(implementation, lastContextData, bThreadSS.getName()) :
                             getEnv(implementation, debuggerFrame != null ? debuggerFrame.contextData() : null);
             EventSet waitFor = bThreadSS.getSyncStatement().getWaitFor();
             EventInfo waitEvent = waitFor.equals(none) ? null : new EventInfo(((BEvent) waitFor).getName());
