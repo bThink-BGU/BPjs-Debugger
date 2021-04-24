@@ -1,6 +1,8 @@
 package il.ac.bgu.se.bp.common;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import il.ac.bgu.se.bp.socket.state.BThreadInfo;
+import il.ac.bgu.se.bp.socket.state.EventInfo;
 import il.ac.bgu.se.bp.utils.Pair;
 import org.springframework.util.StringUtils;
 
@@ -8,7 +10,11 @@ import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
+import static org.junit.Assert.fail;
+
 public class Utils {
+
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     public static boolean isNull(String str) {
         return str.equals("null");
@@ -31,7 +37,6 @@ public class Utils {
         }
         return null;
     }
-
 
     public static List<String> getBThreadNamesByBreakpoint(String bThreads, int currentLineNumber) {
         return getBThreadsNamesByBreakpoints(bThreads).get(currentLineNumber);
@@ -106,7 +111,7 @@ public class Utils {
     public static String strToString(String str) {
         str = str.charAt(0) == '\"' ? str.substring(1) : str;
         str = str.charAt(str.length() - 1) == '\"' ? str.substring(0, str.length() -1) : str;
-        return str;
+        return cleanString(str);
     }
 
     public static Double strToDouble(String str) {
@@ -117,7 +122,15 @@ public class Utils {
         return Integer.parseInt(str);
     }
 
-    private static List<String> strToStringList(String strings) {
+    public static List<String> strToStringList(String strings) {
+        strings = cleanString(strings);
+        if (strings.isEmpty()) {
+            return new LinkedList<>();
+        }
+
+        if (strings.charAt(0) == '[' && strings.charAt(strings.length() -1) == ']') {
+            strings = strings.substring(1, strings.length() - 1);
+        }
         return Arrays.stream(strings.split(",")).collect(Collectors.toList());
     }
 
@@ -140,14 +153,48 @@ public class Utils {
         } catch (Exception e) {
             e.printStackTrace();
         }
+//        fail("predicate was not satisfied after " + maxToTry + " retries");
     }
 
     private static void sleep(int timeToSleep) {
         try {
+            System.out.println("sleeping " + timeToSleep / 1000 + " sec");
             Thread.sleep(timeToSleep);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
 
+    public static String cleanString(String string) {
+        return string.replace("[blank]", "");
+    }
+
+    public static List<BThreadInfo> strToBThreadInfo(String bThreadInfoListStr) {
+        List<BThreadInfo> bThreadInfoList = new LinkedList<>();
+        bThreadInfoListStr = cleanString(bThreadInfoListStr);
+        String[] splatBThreadInfoListStr = bThreadInfoListStr.split("[{}]");
+        for (String bThreadInfoStr : splatBThreadInfoListStr) {
+            if (StringUtils.isEmpty(bThreadInfoStr))
+                continue;
+            String[] bThreadInfoDataArray = bThreadInfoStr.split(",");
+            HashMap<String, String> bThreadInfoDataMap = new HashMap<>();
+            for (String bThreadInfoData : bThreadInfoDataArray) {
+                String[] keyAndValue = bThreadInfoData.split(":");
+                bThreadInfoDataMap.put(keyAndValue[0], keyAndValue[1]);
+            }
+            BThreadInfo bThreadInfo = new BThreadInfo(bThreadInfoDataMap.get("name"), null,
+                    toEventInfo(bThreadInfoDataMap.get("wait")), toEventInfo(bThreadInfoDataMap.get("blocked")),
+                    toEventInfoList(strToStringList(bThreadInfoDataMap.get("requested"))));
+            bThreadInfoList.add(bThreadInfo);
+        }
+        return bThreadInfoList;
+    }
+
+    private static Set<EventInfo> toEventInfoList(List<String> requested) {
+        return requested.stream().map(EventInfo::new).collect(Collectors.toSet());
+    }
+
+    private static EventInfo toEventInfo(String name) {
+        return name == null ? null : new EventInfo(name);
+    }
 }

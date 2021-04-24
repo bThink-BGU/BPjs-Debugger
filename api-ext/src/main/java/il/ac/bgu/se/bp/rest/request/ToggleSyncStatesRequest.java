@@ -12,6 +12,10 @@ public class ToggleSyncStatesRequest implements Serializable {
     public ToggleSyncStatesRequest() {
     }
 
+    public ToggleSyncStatesRequest(boolean skipSyncStates) {
+        this.skipSyncStates = skipSyncStates;
+    }
+
     public boolean isSkipSyncStates() {
         return skipSyncStates;
     }

@@ -5,22 +5,22 @@ import il.ac.bgu.se.bp.mocks.SessionHandlerMock;
 import il.ac.bgu.se.bp.mocks.testService.TestService;
 import il.ac.bgu.se.bp.rest.request.DebugRequest;
 import il.ac.bgu.se.bp.rest.request.ToggleBreakpointsRequest;
+import il.ac.bgu.se.bp.rest.request.ToggleSyncStatesRequest;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.response.DebugResponse;
 import il.ac.bgu.se.bp.rest.socket.StompPrincipal;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
+import il.ac.bgu.se.bp.socket.state.BThreadInfo;
+import il.ac.bgu.se.bp.socket.state.EventInfo;
+import il.ac.bgu.se.bp.socket.state.EventsStatus;
 import il.ac.bgu.se.bp.utils.Pair;
-import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static il.ac.bgu.se.bp.code.CodeFilesHelper.getCodeByFileName;
@@ -74,21 +74,39 @@ public class IDESteps {
         lastDebugResponse = testService.debug(getUserIdByName(username), debugRequest);
     }
 
-    @When("(.*) clicks on continue")
-    public void userClicksOnContinue(String username) {
+    @When("(.*) clicks on (.*)")
+    public void userClicksOnCommand(String username, String command) {
         sessionHandler.cleanUserMockData(getUserIdByName(username));
-        lastResponse = testService.continueRun(getUserIdByName(username));
+        applyCommandByUser(username, command);
+    }
+
+    private void applyCommandByUser(String username, String command) {
+        String userId = getUserIdByName(username);
+        lastResponse = null;
+        switch (command) {
+            case "continue":
+                lastResponse = testService.continueRun(userId);
+                break;
+            case "next sync":
+                lastResponse = testService.nextSync(userId);
+                break;
+        }
     }
 
     @When("(.*) toggles mute breakpoints to (.*)")
-    public void userTogglesMuteBreakpointsToOff(String username, String skipBreakpoints) {
+    public void userTogglesMuteBreakpoints(String username, String skipBreakpoints) {
         lastResponse = testService.toggleMuteBreakpoints(getUserIdByName(username), new ToggleBreakpointsRequest(strToBoolean(skipBreakpoints)));
+    }
+
+    @When("(.*) toggles mute sync states to (.*)")
+    public void userTogglesMuteSyncStates(String username, String skipSyncStates) {
+        lastResponse = testService.toggleMuteSyncPoints(getUserIdByName(username), new ToggleSyncStatesRequest(strToBoolean(skipSyncStates)));
     }
 
     @Then("wait until program of user (.*) is over")
     public void waitUntilTheProgramIsOver(String username) {
         waitUntilPredicateSatisfied(() -> sessionHandler.getUsersLastConsoleMessage(getUserIdByName(username)) != null &&
-                sessionHandler.getUsersLastConsoleMessage(getUserIdByName(username)).getMessage().contains(END_OF_EXECUTION_INDICATOR_MESSAGE), 1000, 3);
+                sessionHandler.getUsersLastConsoleMessage(getUserIdByName(username)).getMessage().contains(END_OF_EXECUTION_INDICATOR_MESSAGE), 4000, 3);
     }
 
     @Then("The response should be (.*) with errorCode (.*)")
@@ -130,13 +148,13 @@ public class IDESteps {
         }
     }
 
-    @And("verify all breakpoints of user (.*) were reached")
+    @Then("verify all breakpoints of user (.*) were reached")
     public void verifyAllBreakpointsWereReached(String username) {
         breakpointsVerifierPerUser.get(username)
                 .forEach((breakpoint, isReached) -> assertTrue("did not get to breakpoint " + breakpoint, isReached));
     }
 
-    @And("verify user (.*) has reached only (.*) breakpoints")
+    @Then("verify user (.*) has reached only (.*) breakpoints")
     public void verifyOnlyPartialBreakpointsWereReached(String username, String numOfBreakpointsReachedStr) {
         AtomicInteger actualNumOfBreakpointsReached = new AtomicInteger(0);
         breakpointsVerifierPerUser.get(username).values().forEach(isReached -> {
@@ -148,13 +166,63 @@ public class IDESteps {
         assertEquals(strToInt(numOfBreakpointsReachedStr), actualNumOfBreakpointsReached.get());
     }
 
+    @Then("wait until user (.*) has reached sync state")
+    public void waitUntilUserHasReachedSyncState(String username) {
+        waitUntilPredicateSatisfied(() -> sessionHandler.getUsersLastDebuggerState(getUserIdByName(username)) != null &&
+                sessionHandler.getUsersLastDebuggerState(getUserIdByName(username)).getCurrentLineNumber() == null, 2000, 3);
+    }
+
     @Then("wait until user (.*) has reached breakpoint")
     public void waitUntilBreakpointReached(String username) {
         waitUntilPredicateSatisfied(() -> sessionHandler.getUsersLastDebuggerState(getUserIdByName(username)) != null &&
                 sessionHandler.getUsersLastDebuggerState(getUserIdByName(username)).getCurrentLineNumber() != null, 2000, 3);
     }
 
-    @Then("(.*) should get notification with BThread (.*), doubles (.*), strings (.*) and breakpoint lines (.*)")
+    @Then("(.*) should get sync state notification wait events (.*), blocked events (.*), requested events (.*), current event (.*), and b-threads info list (.*)")
+    public void userShouldGetSyncStateNotificationWaitEventsBlankBlockedEventsBlankRequestedEventsBlankCurrentEventBlankAndBThreadsInfoListBlank(String username, String waitEventsStr, String blockedEventsStr,
+                                                                                                                                                 String requestedEventsStr, String currentEventStr, String bThreadInfoListStr) {
+        List<String> expectedWaitEvents = strToStringList(waitEventsStr);
+        List<String> expectedBlockedEvents = strToStringList(blockedEventsStr);
+        List<String> expectedRequestedEvents = strToStringList(requestedEventsStr);
+        String expectedCurrentEventName = strToString(currentEventStr);
+        EventInfo expectedCurrentEvent = expectedCurrentEventName.isEmpty() ? null : new EventInfo(expectedCurrentEventName);
+        List<BThreadInfo> expectedBThreadInfoList = strToBThreadInfo(bThreadInfoListStr);
+
+        BPDebuggerState actualDebuggerState = sessionHandler.getUsersLastDebuggerState(getUserIdByName(username));
+        EventsStatus actualEventsStatus = actualDebuggerState.getEventsStatus();
+
+        assertBThreadEvents(expectedWaitEvents, expectedBlockedEvents, expectedRequestedEvents, expectedCurrentEvent, expectedBThreadInfoList, actualDebuggerState, actualEventsStatus);
+    }
+
+    private void assertBThreadEvents(List<String> expectedWaitEvents, List<String> expectedBlockedEvents,
+                                     List<String> expectedRequestedEvents, EventInfo expectedCurrentEvent,
+                                     List<BThreadInfo> expectedBThreadInfoList, BPDebuggerState actualDebuggerState,
+                                     EventsStatus actualEventsStatus) {
+        assertEventInfoEquals(expectedWaitEvents, actualEventsStatus.getWait());
+        assertEventInfoEquals(expectedBlockedEvents, actualEventsStatus.getBlocked());
+        assertEventInfoEquals(expectedRequestedEvents, new LinkedList<>(actualEventsStatus.getRequested()));
+        assertEquals(expectedCurrentEvent, actualEventsStatus.getCurrentEvent());
+
+        List<BThreadInfo> actualBThreadInfoList = actualDebuggerState.getbThreadInfoList();
+        assertEquals(expectedBThreadInfoList.size(), actualBThreadInfoList.size());
+        for (int i = 0; i < expectedBThreadInfoList.size(); i++) {
+            BThreadInfo expectedBThreadInfo = expectedBThreadInfoList.get(i);
+            BThreadInfo actualBThreadInfo = actualBThreadInfoList.get(i);
+
+            assertEquals(expectedBThreadInfo.getName(), actualBThreadInfo.getName());
+            assertEquals(expectedBThreadInfo.getWait(), actualBThreadInfo.getWait());
+            assertEquals(expectedBThreadInfo.getBlocked(), actualBThreadInfo.getBlocked());
+            assertEquals(expectedBThreadInfo.getRequested(), actualBThreadInfo.getRequested());
+        }
+    }
+
+    private void assertEventInfoEquals(List<String> expectedEvents, List<EventInfo> actualEventsInfo) {
+        assertEquals(expectedEvents.size(), actualEventsInfo.size());
+        actualEventsInfo.forEach(eventInfo -> assertTrue(expectedEvents.contains(eventInfo.getName())));
+    }
+
+
+    @Then("(.*) should get breakpoint notification with BThread (.*), doubles (.*), strings (.*) and breakpoint lines (.*)")
     public void userShouldGetNotificationWithDoubleVariablesAndStringVariables(String username, String bThreads, String doubleVars, String stringVars, String breakpointsStr) {
         BPDebuggerState lastDebuggerState = sessionHandler.getUsersLastDebuggerState(getUserIdByName(username));
         assertNotNull("BPDebuggerState was not received for user: " + username, lastDebuggerState);
