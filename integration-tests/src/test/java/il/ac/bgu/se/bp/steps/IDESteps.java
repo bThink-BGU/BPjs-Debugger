@@ -65,13 +65,14 @@ public class IDESteps {
     }
 
 
-    @When("(.*) asks to debug with filename (.*) and toggleMuteBreakpoints (.*) and toggleMuteSyncPoints (.*) and breakpoints (.*)")
-    public void userAsksToDebugWithFilenameAndToggleMuteBreakpointsAndToggleMuteSyncPointsAndBreakpoints(String username, String filename, String toggleMuteBreakpoints, String toggleMuteSyncPoints, String breakpoints) {
+    @When("(.*) asks to debug with filename (.*) and toggleMuteBreakpoints (.*) and toggleMuteSyncPoints (.*) and toggleWaitForExternalEvent (.*) and breakpoints (.*)")
+    public void userAsksToDebugWithFilenameAndToggleMuteBreakpointsAndToggleMuteSyncPointsAndBreakpoints(String username, String filename, String toggleMuteBreakpoints, String toggleMuteSyncPoints, String toggleWaitForExternalEvent, String breakpoints) {
         sessionHandler.cleanUserMockData(getUserIdByName(username));
 
         DebugRequest debugRequest = new DebugRequest(getCodeByFileName(filename), strToIntList(breakpoints));
         debugRequest.setSkipBreakpointsToggle(strToBoolean(toggleMuteBreakpoints));
         debugRequest.setSkipSyncStateToggle(strToBoolean(toggleMuteSyncPoints));
+        debugRequest.setWaitForExternalEvents(strToBoolean(toggleWaitForExternalEvent));
 
         lastDebugResponse = testService.debug(getUserIdByName(username), debugRequest);
     }

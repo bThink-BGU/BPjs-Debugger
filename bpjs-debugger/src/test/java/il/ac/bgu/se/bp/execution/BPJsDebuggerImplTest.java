@@ -66,7 +66,7 @@ public class BPJsDebuggerImplTest {
 
     private void setupDebugger() {
         assertFalse(bpJsDebugger.isSetup());
-        BooleanResponse booleanResponse = bpJsDebugger.setup(breakpoints, false, false);
+        BooleanResponse booleanResponse = bpJsDebugger.setup(breakpoints, false, false,false);
         assertSuccessResponse(booleanResponse);
         assertTrue(bpJsDebugger.isSetup());
 
@@ -95,8 +95,8 @@ public class BPJsDebuggerImplTest {
     @Test
     public void setWaitForExternalEvents() {
         setupDebugger();
-        assertSuccessResponse(bpJsDebugger.setWaitForExternalEvents(true));
-        assertSuccessResponse(bpJsDebugger.setWaitForExternalEvents(false));
+        assertSuccessResponse(bpJsDebugger.toggleWaitForExternalEvents(true));
+        assertSuccessResponse(bpJsDebugger.toggleWaitForExternalEvents(false));
     }
 
     @Test
@@ -126,7 +126,7 @@ public class BPJsDebuggerImplTest {
     @Test
     public void startSyncTest() throws InterruptedException {
         setupDebugger();
-        assertSuccessResponse(bpJsDebugger.startSync(new HashMap<>(), false, false));
+        assertSuccessResponse(bpJsDebugger.startSync(new HashMap<>(), false, false,false ));
 
         sleepUntil(e -> bpJsDebugger.isStarted(), 3);
         assertTrue(bpJsDebugger.isStarted());
@@ -139,7 +139,7 @@ public class BPJsDebuggerImplTest {
     @Test
     public void nextSyncTest() throws InterruptedException {
         setupDebugger();
-        assertSuccessResponse(bpJsDebugger.startSync(new HashMap<>(), false, false));
+        assertSuccessResponse(bpJsDebugger.startSync(new HashMap<>(), false, false,false ));
 
         sleepUntil(e -> bpJsDebugger.isStarted(), 3);
         assertTrue(bpJsDebugger.isStarted());

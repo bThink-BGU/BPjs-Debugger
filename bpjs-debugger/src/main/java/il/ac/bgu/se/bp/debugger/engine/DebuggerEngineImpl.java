@@ -181,6 +181,11 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
     }
 
     @Override
+    public boolean isMuteBreakpoints() {
+        return this.areBreakpointsMuted;
+    }
+
+    @Override
     public void getState() {
         onStateChanged();
     }

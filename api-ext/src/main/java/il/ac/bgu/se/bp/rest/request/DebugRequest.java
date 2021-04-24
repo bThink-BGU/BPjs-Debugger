@@ -10,6 +10,7 @@ public class DebugRequest extends RunRequest {
     private List<Integer> breakpoints = new LinkedList<>();
     private boolean skipBreakpointsToggle;
     private boolean skipSyncStateToggle;
+    private boolean waitForExternalEvents;
 
     public DebugRequest() {
     }
@@ -17,6 +18,14 @@ public class DebugRequest extends RunRequest {
     public DebugRequest(String code, List<Integer> breakpoints) {
         this.sourceCode = code;
         this.breakpoints = breakpoints;
+    }
+
+    public boolean isWaitForExternalEvents() {
+        return waitForExternalEvents;
+    }
+
+    public void setWaitForExternalEvents(boolean waitForExternalEvents) {
+        this.waitForExternalEvents = waitForExternalEvents;
     }
 
     public DebugRequest(String code) {

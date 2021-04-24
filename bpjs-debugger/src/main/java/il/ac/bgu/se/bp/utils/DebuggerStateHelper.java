@@ -6,13 +6,12 @@ import il.ac.bgu.cs.bp.bpjs.model.BProgramSyncSnapshot;
 import il.ac.bgu.cs.bp.bpjs.model.BThreadSyncSnapshot;
 import il.ac.bgu.cs.bp.bpjs.model.SyncStatement;
 import il.ac.bgu.cs.bp.bpjs.model.eventsets.EventSet;
+import il.ac.bgu.se.bp.debugger.BPJsDebugger;
 import il.ac.bgu.se.bp.debugger.RunnerState;
 import il.ac.bgu.se.bp.debugger.engine.SyncSnapshotHolder;
+import il.ac.bgu.se.bp.execution.BPJsDebuggerImpl;
 import il.ac.bgu.se.bp.logger.Logger;
-import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
-import il.ac.bgu.se.bp.socket.state.BThreadInfo;
-import il.ac.bgu.se.bp.socket.state.EventInfo;
-import il.ac.bgu.se.bp.socket.state.EventsStatus;
+import il.ac.bgu.se.bp.socket.state.*;
 import org.apache.commons.lang3.ArrayUtils;
 import org.mozilla.javascript.*;
 import org.mozilla.javascript.tools.debugger.Dim;
@@ -34,8 +33,10 @@ public class DebuggerStateHelper {
     private String currentEvent = null;
     private static final int INITIAL_INDEX_FOR_EVENTS_HISTORY_ON_SYNC_STATE = 0;
     private static final int FINAL_INDEX_FOR_EVENTS_HISTORY_ON_SYNC_STATE = 10;
+    private BPJsDebugger bpJsDebugger = null;
 
-    public DebuggerStateHelper(SyncSnapshotHolder<BProgramSyncSnapshot, BEvent> syncSnapshotHolder) {
+    public DebuggerStateHelper(BPJsDebugger bpJsDebugger, SyncSnapshotHolder<BProgramSyncSnapshot, BEvent> syncSnapshotHolder) {
+        this.bpJsDebugger = bpJsDebugger;
         this.syncSnapshotHolder = syncSnapshotHolder;
     }
 
@@ -67,7 +68,8 @@ public class DebuggerStateHelper {
         Integer lineNumber = lastContextData == null ? null : lastContextData.frameCount() > 0 ? lastContextData.getFrame(0).getLineNumber() : null;
         SortedMap<Long, EventInfo> eventsHistory = generateEventsHistory(INITIAL_INDEX_FOR_EVENTS_HISTORY_ON_SYNC_STATE, FINAL_INDEX_FOR_EVENTS_HISTORY_ON_SYNC_STATE);
         boolean[] breakpoints = getBreakpoints(sourceInfo);
-        return new BPDebuggerState(bThreadInfoList, eventsStatus, eventsHistory, currentRunningBT, lineNumber, ArrayUtils.toObject(breakpoints));
+        DebuggerConfigs debuggerConfigs = bpJsDebugger == null? null :new DebuggerConfigs(bpJsDebugger.isMuteBreakPoints(),bpJsDebugger.isWaitForExternalEvents(), bpJsDebugger.isSkipSyncPoints());
+        return new BPDebuggerState(bThreadInfoList, eventsStatus, eventsHistory, currentRunningBT, lineNumber,debuggerConfigs, ArrayUtils.toObject(breakpoints));
     }
 
     private List<BThreadInfo> generateBThreadInfos(BProgramSyncSnapshot syncSnapshot, RunnerState state, Dim.ContextData lastContextData) {

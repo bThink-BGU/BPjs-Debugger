@@ -62,6 +62,13 @@ public class BPjsIDERestControllerImpl implements BPjsIDERestController {
     }
 
     @Override
+    @RequestMapping(value = WAIT_EXTERNAL, method = RequestMethod.PUT)
+    public @ResponseBody
+    BooleanResponse toggleWaitForExternal(@RequestHeader("userId") String userId, @RequestBody ToggleWaitForExternalRequest toggleWaitForExternalRequest) {
+        return bPjsIDEService.toggleWaitForExternal(userId, toggleWaitForExternalRequest);
+    }
+
+    @Override
     @RequestMapping(value = SYNC_STATES, method = RequestMethod.PUT)
     public @ResponseBody
     BooleanResponse toggleMuteSyncPoints(@RequestHeader("userId") String userId, ToggleSyncStatesRequest toggleMuteSyncPoints) {

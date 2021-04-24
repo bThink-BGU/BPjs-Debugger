@@ -11,17 +11,20 @@ import java.util.SortedMap;
 
 public interface BPJsDebugger<T> extends Debugger<T>, Publisher<BPEvent> {
 
-    T setup(Map<Integer, Boolean> breakpoints, boolean isSkipBreakpoints, boolean isSkipSyncPoints);
+    T setup(Map<Integer, Boolean> breakpoints, boolean isSkipBreakpoints, boolean isSkipSyncPoints, boolean isWaitForExternalEvents);
 
     boolean isSetup();
     boolean isStarted();
+    boolean isSkipSyncPoints();
+    boolean isWaitForExternalEvents();
+    boolean isMuteBreakPoints();
 
     T addExternalEvent(String externalEvent);
     T removeExternalEvent(String externalEvent);
 
-    T setWaitForExternalEvents(boolean shouldWait);
+    T toggleWaitForExternalEvents(boolean shouldWait);
 
-    DebugResponse startSync(Map<Integer, Boolean> breakpointsMap, boolean isSkipSyncPoints, boolean isSkipBreakpoints);
+    DebugResponse startSync(Map<Integer, Boolean> breakpointsMap, boolean isSkipSyncPoints, boolean isSkipBreakpoints, boolean isWaitForExternalEvents);
 
     T nextSync();
     T toggleMuteSyncPoints(boolean toggleMuteSyncPoints);
@@ -30,6 +33,7 @@ public interface BPJsDebugger<T> extends Debugger<T>, Publisher<BPEvent> {
 
     RunnerState getDebuggerState();
     String getDebuggerExecutorId();
+
 
     SortedMap<Long, EventInfo> getEventsHistory(int from, int to);
 }

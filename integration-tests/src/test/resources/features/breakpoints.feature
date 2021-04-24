@@ -2,7 +2,7 @@ Feature: Breakpoints
   Scenario Outline: multiple valid breakpoints
     Given user <username> has connected with userId <userId>
     And <username> has connected to websocket with <sessionId>
-    When <username> asks to debug with filename <filename> and toggleMuteBreakpoints <toggleMuteBreakpoints> and toggleMuteSyncPoints <toggleMuteSyncPoints> and breakpoints <breakpoints>
+    When <username> asks to debug with filename <filename> and toggleMuteBreakpoints <toggleMuteBreakpoints> and toggleMuteSyncPoints <toggleMuteSyncPoints> and toggleWaitForExternalEvent <toggleWaitForExternalEvent> and breakpoints <breakpoints>
     Then The debug response should be true with errorCode null and breakpoints <breakpoints> for user <username>
     And wait until user <username> has reached breakpoint
     And <username> should get breakpoint notification with BThread <bThreadNameByBreakpoint>, doubles <doubleVariables>, strings <stringVariables> and breakpoint lines <breakpoints>
@@ -17,14 +17,14 @@ Feature: Breakpoints
     And verify all breakpoints of user <username> were reached
 
     Examples:
-      | username | sessionId  | userId                               | filename  | toggleMuteBreakpoints | toggleMuteSyncPoints | bThreadNameByBreakpoint                     | breakpoints | stringVariables | doubleVariables                                                           |
-      | alex     | sessionId1 | 4655ae8e-cdfe-4ce3-ac2b-dc03743a780f | testFile1 | false                 | true                 | {10:bt-world-son}{21:bt-world,bt-world-son} | 10,21       | {10:z=alex}     | {10:x=5.0,y=16.7}{21:m=50,n=100,p=150} |
-      | tal      | sessionId2 | d1b10451-bbb0-43e2-b5ad-d10afa73449e | testFile2 | false                 | true                 | {4:Thread1}{9:Thread2}{11:Thread2}          | 4,9,11      | {11:var2=alex}  | {4:t=6.0}{9:varT2B=1}{11:varT2B=1}     |
+      | username | sessionId  | userId                               | filename  | toggleMuteBreakpoints | toggleMuteSyncPoints | bThreadNameByBreakpoint                     | toggleWaitForExternalEvent | breakpoints | stringVariables | doubleVariables                                                           |
+      | alex     | sessionId1 | 4655ae8e-cdfe-4ce3-ac2b-dc03743a780f | testFile1 | false                 | true                 | {10:bt-world-son}{21:bt-world,bt-world-son} | false                      | 10,21       | {10:z=alex}     | {10:x=5.0,y=16.7}{21:m=50,n=100,p=150} |
+      | tal      | sessionId2 | d1b10451-bbb0-43e2-b5ad-d10afa73449e | testFile2 | false                 | true                 | {4:Thread1}{9:Thread2}{11:Thread2}          | false                      | 4,9,11      | {11:var2=alex}  | {4:t=6.0}{9:varT2B=1}{11:varT2B=1}     |
 
   Scenario Outline: toggle mute breakpoints after first breakpoint
     Given user <username> has connected with userId <userId>
     And <username> has connected to websocket with <sessionId>
-    When <username> asks to debug with filename <filename> and toggleMuteBreakpoints <toggleMuteBreakpoints> and toggleMuteSyncPoints <toggleMuteSyncPoints> and breakpoints <breakpoints>
+    When <username> asks to debug with filename <filename> and toggleMuteBreakpoints <toggleMuteBreakpoints> and toggleMuteSyncPoints <toggleMuteSyncPoints> and toggleWaitForExternalEvent <toggleWaitForExternalEvent> and breakpoints <breakpoints>
     Then The debug response should be true with errorCode null and breakpoints <breakpoints> for user <username>
     And wait until user <username> has reached breakpoint
     And <username> should get breakpoint notification with BThread <bThreadNameByBreakpoint>, doubles <doubleVariables>, strings <stringVariables> and breakpoint lines <breakpoints>
@@ -36,9 +36,9 @@ Feature: Breakpoints
     And verify user <username> has reached only 1 breakpoints
 
     Examples:
-      | username | sessionId  | userId                               | filename  | toggleMuteBreakpoints | toggleMuteSyncPoints | bThreadNameByBreakpoint                     | breakpoints | stringVariables | doubleVariables                                                           |
-      | alex     | sessionId1 | 4655ae8e-cdfe-4ce3-ac2b-dc03743a780f | testFile1 | false                 | true                 | {10:bt-world-son}{21:bt-world,bt-world-son} | 10,21       | {10:z=alex}     | {10:x=5.0,y=16.7}{21:m=50,n=100,p=150} |
-      | tal      | sessionId2 | d1b10451-bbb0-43e2-b5ad-d10afa73449e | testFile2 | false                 | true                 | {4:Thread1}{9:Thread2}{11:Thread2}          | 4,9,11      | {11:var2=alex}  | {4:t=6.0}{9:varT2B=1}{11:varT2B=1}     |
+      | username | sessionId  | userId                               | filename  | toggleMuteBreakpoints | toggleMuteSyncPoints | bThreadNameByBreakpoint                     | toggleWaitForExternalEvent | breakpoints | stringVariables | doubleVariables                                                           |
+      | alex     | sessionId1 | 4655ae8e-cdfe-4ce3-ac2b-dc03743a780f | testFile1 | false                 | true                 | {10:bt-world-son}{21:bt-world,bt-world-son} | flase                      | 10,21       | {10:z=alex}     | {10:x=5.0,y=16.7}{21:m=50,n=100,p=150} |
+      | tal      | sessionId2 | d1b10451-bbb0-43e2-b5ad-d10afa73449e | testFile2 | false                 | true                 | {4:Thread1}{9:Thread2}{11:Thread2}          | false                      | 4,9,11      | {11:var2=alex}  | {4:t=6.0}{9:varT2B=1}{11:varT2B=1}     |
 
   Scenario: four users request to debug with multiple breakpoints
     Given user alex has connected with userId 4655ae8e-cdfe-4ce3-ac2b-dc03743a780f
@@ -49,9 +49,9 @@ Feature: Breakpoints
     Given alex has connected to websocket with alex-session
     And ron has connected to websocket with ron-session
 
-    When alex asks to debug with filename testFile1 and toggleMuteBreakpoints false and toggleMuteSyncPoints true and breakpoints 10,21,30,50,-1,16
+    When alex asks to debug with filename testFile1 and toggleMuteBreakpoints false and toggleMuteSyncPoints true and toggleWaitForExternalEvent false and breakpoints 10,21,30,50,-1,16
     Then The debug response should be true with errorCode null and breakpoints 10,21 for user alex
-    When ron asks to debug with filename testFile2 and toggleMuteBreakpoints false and toggleMuteSyncPoints true and breakpoints 4,9,11,30,50,-1,6
+    When ron asks to debug with filename testFile2 and toggleMuteBreakpoints false and toggleMuteSyncPoints true and toggleWaitForExternalEvent false and breakpoints 4,9,11,30,50,-1,6
     Then The debug response should be true with errorCode null and breakpoints 4,9,11 for user ron
 
     Then wait until user alex has reached breakpoint
@@ -63,9 +63,9 @@ Feature: Breakpoints
     Given avishai has connected to websocket with avishai-session
     And tal has connected to websocket with tal-session
 
-    When avishai asks to debug with filename testFile1 and toggleMuteBreakpoints false and toggleMuteSyncPoints true and breakpoints 10,21,30,50,-1,16
+    When avishai asks to debug with filename testFile1 and toggleMuteBreakpoints false and toggleMuteSyncPoints true and toggleWaitForExternalEvent false and breakpoints 10,21,30,50,-1,16
     Then The debug response should be true with errorCode null and breakpoints 10,21 for user avishai
-    When tal asks to debug with filename testFile2 and toggleMuteBreakpoints false and toggleMuteSyncPoints true and breakpoints 4,9,11,30,50,-1,6
+    When tal asks to debug with filename testFile2 and toggleMuteBreakpoints false and toggleMuteSyncPoints true and toggleWaitForExternalEvent false and breakpoints 4,9,11,30,50,-1,6
     Then The debug response should be true with errorCode null and breakpoints 4,9,11 for user tal
 
     And wait until user avishai has reached breakpoint

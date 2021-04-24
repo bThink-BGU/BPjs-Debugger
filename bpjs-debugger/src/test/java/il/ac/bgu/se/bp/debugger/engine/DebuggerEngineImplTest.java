@@ -5,9 +5,11 @@ import il.ac.bgu.cs.bp.bpjs.model.BProgram;
 import il.ac.bgu.cs.bp.bpjs.model.BProgramSyncSnapshot;
 import il.ac.bgu.cs.bp.bpjs.model.BThreadSyncSnapshot;
 import il.ac.bgu.cs.bp.bpjs.model.ResourceBProgram;
+import il.ac.bgu.se.bp.debugger.BPJsDebugger;
 import il.ac.bgu.se.bp.debugger.RunnerState;
 import il.ac.bgu.se.bp.debugger.commands.StepInto;
 import il.ac.bgu.se.bp.debugger.engine.events.BPStateEvent;
+import il.ac.bgu.se.bp.execution.BPJsDebuggerImpl;
 import il.ac.bgu.se.bp.execution.manage.ProgramValidatorImpl;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
 import il.ac.bgu.se.bp.utils.DebuggerStateHelper;
@@ -50,6 +52,8 @@ public class DebuggerEngineImplTest {
 
     @Mock
     private Publisher<BPEvent> publisher;
+    @Mock
+    private BPJsDebugger bpJsDebugger;
 
     @Spy
     private AsyncOperationRunnerImpl asyncOperationRunner;
@@ -75,7 +79,13 @@ public class DebuggerEngineImplTest {
             e.printStackTrace();
         }
     }
-
+    private void setMockDebugger() {
+        try {
+            FieldSetter.setField(debuggerStateHelper, DebuggerEngineImpl.class.getDeclaredField("bpJsDebugger"), bpJsDebugger);
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        }
+    }
     @Test
     public void testIsBreakPointAllowed() throws InterruptedException {
         doAnswer(invocation -> onStateChangedTester(invocation.getArgument(0, BPStateEvent.class))).when(publisher).notifySubscribers(any());
@@ -136,6 +146,8 @@ public class DebuggerEngineImplTest {
         doCallRealMethod().when(debuggerStateHelper).getLastState();
         doCallRealMethod().when(debuggerStateHelper).peekNextState(any(),any(),any(),any());
         doCallRealMethod().when(debuggerStateHelper).cleanFields();
+
+
         Set<BThreadSyncSnapshot> recentlyRegisteredBThreads = bProg.getRecentlyRegisteredBthreads();
         Set<Pair<String, Object>> recentlyRegistered = new HashSet<>();
         for (BThreadSyncSnapshot b : recentlyRegisteredBThreads) {
@@ -145,6 +157,7 @@ public class DebuggerEngineImplTest {
         try {
             FieldSetter.setField(debuggerStateHelper, DebuggerStateHelper.class.getDeclaredField("newBTInterpreterFrames"), new HashMap<>());
             FieldSetter.setField(debuggerStateHelper, DebuggerStateHelper.class.getDeclaredField("syncSnapshotHolder"), new SyncSnapshotHolderImpl());
+
         } catch (NoSuchFieldException e) {
             e.printStackTrace();
         }

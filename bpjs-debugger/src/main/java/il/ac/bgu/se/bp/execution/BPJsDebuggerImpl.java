@@ -61,8 +61,10 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     private BProgramSyncSnapshot syncSnapshot;
 
     private final RunnerState state = new RunnerState();
-    private final SyncSnapshotHolder<BProgramSyncSnapshot, BEvent> syncSnapshotHolder = new SyncSnapshotHolderImpl();
-    private final DebuggerStateHelper debuggerStateHelper = new DebuggerStateHelper(syncSnapshotHolder);
+
+
+    public final SyncSnapshotHolder<BProgramSyncSnapshot, BEvent> syncSnapshotHolder = new SyncSnapshotHolderImpl();
+    private final DebuggerStateHelper debuggerStateHelper;
     private final DebuggerPrintStream debuggerPrintStream = new DebuggerPrintStream();
     private final List<BProgramRunnerListener> listeners = new ArrayList<>();
     private final List<Subscriber<BPEvent>> subscribers = new ArrayList<>();
@@ -76,6 +78,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     public BPJsDebuggerImpl(String debuggerId, String filename) {
         this.debuggerId = debuggerId;
         this.filename = filename;
+        debuggerStateHelper  = new DebuggerStateHelper(this, syncSnapshotHolder);
         initDebugger();
     }
 
@@ -96,7 +99,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     }
 
     @Override
-    public DebugResponse setup(Map<Integer, Boolean> breakpoints, boolean isSkipBreakpoints, boolean isSkipSyncPoints) {
+    public DebugResponse setup(Map<Integer, Boolean> breakpoints, boolean isSkipBreakpoints, boolean isSkipSyncPoints, boolean isWaitForExternalEvents) {
         if (!isBProgSetup) { // may get twice to setup - must do bprog setup first time only
             listeners.forEach(l -> l.starting(bprog));
             syncSnapshot = awaitForExecutorServiceToFinishTask(bprog::setup);
@@ -116,9 +119,10 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         state.setDebuggerState(RunnerState.State.STOPPED);
         boolean[] actualBreakpoints = debuggerEngine.getBreakpoints();
 
-        bprog.setWaitForExternalEvents(false);        //todo: add wait for external event toggle
+        bprog.setWaitForExternalEvents(isWaitForExternalEvents);
         return new DebugResponse(true, actualBreakpoints);
     }
+
 
     @Override
     public synchronized BooleanResponse toggleMuteSyncPoints(boolean toggleMuteSyncPoints) {
@@ -187,8 +191,8 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     }
 
     @Override
-    public DebugResponse startSync(Map<Integer, Boolean> breakpointsMap, boolean isSkipSyncPoints, boolean isSkipBreakpoints) {
-        DebugResponse setupResponse = setup(breakpointsMap, isSkipBreakpoints, isSkipSyncPoints);
+    public DebugResponse startSync(Map<Integer, Boolean> breakpointsMap, boolean isSkipSyncPoints, boolean isSkipBreakpoints, boolean isWaitForExternalEvents) {
+        DebugResponse setupResponse = setup(breakpointsMap, isSkipBreakpoints, isSkipSyncPoints, isWaitForExternalEvents );
         if(setupResponse.isSuccess())
             asyncOperationRunner.runAsyncCallback(this::runStartSync);
         return setupResponse;
@@ -428,7 +432,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     }
 
     @Override
-    public BooleanResponse setWaitForExternalEvents(boolean shouldWait) {
+    public BooleanResponse toggleWaitForExternalEvents(boolean shouldWait) {
         bprog.setWaitForExternalEvents(shouldWait);
         return createSuccessResponse();
     }
@@ -470,6 +474,19 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         for (Subscriber<BPEvent> subscriber : subscribers) {
             subscriber.update(event);
         }
+    }
+
+    public boolean isSkipSyncPoints() {
+        return isSkipSyncPoints;
+    }
+    public boolean isWaitForExternalEvents() {
+        return bprog.isWaitForExternalEvents();
+    }
+    public boolean isMuteBreakPoints() {
+        return debuggerEngine.isMuteBreakpoints();
+    }
+    public DebuggerEngine<BProgramSyncSnapshot> getDebuggerEngine() {
+        return debuggerEngine;
     }
 
 //    //OLD METHOD TO RUN BPROG - JUST FOR REFERENCE

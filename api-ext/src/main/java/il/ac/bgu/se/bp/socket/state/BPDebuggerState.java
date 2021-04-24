@@ -11,13 +11,14 @@ public class BPDebuggerState implements Serializable {
     private SortedMap<Long,EventInfo> eventsHistory;
     private String currentRunningBT;
     private Integer currentLineNumber;
+    private DebuggerConfigs debuggerConfigs;
     private Boolean[] breakpoints;
 
 
     public BPDebuggerState() {
         this.bThreadInfoList = new ArrayList<>();
-        this.eventsHistory = new TreeMap<>();
         this.eventsStatus = new EventsStatus(new ArrayList<>(), new ArrayList<>(), new HashSet<>() , new LinkedList<>());
+        this.eventsHistory = new TreeMap<>();
     }
 
     public BPDebuggerState(List<BThreadInfo> bThreadInfoList, EventsStatus eventsStatus) {
@@ -33,12 +34,14 @@ public class BPDebuggerState implements Serializable {
         this.currentRunningBT = currentRunningBT;
         this.currentLineNumber = currentLineNumber;
     }
-    public BPDebuggerState(List<BThreadInfo> bThreadInfoList, EventsStatus eventsStatus , SortedMap<Long,EventInfo> eventsHistory, String currentRunningBT, Integer currentLineNumber, Boolean[] breakpoints) {
+
+    public BPDebuggerState(List<BThreadInfo> bThreadInfoList, EventsStatus eventsStatus , SortedMap<Long,EventInfo> eventsHistory, String currentRunningBT, Integer currentLineNumber, DebuggerConfigs debuggerConfigs, Boolean[] breakpoints) {
         this.bThreadInfoList = bThreadInfoList;
         this.eventsStatus = eventsStatus;
         this.eventsHistory = eventsHistory;
         this.currentRunningBT = currentRunningBT;
         this.currentLineNumber = currentLineNumber;
+        this.debuggerConfigs = debuggerConfigs;
         this.breakpoints = breakpoints;
     }
     public String getCurrentRunningBT() {
@@ -89,6 +92,14 @@ public class BPDebuggerState implements Serializable {
         this.eventsHistory = eventsHistory;
     }
 
+    public DebuggerConfigs getDebuggerConfigs() {
+        return debuggerConfigs;
+    }
+
+    public void setDebuggerConfigs(DebuggerConfigs debuggerConfigs) {
+        this.debuggerConfigs = debuggerConfigs;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -116,6 +127,8 @@ public class BPDebuggerState implements Serializable {
                 .append("\tcurrentRunningBT: ").append(currentRunningBT)
                 .append("\n")
                 .append("\tcurrentLineNumber: ").append(currentLineNumber)
+                .append("\n")
+                .append("\tdebuggerConfigs:\n").append(debuggerConfigs.toString())
                 .append("\n")
                 .append("\t breakpoints:");
                 s.append(Arrays.toString(breakpoints))

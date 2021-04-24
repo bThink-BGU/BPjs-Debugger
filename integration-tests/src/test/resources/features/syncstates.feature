@@ -9,9 +9,9 @@ Feature: Sync States
     Given alex has connected to websocket with alex-session
     And ron has connected to websocket with ron-session
 
-    When alex asks to debug with filename testFile1 and toggleMuteBreakpoints true and toggleMuteSyncPoints false and breakpoints 10,21
+    When alex asks to debug with filename testFile1 and toggleMuteBreakpoints true and toggleMuteSyncPoints false and toggleWaitForExternalEvent false and breakpoints 10,21
     Then The debug response should be true with errorCode null and breakpoints 10,21 for user alex
-    When ron asks to debug with filename testFile2 and toggleMuteBreakpoints true and toggleMuteSyncPoints false and breakpoints 4,9,11
+    When ron asks to debug with filename testFile2 and toggleMuteBreakpoints true and toggleMuteSyncPoints false and toggleWaitForExternalEvent false and breakpoints 4,9,11
     Then The debug response should be true with errorCode null and breakpoints 4,9,11 for user ron
 
     Then wait until user alex has reached sync state
@@ -23,9 +23,9 @@ Feature: Sync States
     Given avishai has connected to websocket with avishai-session
     And tal has connected to websocket with tal-session
 
-    When avishai asks to debug with filename testFile1 and toggleMuteBreakpoints true and toggleMuteSyncPoints false and breakpoints 10,21
+    When avishai asks to debug with filename testFile1 and toggleMuteBreakpoints true and toggleMuteSyncPoints false and toggleWaitForExternalEvent false and breakpoints 10,21
     Then The debug response should be true with errorCode null and breakpoints 10,21 for user avishai
-    When tal asks to debug with filename testFile2 and toggleMuteBreakpoints true and toggleMuteSyncPoints false and breakpoints 4,9,11
+    When tal asks to debug with filename testFile2 and toggleMuteBreakpoints true and toggleMuteSyncPoints false and toggleWaitForExternalEvent false and breakpoints 4,9,11
     Then The debug response should be true with errorCode null and breakpoints 4,9,11 for user tal
 
     And wait until user avishai has reached sync state

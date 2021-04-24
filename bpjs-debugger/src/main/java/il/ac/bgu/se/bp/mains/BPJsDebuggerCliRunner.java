@@ -1,7 +1,6 @@
 package il.ac.bgu.se.bp.mains;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
 import il.ac.bgu.se.bp.config.BPJsDebuggerConfiguration;
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
 import il.ac.bgu.se.bp.debugger.manage.DebuggerFactory;
@@ -89,7 +88,7 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
             }
             case "go":
                 if (!bpJsDebugger.isStarted()) {
-                    sendRequest(() -> bpJsDebugger.startSync(breakpoints, isSkipSyncPoints, isSkipBreakPoints));
+                    sendRequest(() -> bpJsDebugger.startSync(breakpoints, isSkipSyncPoints, isSkipBreakPoints, false ));
                 }
                 else {
                     sendRequest(bpJsDebugger::continueRun);
@@ -133,7 +132,7 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
                     break;
                 }
                 boolean shouldWait = Integer.parseInt(splat[1]) > 0;
-                sendRequest(() -> bpJsDebugger.setWaitForExternalEvents(shouldWait));
+                sendRequest(() -> bpJsDebugger.toggleWaitForExternalEvents(shouldWait));
                 break;
             }
             case "h": {

@@ -94,7 +94,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
                 .stream()
                 .collect(Collectors.toMap(Function.identity(), b -> Boolean.TRUE));
 
-        return bpProgramDebugger.startSync(breakpointsMap, debugRequest.isSkipSyncStateToggle(), debugRequest.isSkipBreakpointsToggle());
+        return bpProgramDebugger.startSync(breakpointsMap, debugRequest.isSkipSyncStateToggle(), debugRequest.isSkipBreakpointsToggle(), debugRequest.isWaitForExternalEvents());
     }
 
     @Override
@@ -126,7 +126,20 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
         sessionHandler.updateLastOperationTime(userId);
         return bpJsDebugger.toggleMuteBreakpoints(toggleBreakPointStatus.isSkipBreakpoints());
     }
+    @Override
+    public BooleanResponse toggleWaitForExternal(String userId, ToggleWaitForExternalRequest toggleWaitForExternalRequest) {
+        if (toggleWaitForExternalRequest == null) {
+            return createErrorResponse(ErrorCode.INVALID_REQUEST);
+        }
 
+        BPJsDebugger<BooleanResponse> bpJsDebugger = sessionHandler.getBPjsDebuggerByUser(userId);
+        if (bpJsDebugger == null) {
+            return createErrorResponse(ErrorCode.UNKNOWN_USER);
+        }
+
+        sessionHandler.updateLastOperationTime(userId);
+        return bpJsDebugger.toggleWaitForExternalEvents(toggleWaitForExternalRequest.isWaitForExternal());
+    }
     @Override
     public BooleanResponse toggleMuteSyncPoints(String userId, ToggleSyncStatesRequest toggleMuteSyncPoints) {
         if (toggleMuteSyncPoints == null) {
