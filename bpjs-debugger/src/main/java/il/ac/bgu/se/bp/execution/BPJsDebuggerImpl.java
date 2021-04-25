@@ -126,6 +126,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
 
     @Override
     public synchronized BooleanResponse toggleMuteSyncPoints(boolean toggleMuteSyncPoints) {
+        logger.info("toggleMuteSyncPoints to: " +toggleMuteSyncPoints);
         this.isSkipSyncPoints = toggleMuteSyncPoints;
         return createSuccessResponse();
     }
