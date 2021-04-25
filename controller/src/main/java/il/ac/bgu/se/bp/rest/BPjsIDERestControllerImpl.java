@@ -71,7 +71,7 @@ public class BPjsIDERestControllerImpl implements BPjsIDERestController {
     @Override
     @RequestMapping(value = SYNC_STATES, method = RequestMethod.PUT)
     public @ResponseBody
-    BooleanResponse toggleMuteSyncPoints(@RequestHeader("userId") String userId, ToggleSyncStatesRequest toggleMuteSyncPoints) {
+    BooleanResponse toggleMuteSyncPoints(@RequestHeader("userId") String userId, @RequestBody ToggleSyncStatesRequest toggleMuteSyncPoints) {
         return bPjsIDEService.toggleMuteSyncPoints(userId, toggleMuteSyncPoints);
     }
 
