@@ -144,13 +144,16 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
 
     @Override
     public BooleanResponse setSyncSnapshot(long snapShotTime) {
+        if (!RunnerState.State.SYNC_STATE.equals(state.getDebuggerState())) {
+            return createErrorResponse(ErrorCode.NOT_IN_BP_SYNC_STATE);
+        }
         BProgramSyncSnapshot newSnapshot = syncSnapshotHolder.popKey(snapShotTime);
         if (newSnapshot == null) {
             return createErrorResponse(ErrorCode.CANNOT_REPLACE_SNAPSHOT);
         }
 
         syncSnapshot = newSnapshot;
-        this.debuggerStateHelper.cleanFields();
+        debuggerStateHelper.cleanFields();
         return nextSync();
     }
 

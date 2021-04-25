@@ -119,6 +119,10 @@ public class BPJsDebuggerImplTest {
     @Test
     public void setSyncSnapshots_noSnapshotsAddedTest() {
         setupDebugger();
+        assertErrorResponse(bpJsDebugger.setSyncSnapshot(123123L), ErrorCode.NOT_IN_BP_SYNC_STATE);
+        assertErrorResponse(bpJsDebugger.setSyncSnapshot(-1L), ErrorCode.NOT_IN_BP_SYNC_STATE);
+
+        assertSuccessResponse(bpJsDebugger.startSync(new HashMap<>(), false, false,false ));
         assertErrorResponse(bpJsDebugger.setSyncSnapshot(123123L), ErrorCode.CANNOT_REPLACE_SNAPSHOT);
         assertErrorResponse(bpJsDebugger.setSyncSnapshot(-1L), ErrorCode.CANNOT_REPLACE_SNAPSHOT);
     }
