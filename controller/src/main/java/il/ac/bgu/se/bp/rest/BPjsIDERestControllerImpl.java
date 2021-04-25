@@ -57,21 +57,24 @@ public class BPjsIDERestControllerImpl implements BPjsIDERestController {
     @Override
     @RequestMapping(value = BREAKPOINT, method = RequestMethod.PUT)
     public @ResponseBody
-    BooleanResponse toggleMuteBreakpoints(@RequestHeader("userId") String userId, @RequestBody ToggleBreakpointsRequest toggleBreakpointsRequest) {
+    BooleanResponse toggleMuteBreakpoints(@RequestHeader("userId") String userId,
+                                          @RequestBody ToggleBreakpointsRequest toggleBreakpointsRequest) {
         return bPjsIDEService.toggleMuteBreakpoints(userId, toggleBreakpointsRequest);
     }
 
     @Override
     @RequestMapping(value = WAIT_EXTERNAL, method = RequestMethod.PUT)
     public @ResponseBody
-    BooleanResponse toggleWaitForExternal(@RequestHeader("userId") String userId, @RequestBody ToggleWaitForExternalRequest toggleWaitForExternalRequest) {
+    BooleanResponse toggleWaitForExternal(@RequestHeader("userId") String userId,
+                                          @RequestBody ToggleWaitForExternalRequest toggleWaitForExternalRequest) {
         return bPjsIDEService.toggleWaitForExternal(userId, toggleWaitForExternalRequest);
     }
 
     @Override
     @RequestMapping(value = SYNC_STATES, method = RequestMethod.PUT)
     public @ResponseBody
-    BooleanResponse toggleMuteSyncPoints(@RequestHeader("userId") String userId, @RequestBody ToggleSyncStatesRequest toggleMuteSyncPoints) {
+    BooleanResponse toggleMuteSyncPoints(@RequestHeader("userId") String userId,
+                                         @RequestBody ToggleSyncStatesRequest toggleMuteSyncPoints) {
         return bPjsIDEService.toggleMuteSyncPoints(userId, toggleMuteSyncPoints);
     }
 
@@ -120,14 +123,16 @@ public class BPjsIDERestControllerImpl implements BPjsIDERestController {
     @Override
     @RequestMapping(value = EXTERNAL_EVENT, method = RequestMethod.POST)
     public @ResponseBody
-    BooleanResponse externalEvent(@RequestHeader("userId") String userId,@RequestBody ExternalEventRequest externalEventRequest) {
+    BooleanResponse externalEvent(@RequestHeader("userId") String userId,
+                                  @RequestBody ExternalEventRequest externalEventRequest) {
         return bPjsIDEService.externalEvent(userId, externalEventRequest);
     }
 
     @Override
     @RequestMapping(value = SYNC_SNAPSHOT, method = RequestMethod.POST)
     public @ResponseBody
-    BooleanResponse setSyncSnapshot(@RequestHeader("userId") String userId,@RequestBody SetSyncSnapshotRequest setSyncSnapshotRequest) {
+    BooleanResponse setSyncSnapshot(@RequestHeader("userId") String userId,
+                                    @RequestBody SetSyncSnapshotRequest setSyncSnapshotRequest) {
         return bPjsIDEService.setSyncSnapshot(userId, setSyncSnapshotRequest);
     }
 
