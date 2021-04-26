@@ -12,7 +12,6 @@ import il.ac.bgu.cs.bp.bpjs.model.eventsets.ExplicitEventSet;
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
 import il.ac.bgu.se.bp.debugger.RunnerState;
 import il.ac.bgu.se.bp.debugger.engine.SyncSnapshotHolder;
-import il.ac.bgu.se.bp.execution.BPJsDebuggerImpl;
 import il.ac.bgu.se.bp.logger.Logger;
 import il.ac.bgu.se.bp.socket.state.*;
 import org.apache.commons.lang3.ArrayUtils;
@@ -55,7 +54,10 @@ public class DebuggerStateHelper {
         currentEvent = null;
     }
 
-    public boolean[] getBreakpoints(Dim.SourceInfo sourceInfo){
+    public boolean[] getBreakpoints(Dim.SourceInfo sourceInfo) {
+        if (sourceInfo == null) {
+            return new boolean[0];
+        }
         try {
             boolean[] breakpoints = getValue(sourceInfo, "breakpoints");
             return breakpoints;

@@ -15,7 +15,10 @@ import il.ac.bgu.se.bp.utils.visitor.PublisherVisitor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Scanner;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 
 public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisitor {
@@ -25,7 +28,7 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
 
     private boolean isTerminated = false;
     private Scanner sc;
-    private boolean isSkipSyncPoints = true;
+    private boolean isSkipSyncPoints = false;
     private boolean isSkipBreakPoints = false;
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -185,12 +188,16 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
 
     private static String[] getUserInput(Scanner sc) {
         try {
-            System.out.println("Enter command: b / rb / go / si / sov / sou / getss / n / e / re / we / h / tmb / tsp / sss / stop");
+            printMenu();
             String cmd = sc.nextLine();
             return cmd.split(" ");
         } catch (Exception e) {
             return new String[]{"stop"};
         }
+    }
+
+    private static void printMenu() {
+        System.out.println("Enter command: b / rb / go / si / sov / sou / getss / n / e / re / we / h / tmb / tsp / sss / stop");
     }
 
     @Override
@@ -201,11 +208,13 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
     @Override
     public void visit(String userId, BPDebuggerState debuggerState) {
         System.out.println("debuggerState event received, content: " + debuggerState.prettier());
+        printMenu();
     }
 
     @Override
     public void visit(String userId, ConsoleMessage consoleMessage) {
         System.out.println("consoleMessage event received, content: " + consoleMessage.toString());
+        printMenu();
     }
 
     @Override
