@@ -246,7 +246,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         }
 
         if (!syncSnapshot.isStateValid()) {
-            onInvalidStateError("Start sync fatal error");
+            onInvalidStateError("next sync fatal error");
             return createErrorResponse(ErrorCode.INVALID_SYNC_SNAPSHOT_STATE);
         }
 
