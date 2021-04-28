@@ -21,7 +21,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 
 import java.util.*;
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
@@ -93,17 +92,22 @@ public class IDESteps {
             case "next sync":
                 lastResponse = testService.nextSync(userId);
                 break;
+            case "stop":
+                lastResponse = testService.stop(userId);
+                break;
         }
     }
 
-    @When("(.*) toggles mute breakpoints to (.*)")
-    public void userTogglesMuteBreakpoints(String username, String skipBreakpoints) {
-        lastResponse = testService.toggleMuteBreakpoints(getUserIdByName(username), new ToggleBreakpointsRequest(strToBoolean(skipBreakpoints)));
-    }
-
-    @When("(.*) toggles mute sync states to (.*)")
-    public void userTogglesMuteSyncStates(String username, String skipSyncStates) {
-        lastResponse = testService.toggleMuteSyncPoints(getUserIdByName(username), new ToggleSyncStatesRequest(strToBoolean(skipSyncStates)));
+    @When("(.*) toggles (.*) to (.*)")
+    public void userTogglesMuteBreakpoints(String username, String toggleButton, String toggleMode) {
+        switch (toggleButton) {
+            case "mute breakpoints":
+                lastResponse = testService.toggleMuteBreakpoints(getUserIdByName(username), new ToggleBreakpointsRequest(strToBoolean(toggleMode)));
+                break;
+            case "mute sync states":
+                lastResponse = testService.toggleMuteSyncPoints(getUserIdByName(username), new ToggleSyncStatesRequest(strToBoolean(toggleMode)));
+                break;
+        }
     }
 
     @Then("wait until program of user (.*) is over")

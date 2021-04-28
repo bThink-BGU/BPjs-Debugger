@@ -2,7 +2,6 @@ package il.ac.bgu.se.bp.mocks;
 
 import il.ac.bgu.se.bp.service.manage.SessionHandlerImpl;
 import il.ac.bgu.se.bp.socket.console.ConsoleMessage;
-import il.ac.bgu.se.bp.socket.exit.ProgramExit;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
 
 import java.util.LinkedList;
@@ -25,11 +24,6 @@ public class SessionHandlerMock extends SessionHandlerImpl {
         System.out.println(userId + ": " + consoleMessage.getMessage());
         consoleMessagesPerUser.putIfAbsent(userId, new LinkedList<>());
         consoleMessagesPerUser.get(userId).add(consoleMessage);
-    }
-
-    @Override
-    public void visit(String userId, ProgramExit programExit) {
-
     }
 
     public void cleanMockData() {

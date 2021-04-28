@@ -7,10 +7,8 @@ import il.ac.bgu.se.bp.error.ErrorCode;
 import il.ac.bgu.se.bp.logger.Logger;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.utils.asyncHelper.AsyncOperationRunner;
-import il.ac.bgu.se.bp.utils.asyncHelper.AsyncOperationRunnerImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
 
 import java.util.concurrent.Callable;
 
@@ -95,10 +93,10 @@ public class ProgramValidatorImpl implements ProgramValidator<BPJsDebugger> {
 
     @Override
     public BooleanResponse validateAndRunAsync(BPJsDebugger bProg, RunnerState.State expectedState, Callable<BooleanResponse> callback) {
-        RunnerState.State state = bProg.getDebuggerState().getDebuggerState();
+        RunnerState.State actualState = bProg.getDebuggerState().getDebuggerState();
 
-        if (!RunnerState.State.JS_DEBUG.equals(state)) {
-            return createErrorResponse(getErrorCodeByExpectedDebuggerState(state));
+        if (!expectedState.equals(actualState)) {
+            return createErrorResponse(getErrorCodeByExpectedDebuggerState(expectedState));
         }
 
         return validateAndRunAsync(bProg, callback);
