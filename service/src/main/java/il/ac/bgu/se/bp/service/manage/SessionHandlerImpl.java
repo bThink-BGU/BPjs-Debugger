@@ -158,7 +158,7 @@ public class SessionHandlerImpl implements SessionHandler<BProgramRunner> {
         if (!validateUserId(userId)) {
             return;
         }
-        logger.debug("sending BPDebuggerState update");
+//        logger.debug("sending BPDebuggerState update");
         logger.debug(gson.toJson(debuggerState));
         stateNotificationHandler.sendNotification(userId, gson.toJson(debuggerState));
     }
@@ -168,7 +168,7 @@ public class SessionHandlerImpl implements SessionHandler<BProgramRunner> {
         if (!validateUserId(userId)) {
             return;
         }
-        logger.debug("sending ConsoleMessage update");
+//        logger.debug("sending ConsoleMessage update");
         consoleNotificationHandler.sendNotification(userId, consoleMessage);
     }
 

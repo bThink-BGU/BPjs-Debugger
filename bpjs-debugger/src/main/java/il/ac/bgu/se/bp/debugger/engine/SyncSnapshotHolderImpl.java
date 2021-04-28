@@ -31,7 +31,16 @@ public class SyncSnapshotHolderImpl implements SyncSnapshotHolder<BProgramSyncSn
 
         return cloneBProgramSyncSnapshot(oldBProgramSyncSnapshot);
     }
+    @Override
+    public synchronized BEvent popValue(long snapshotTime) {
+        if (!snapshotsByTimeChosen.containsKey(snapshotTime)) {
+            return null;
+        }
 
+        BEvent bEvent = snapshotsByTimeChosen.get(snapshotTime).getRight();
+
+        return bEvent;
+    }
     private BProgramSyncSnapshot cloneBProgramSyncSnapshot(BProgramSyncSnapshot oldBProgramSyncSnapshot) {
         BProgram aBProgram = oldBProgramSyncSnapshot.getBProgram();
         Set<BThreadSyncSnapshot> someThreadSnapshots = oldBProgramSyncSnapshot.getBThreadSnapshots();
