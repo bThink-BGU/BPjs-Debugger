@@ -6,6 +6,7 @@ import il.ac.bgu.cs.bp.bpjs.model.BProgramSyncSnapshot;
 import il.ac.bgu.cs.bp.bpjs.model.BThreadSyncSnapshot;
 import il.ac.bgu.cs.bp.bpjs.model.ResourceBProgram;
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
+import il.ac.bgu.se.bp.debugger.DebuggerLevel;
 import il.ac.bgu.se.bp.debugger.RunnerState;
 import il.ac.bgu.se.bp.debugger.commands.StepInto;
 import il.ac.bgu.se.bp.debugger.engine.events.BPStateEvent;
@@ -157,7 +158,7 @@ public class DebuggerEngineImplTest {
         try {
             FieldSetter.setField(debuggerStateHelper, DebuggerStateHelper.class.getDeclaredField("newBTInterpreterFrames"), new HashMap<>());
             FieldSetter.setField(debuggerStateHelper, DebuggerStateHelper.class.getDeclaredField("syncSnapshotHolder"), new SyncSnapshotHolderImpl());
-
+            FieldSetter.setField(debuggerStateHelper, DebuggerStateHelper.class.getDeclaredField("debuggerLevel"), DebuggerLevel.NORMAL);
         } catch (NoSuchFieldException e) {
             e.printStackTrace();
         }
