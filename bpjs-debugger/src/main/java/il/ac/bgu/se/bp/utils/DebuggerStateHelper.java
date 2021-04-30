@@ -1,6 +1,7 @@
 package il.ac.bgu.se.bp.utils;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import il.ac.bgu.cs.bp.bpjs.model.BEvent;
 import il.ac.bgu.cs.bp.bpjs.model.BProgramSyncSnapshot;
 import il.ac.bgu.cs.bp.bpjs.model.BThreadSyncSnapshot;
@@ -166,6 +167,7 @@ public class DebuggerStateHelper {
             }
             return getValue(frame, "fnOrScript");
         } catch (Exception e) {
+            logger.error("getBaseFnOrScript: failed e: {0}", e, e.getMessage());
             return null;
         }
     }
@@ -293,13 +295,26 @@ public class DebuggerStateHelper {
             Object[] ids = Arrays.stream(scope.getIds()).filter((p) -> !p.toString().equals("arguments") && !p.toString().equals(itsName + "param")).toArray();
             for (Object id : ids) {
                 Object jsValue = collectJsValue(scope.get(id));
-                Gson gson = new Gson();
-                myEnv.put(id.toString(), gson.toJson(jsValue));
+                String var_value = getVarGsonValue(jsValue);
+                myEnv.put(id.toString(), var_value);
             }
         } catch (NoSuchFieldException | IllegalAccessException e) {
             logger.error("failed to get scope, e: {0}", e, e.getMessage());
         }
         return myEnv;
+    }
+
+    private String getVarGsonValue(Object jsValue) {
+        GsonBuilder gsonBuilder = new GsonBuilder();
+        gsonBuilder.serializeSpecialFloatingPointValues();
+        Gson gson= gsonBuilder.create();
+        try {
+            return gson.toJson(jsValue);
+        }
+        catch (Exception e){
+            logger.error("getVarGsonValue Error: jsValue: {0}, error: {1} ", e, jsValue, e.getMessage());
+            return null;
+        }
     }
 
     public BPDebuggerState getLastState() {

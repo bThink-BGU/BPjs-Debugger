@@ -14,6 +14,7 @@ import il.ac.bgu.se.bp.debugger.engine.DebuggerEngine;
 import il.ac.bgu.se.bp.debugger.engine.DebuggerEngineImpl;
 import il.ac.bgu.se.bp.debugger.engine.SyncSnapshotHolder;
 import il.ac.bgu.se.bp.debugger.engine.SyncSnapshotHolderImpl;
+import il.ac.bgu.se.bp.debugger.engine.events.BPConsoleEvent;
 import il.ac.bgu.se.bp.debugger.engine.events.BPExitEvent;
 import il.ac.bgu.se.bp.debugger.manage.ProgramValidator;
 import il.ac.bgu.se.bp.error.ErrorCode;
@@ -21,6 +22,7 @@ import il.ac.bgu.se.bp.logger.Logger;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.response.DebugResponse;
 import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
+import il.ac.bgu.se.bp.socket.console.ConsoleMessage;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
 import il.ac.bgu.se.bp.socket.state.EventInfo;
 import il.ac.bgu.se.bp.utils.DebuggerBProgramRunnerListener;
@@ -244,6 +246,10 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
             logger.error("Forced to stop");
             return createErrorResponse(ErrorCode.BP_SETUP_FAIL);
         }
+        catch(Exception e){
+            logger.error("runStartSync Failed {0}", e.getMessage());
+            notifySubscribers(new BPConsoleEvent(debuggerId, new ConsoleMessage(e.getMessage(), "error")));
+        }
         return createSuccessResponse();
     }
 
@@ -290,8 +296,11 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
                 logger.info("Events queue is empty");
             }
         } catch (InterruptedException e) {
-            logger.warning("got InterruptedException in nextSync");
+            logger.error("runNextSync: got InterruptedException in nextSync");
             return false;
+        }  catch(Exception e){
+            logger.error("runNextSync Failed {0}", e.getMessage());
+            notifySubscribers(new BPConsoleEvent(debuggerId, new ConsoleMessage(e.getMessage(), "error")));
         }
         return true;
     }
@@ -299,7 +308,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         syncSnapshotHolder.addSyncSnapshot(newSS, bEvent);
         debuggerEngine.setSyncSnapshot(newSS);
     }
-    private void nextSyncOnChosenEvent(EventSelectionResult eventSelectionResult) throws InterruptedException {
+    private void nextSyncOnChosenEvent(EventSelectionResult eventSelectionResult) throws Exception {
         BEvent event = eventSelectionResult.getEvent();
         if (!eventSelectionResult.getIndicesToRemove().isEmpty()) {
             removeExternalEvents(eventSelectionResult);
@@ -369,6 +378,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
             return execSvc.submit(callable).get();
         } catch (Exception e) {
             logger.error("failed running callable task via executor service, error: {0}", e, e.getMessage());
+            notifySubscribers(new BPConsoleEvent(debuggerId, new ConsoleMessage(e.getMessage(), "error")));
         }
         return null;
     }
