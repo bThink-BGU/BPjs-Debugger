@@ -1,6 +1,7 @@
 package il.ac.bgu.se.bp.utils;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import il.ac.bgu.cs.bp.bpjs.model.BEvent;
 import il.ac.bgu.cs.bp.bpjs.model.BProgramSyncSnapshot;
 import il.ac.bgu.cs.bp.bpjs.model.BThreadSyncSnapshot;
@@ -10,6 +11,7 @@ import il.ac.bgu.cs.bp.bpjs.model.eventsets.EventSet;
 import il.ac.bgu.cs.bp.bpjs.model.eventsets.EventSets;
 import il.ac.bgu.cs.bp.bpjs.model.eventsets.ExplicitEventSet;
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
+import il.ac.bgu.se.bp.debugger.DebuggerLevel;
 import il.ac.bgu.se.bp.debugger.RunnerState;
 import il.ac.bgu.se.bp.debugger.engine.SyncSnapshotHolder;
 import il.ac.bgu.se.bp.logger.Logger;
@@ -36,10 +38,12 @@ public class DebuggerStateHelper {
     private static final int INITIAL_INDEX_FOR_EVENTS_HISTORY_ON_SYNC_STATE = 0;
     private static final int FINAL_INDEX_FOR_EVENTS_HISTORY_ON_SYNC_STATE = 10;
     private BPJsDebugger bpJsDebugger;
+    private DebuggerLevel debuggerLevel;
 
-    public DebuggerStateHelper(BPJsDebugger bpJsDebugger, SyncSnapshotHolder<BProgramSyncSnapshot, BEvent> syncSnapshotHolder) {
+    public DebuggerStateHelper(BPJsDebugger bpJsDebugger, SyncSnapshotHolder<BProgramSyncSnapshot, BEvent> syncSnapshotHolder, DebuggerLevel debuggerLevel) {
         this.bpJsDebugger = bpJsDebugger;
         this.syncSnapshotHolder = syncSnapshotHolder;
+        this.debuggerLevel = debuggerLevel;
     }
 
     public BPDebuggerState generateDebuggerState(BProgramSyncSnapshot syncSnapshot, RunnerState state, Dim.ContextData lastContextData, Dim.SourceInfo sourceInfo) {
@@ -68,13 +72,18 @@ public class DebuggerStateHelper {
     }
 
     private BPDebuggerState generateDebuggerStateInner(BProgramSyncSnapshot syncSnapshot, RunnerState state, Dim.ContextData lastContextData, Dim.SourceInfo sourceInfo) {
-        List<BThreadInfo> bThreadInfoList = generateBThreadInfos(syncSnapshot, state, lastContextData);
-        EventsStatus eventsStatus = generateEventsStatus(syncSnapshot);
-        Integer lineNumber = lastContextData == null ? null : lastContextData.frameCount() > 0 ? lastContextData.getFrame(0).getLineNumber() : null;
         SortedMap<Long, EventInfo> eventsHistory = generateEventsHistory(INITIAL_INDEX_FOR_EVENTS_HISTORY_ON_SYNC_STATE, FINAL_INDEX_FOR_EVENTS_HISTORY_ON_SYNC_STATE);
-        boolean[] breakpoints = getBreakpoints(sourceInfo);
         DebuggerConfigs debuggerConfigs = bpJsDebugger == null? null :new DebuggerConfigs(bpJsDebugger.isMuteBreakPoints(),bpJsDebugger.isWaitForExternalEvents(), bpJsDebugger.isSkipSyncPoints());
-        return new BPDebuggerState(bThreadInfoList, eventsStatus, eventsHistory, currentRunningBT, lineNumber,debuggerConfigs, ArrayUtils.toObject(breakpoints));
+
+        if(debuggerLevel.getLevel() > DebuggerLevel.LIGHT.getLevel()){
+            List<BThreadInfo> bThreadInfoList = generateBThreadInfos(syncSnapshot, state, lastContextData);
+            EventsStatus eventsStatus = generateEventsStatus(syncSnapshot);
+            Integer lineNumber = lastContextData == null ? null : lastContextData.frameCount() > 0 ? lastContextData.getFrame(0).getLineNumber() : null;
+            boolean[] breakpoints = getBreakpoints(sourceInfo);
+            return new BPDebuggerState(bThreadInfoList, eventsStatus, eventsHistory, currentRunningBT, lineNumber,debuggerConfigs, ArrayUtils.toObject(breakpoints));
+        }
+
+        return new BPDebuggerState(new LinkedList<>(), new EventsStatus(), eventsHistory, currentRunningBT, null,debuggerConfigs, new Boolean[0]);
     }
 
     private List<BThreadInfo> generateBThreadInfos(BProgramSyncSnapshot syncSnapshot, RunnerState state, Dim.ContextData lastContextData) {
@@ -158,6 +167,7 @@ public class DebuggerStateHelper {
             }
             return getValue(frame, "fnOrScript");
         } catch (Exception e) {
+            logger.error("getBaseFnOrScript: failed e: {0}", e, e.getMessage());
             return null;
         }
     }
@@ -285,13 +295,26 @@ public class DebuggerStateHelper {
             Object[] ids = Arrays.stream(scope.getIds()).filter((p) -> !p.toString().equals("arguments") && !p.toString().equals(itsName + "param")).toArray();
             for (Object id : ids) {
                 Object jsValue = collectJsValue(scope.get(id));
-                Gson gson = new Gson();
-                myEnv.put(id.toString(), gson.toJson(jsValue));
+                String var_value = getVarGsonValue(jsValue);
+                myEnv.put(id.toString(), var_value);
             }
         } catch (NoSuchFieldException | IllegalAccessException e) {
             logger.error("failed to get scope, e: {0}", e, e.getMessage());
         }
         return myEnv;
+    }
+
+    private String getVarGsonValue(Object jsValue) {
+        GsonBuilder gsonBuilder = new GsonBuilder();
+        gsonBuilder.serializeSpecialFloatingPointValues();
+        Gson gson= gsonBuilder.create();
+        try {
+            return gson.toJson(jsValue);
+        }
+        catch (Exception e){
+            logger.error("getVarGsonValue Error: jsValue: {0}, error: {1} ", e, jsValue, e.getMessage());
+            return null;
+        }
     }
 
     public BPDebuggerState getLastState() {

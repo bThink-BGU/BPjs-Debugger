@@ -171,6 +171,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
             BPDebuggerState newState = debuggerStateHelper.generateDebuggerState(syncSnapshot, state, lastContextData, dimHelper.getSourceInfo(filename));
             execSvc.submit(() -> notifySubscribers(new BPStateEvent(debuggerId, newState))).get();
         } catch (Exception e) {
+            logger.error("onStateChanged: failed e: {0}", e, e.getMessage());
             e.printStackTrace();
         }
     }

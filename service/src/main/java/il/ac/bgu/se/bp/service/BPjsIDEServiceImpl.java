@@ -1,7 +1,7 @@
 package il.ac.bgu.se.bp.service;
 
-import il.ac.bgu.cs.bp.bpjs.execution.BProgramRunner;
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
+import il.ac.bgu.se.bp.debugger.DebuggerLevel;
 import il.ac.bgu.se.bp.debugger.manage.DebuggerFactory;
 import il.ac.bgu.se.bp.error.ErrorCode;
 import il.ac.bgu.se.bp.logger.Logger;
@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.util.StringUtils;
 
 import javax.annotation.PostConstruct;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -29,7 +30,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
     private static final Logger logger = new Logger(BPjsIDEServiceImpl.class);
 
     @Autowired
-    private SessionHandler<BProgramRunner> sessionHandler;
+    private SessionHandler<BPJsDebugger<BooleanResponse>> sessionHandler;
 
     @Autowired
     private SourceCodeHelper sourceCodeHelper;
@@ -53,15 +54,26 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
 
     @Override
     public BooleanResponse run(RunRequest runRequest, String userId) {
-        BProgramRunner bProgramRunner = new BProgramRunner();
+        if (!validateRequest(runRequest)) {
+            return createErrorResponse(ErrorCode.INVALID_REQUEST);
+        }
 
-        //todo
-        sessionHandler.addNewRunExecution(userId, bProgramRunner, "filename");
+        if (!sessionHandler.validateUserId(userId)) {
+            return createErrorResponse(ErrorCode.UNKNOWN_USER);
+        }
+        logger.info("received run request for user: {0}", userId);
+        String filename = sourceCodeHelper.createCodeFile(runRequest.getSourceCode());
+        if (StringUtils.isEmpty(filename)) {
+            return createErrorResponse(ErrorCode.INVALID_SOURCE_CODE);
+        }
+
+        BPJsDebugger<BooleanResponse> bpProgramDebugger = debuggerFactory.getBPJsDebugger(userId, filename, DebuggerLevel.LIGHT);
+        bpProgramDebugger.subscribe(sessionHandler);
+        sessionHandler.addNewRunExecution(userId, bpProgramDebugger, filename);
         sessionHandler.updateLastOperationTime(userId);
 
+        return bpProgramDebugger.startSync(new HashMap<>(), true, true, runRequest.isWaitForExternalEvents());
 
-        logger.info("received run request with code: {0}", bProgramRunner.toString());
-        return new BooleanResponse(true);
     }
 
     @Override
@@ -84,7 +96,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
     }
 
     private DebugResponse handleNewDebugRequest(DebugRequest debugRequest, String userId, String filename) {
-        BPJsDebugger<BooleanResponse> bpProgramDebugger = debuggerFactory.getBPJsDebugger(userId, filename);
+        BPJsDebugger<BooleanResponse> bpProgramDebugger = debuggerFactory.getBPJsDebugger(userId, filename, DebuggerLevel.NORMAL);
         bpProgramDebugger.subscribe(sessionHandler);
 
         sessionHandler.addNewDebugExecution(userId, bpProgramDebugger, filename);
@@ -132,7 +144,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
             return createErrorResponse(ErrorCode.INVALID_REQUEST);
         }
 
-        BPJsDebugger<BooleanResponse> bpJsDebugger = sessionHandler.getBPjsDebuggerByUser(userId);
+        BPJsDebugger<BooleanResponse> bpJsDebugger = sessionHandler.getBPjsDebuggerOrRunnerByUser(userId);
         if (bpJsDebugger == null) {
             return createErrorResponse(ErrorCode.UNKNOWN_USER);
         }
@@ -157,7 +169,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
 
     @Override
     public BooleanResponse stop(String userId) {
-        BPJsDebugger<BooleanResponse> bpJsDebugger = sessionHandler.getBPjsDebuggerByUser(userId);
+        BPJsDebugger<BooleanResponse> bpJsDebugger = sessionHandler.getBPjsDebuggerOrRunnerByUser(userId);
         if (bpJsDebugger == null) {
             return createErrorResponse(ErrorCode.UNKNOWN_USER);
         }
@@ -221,7 +233,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
             return createErrorResponse(ErrorCode.INVALID_REQUEST);
         }
 
-        BPJsDebugger<BooleanResponse> bpJsDebugger = sessionHandler.getBPjsDebuggerByUser(userId);
+        BPJsDebugger<BooleanResponse> bpJsDebugger = sessionHandler.getBPjsDebuggerOrRunnerByUser(userId);
         if (bpJsDebugger == null) {
             return createErrorResponse(ErrorCode.UNKNOWN_USER);
         }
@@ -250,7 +262,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
 
     @Override
     public EventsHistoryResponse getEventsHistory(String userId, int from, int to) {
-        BPJsDebugger<BooleanResponse> bpJsDebugger = sessionHandler.getBPjsDebuggerByUser(userId);
+        BPJsDebugger<BooleanResponse> bpJsDebugger = sessionHandler.getBPjsDebuggerOrRunnerByUser(userId);
         if (bpJsDebugger == null) {
             return new EventsHistoryResponse();
         }

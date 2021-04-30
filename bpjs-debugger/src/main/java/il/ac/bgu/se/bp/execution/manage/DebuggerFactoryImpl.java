@@ -1,6 +1,7 @@
 package il.ac.bgu.se.bp.execution.manage;
 
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
+import il.ac.bgu.se.bp.debugger.DebuggerLevel;
 import il.ac.bgu.se.bp.debugger.manage.DebuggerFactory;
 import il.ac.bgu.se.bp.execution.BPJsDebuggerImpl;
 import il.ac.bgu.se.bp.logger.Logger;
@@ -18,9 +19,9 @@ public class DebuggerFactoryImpl implements DebuggerFactory<BooleanResponse>, Ap
     private static final Logger logger = new Logger(DebuggerFactoryImpl.class);
 
     @Override
-    public BPJsDebugger<BooleanResponse> getBPJsDebugger(String debuggerId, String filename) {
+    public BPJsDebugger<BooleanResponse> getBPJsDebugger(String debuggerId, String filename, DebuggerLevel debuggerLevel) {
         logger.info("generating new debugger for debuggerId: {0}, with filename: {1}", debuggerId, filename);
-        BPJsDebugger<BooleanResponse> bpJsDebugger = new BPJsDebuggerImpl(debuggerId, filename);
+        BPJsDebugger<BooleanResponse> bpJsDebugger = new BPJsDebuggerImpl(debuggerId, filename, debuggerLevel);
 
         AutowireCapableBeanFactory factory = applicationContext.getAutowireCapableBeanFactory();
         factory.autowireBean(bpJsDebugger);

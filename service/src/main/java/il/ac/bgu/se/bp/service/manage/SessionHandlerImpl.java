@@ -1,9 +1,9 @@
 package il.ac.bgu.se.bp.service.manage;
 
 import com.google.gson.Gson;
-import il.ac.bgu.cs.bp.bpjs.execution.BProgramRunner;
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
 import il.ac.bgu.se.bp.logger.Logger;
+import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.service.code.SourceCodeHelper;
 import il.ac.bgu.se.bp.service.notification.NotificationHandler;
 import il.ac.bgu.se.bp.socket.console.ConsoleMessage;
@@ -23,15 +23,15 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 @EnableScheduling
-public class SessionHandlerImpl implements SessionHandler<BProgramRunner> {
+public class SessionHandlerImpl implements SessionHandler<BPJsDebugger<BooleanResponse>> {
 
     private static final Logger logger = new Logger(SessionHandlerImpl.class);
 
     private static final int ONE_HOUR = 60 * 60 * 1000;
     private static final int BP_JS_PROGRAM_TTL = 3 * ONE_HOUR;
 
-    private static final Map<String, UserProgramSession<BPJsDebugger>> bpDebugProgramsByUsers = new ConcurrentHashMap<>();
-    private static final Map<String, UserProgramSession<BProgramRunner>> bpRunProgramsByUsers = new ConcurrentHashMap<>();
+    private static final Map<String, UserProgramSession<BPJsDebugger<BooleanResponse>>> bpDebugProgramsByUsers = new ConcurrentHashMap<>();
+    private static final Map<String, UserProgramSession<BPJsDebugger<BooleanResponse>>> bpRunProgramsByUsers = new ConcurrentHashMap<>();
     private static final Map<String, UserSession> unknownSessions = new ConcurrentHashMap<>();
     private final Gson gson = new Gson();
 
@@ -56,43 +56,47 @@ public class SessionHandlerImpl implements SessionHandler<BProgramRunner> {
     }
 
     @Override
-    public void addNewRunExecution(String userId, BProgramRunner bProgramRunner, String filename) {
-        UserSession existingUserSession = unknownSessions.get(userId);
-        if (existingUserSession == null) {
-            return;
-        }
-
-        //todo: add thread id
-//        existingUserSession.setThreadId(bProgramRunner.getDebuggerExecutorId());
-        bpRunProgramsByUsers.put(userId, existingUserSession.withProgram(bProgramRunner).withFilename(filename));
-        updateLastOperationTime(userId);
+    public void addNewRunExecution(String userId, BPJsDebugger<BooleanResponse> bpProgramDebugger, String filename) {
+        addDebugExecutionTo(userId, bpProgramDebugger, filename, bpRunProgramsByUsers);
     }
 
     @Override
-    public BProgramRunner getBPjsRunnerByUser(String userId) {
-        UserProgramSession<BProgramRunner> userSession = bpRunProgramsByUsers.get(userId);
-        if (userSession == null) {
-            return null;
-        }
-
-        return userSession.getProgram();
+    public void addNewDebugExecution(String userId, BPJsDebugger<BooleanResponse> bpProgramDebugger, String filename) {
+        addDebugExecutionTo(userId, bpProgramDebugger, filename, bpDebugProgramsByUsers);
     }
 
-    @Override
-    public void addNewDebugExecution(String userId, BPJsDebugger bpProgramDebugger, String filename) {
+    private void addDebugExecutionTo(String userId, BPJsDebugger<BooleanResponse> bpProgramDebugger, String filename, Map<String, UserProgramSession<BPJsDebugger<BooleanResponse>>> bpDebuggersByUsers) {
         UserSession existingUserSession = unknownSessions.get(userId);
         if (existingUserSession == null) {
             return;
         }
 
         existingUserSession.setThreadId(bpProgramDebugger.getDebuggerExecutorId());
-        bpDebugProgramsByUsers.put(userId, existingUserSession.withProgram(bpProgramDebugger).withFilename(filename));
+        bpDebuggersByUsers.put(userId, existingUserSession.withProgram(bpProgramDebugger).withFilename(filename));
         updateLastOperationTime(userId);
     }
 
     @Override
-    public BPJsDebugger getBPjsDebuggerByUser(String userId) {
-        UserProgramSession<BPJsDebugger> userSession = bpDebugProgramsByUsers.get(userId);
+    public BPJsDebugger<BooleanResponse> getBPjsRunnerByUser(String userId) {
+        return getBPJsDebuggerFrom(userId, bpRunProgramsByUsers);
+    }
+
+    @Override
+    public BPJsDebugger<BooleanResponse> getBPjsDebuggerByUser(String userId) {
+        return getBPJsDebuggerFrom(userId, bpDebugProgramsByUsers);
+    }
+
+    @Override
+    public BPJsDebugger<BooleanResponse> getBPjsDebuggerOrRunnerByUser(String userId) {
+        BPJsDebugger<BooleanResponse> bpJsDebugger = getBPjsDebuggerByUser(userId);
+        if (bpJsDebugger == null) {
+            return getBPjsRunnerByUser(userId);
+        }
+        return bpJsDebugger;
+    }
+
+    private BPJsDebugger<BooleanResponse> getBPJsDebuggerFrom(String userId, Map<String, UserProgramSession<BPJsDebugger<BooleanResponse>>> bpDebuggersByUsers) {
+        UserProgramSession<BPJsDebugger<BooleanResponse>> userSession = bpDebuggersByUsers.get(userId);
         if (userSession == null) {
             return null;
         }
@@ -128,7 +132,6 @@ public class SessionHandlerImpl implements SessionHandler<BProgramRunner> {
 
         userSession.setLastOperationTime(getCurrentLocalDateTime());
     }
-
 
     @Override
     public void removeUser(String userId) {
