@@ -277,12 +277,14 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     }
 
     private boolean runNextSync() {
+        logger.info("runNextSync state: {0}", state.getDebuggerState());
+
+        if(!isThereAnyPossibleEvents()){
+            nextSyncOnNoPossibleEvents();
+        }
         state.setDebuggerState(RunnerState.State.RUNNING);
         EventSelectionStrategy eventSelectionStrategy = bprog.getEventSelectionStrategy();
         Set<BEvent> possibleEvents = eventSelectionStrategy.selectableEvents(syncSnapshot);
-        if (possibleEvents.isEmpty()) {
-            possibleEvents = nextSyncOnNoPossibleEvents(eventSelectionStrategy, possibleEvents);
-        }
 
         logger.info("Possible events(internal): " + possibleEvents);
         logger.info("External events: " + syncSnapshot.getExternalEvents());
@@ -305,9 +307,10 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         return true;
     }
 
-    private void gotNewSS(BProgramSyncSnapshot newSS, BEvent bEvent) {
-        syncSnapshotHolder.addSyncSnapshot(newSS, bEvent);
-        debuggerEngine.setSyncSnapshot(newSS);
+    private boolean isThereAnyPossibleEvents(){
+        EventSelectionStrategy eventSelectionStrategy = bprog.getEventSelectionStrategy();
+        Set<BEvent> possibleEvents = eventSelectionStrategy.selectableEvents(syncSnapshot);
+        return !possibleEvents.isEmpty();
     }
 
     private void nextSyncOnChosenEvent(EventSelectionResult eventSelectionResult) throws Exception {
@@ -336,31 +339,27 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         }
     }
 
-    private Set<BEvent> nextSyncOnNoPossibleEvents(EventSelectionStrategy eventSelectionStrategy, Set<BEvent> possibleEvents) {
+    private void nextSyncOnNoPossibleEvents() {
         debuggerEngine.onStateChanged();
+        state.setDebuggerState(RunnerState.State.WAITING_FOR_EXTERNAL_EVENT);
         if (!bprog.isWaitForExternalEvents()) {
             logger.info("Event queue empty, not need to wait to external event. terminating....");
             listeners.forEach(l -> l.ended(bprog));
             onExit();
-            return possibleEvents;
+            return;
         }
         try {
-            state.setDebuggerState(RunnerState.State.WAITING_FOR_EXTERNAL_EVENT);
             listeners.forEach(l -> l.superstepDone(bprog));
             BEvent next = bprog.takeExternalEvent(); // and now we wait for external event
-            state.setDebuggerState(RunnerState.State.RUNNING);
             if (next == null) {
                 logger.info("Event queue empty, not need to wait to external event. terminating....");
                 listeners.forEach(l -> l.ended(bprog));
                 onExit();
-                return possibleEvents;
+                return;
             }
-
             syncSnapshot.getExternalEvents().add(next);
-            return eventSelectionStrategy.selectableEvents(syncSnapshot);
         } catch (Exception e) {
             logger.error("nextSyncOnNoPossibleEvents error: {0}", e.getMessage());
-            return possibleEvents;
         }
     }
 
@@ -443,17 +442,23 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         if (StringUtils.isEmpty(externalEvent)) {
             return createErrorResponse(ErrorCode.INVALID_EVENT);
         }
-        logger.info("Adding external event: " + externalEvent);
+        logger.info("Adding external event: {0} , debugger state: {1}",externalEvent, this.state.getDebuggerState());
         BEvent bEvent = new BEvent(externalEvent);
-        bprog.enqueueExternalEvent(bEvent);
 
-        if (this.state.getDebuggerState() != RunnerState.State.WAITING_FOR_EXTERNAL_EVENT) {
+        if(this.state.getDebuggerState() == RunnerState.State.WAITING_FOR_EXTERNAL_EVENT ){
+            bprog.enqueueExternalEvent(bEvent);
+        }
+        else{
             List<BEvent> updatedExternals = new ArrayList<>(syncSnapshot.getExternalEvents());
             updatedExternals.add(bEvent);
             syncSnapshot = syncSnapshot.copyWith(updatedExternals);
             debuggerEngine.setSyncSnapshot(syncSnapshot);
             debuggerEngine.onStateChanged();
         }
+        if(this.state.getDebuggerState() != RunnerState.State.WAITING_FOR_EXTERNAL_EVENT  && this.state.getDebuggerState() != RunnerState.State.SYNC_STATE )
+            bprog.enqueueExternalEvent(bEvent);
+
+
         return createSuccessResponse();
     }
 

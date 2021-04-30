@@ -219,16 +219,15 @@ public class DebuggerStateHelper {
         Context cx = Context.getCurrentContext();
         boolean currentRunningBT = false;
         try {
-            Object lastInterpreterFrame = getValue(cx, "lastInterpreterFrame");
-            if (lastInterpreterFrame == null) {
+            Object cxInterpreterFrame = getValue(cx, "lastInterpreterFrame");
+            if (cxInterpreterFrame == null) {
                 return getEnv(interpreterCallFrame, lastContextData);
             }
-            Object parentFrame = getValue(lastInterpreterFrame, "parentFrame");
-            ScriptableObject interruptedScope = parentFrame != null ? getValue(parentFrame, "scope") :
-                    getValue(lastInterpreterFrame, "scope");
-            ScriptableObject paramScope = getValue(interpreterCallFrame, "scope");
-            if (paramScope == interruptedScope) { //current running BT
-                currentRunningBT = true;
+            Object myScope =getValue(interpreterCallFrame, "scope");
+            currentRunningBT = isScopesRelated(cxInterpreterFrame, myScope);
+            Object parentFrame = interpreterCallFrame;
+            if (currentRunningBT) { //current running BT
+                logger.info("currentRunningBT + " +btName);
                 for (int i = 0; i < lastContextData.frameCount(); i++) {
                     ScriptableObject scope = (ScriptableObject) lastContextData.getFrame(i).scope();
                     env.put(i, getScope(scope));
@@ -236,8 +235,9 @@ public class DebuggerStateHelper {
                 }
                 key = lastContextData.frameCount();
                 this.currentRunningBT = btName;
+                parentFrame = getValue(cxInterpreterFrame, "parentFrame");
             }
-            parentFrame = lastInterpreterFrame;
+
             while (parentFrame != null) {
                 if (currentRunningBT) {
                     Dim.StackFrame stackFrame = getValue(parentFrame, "debuggerFrame");
@@ -261,6 +261,23 @@ public class DebuggerStateHelper {
             logger.error("getEnvDebug: failed to get env, e: {0}", e, e.getMessage());
         }
         return env;
+    }
+
+    private boolean isScopesRelated(Object cxInterpreterFrame, Object myScope) {
+        Object scope;
+        Object parentFrame = cxInterpreterFrame;
+        try {
+            while (parentFrame != null) {
+                scope = getValue(parentFrame, "scope");
+                if(scope == myScope)
+                    return true;
+                parentFrame = getValue(parentFrame, "parentFrame");
+            }
+            return false;
+        } catch (Exception e) {
+            logger.error("isScopesRelated: failed e: {0}", e, e.getMessage());
+            return false;
+        }
     }
 
     private Map<Integer, Map<String, String>> getEnv(Object interpreterCallFrame, Dim.ContextData contextData) {
