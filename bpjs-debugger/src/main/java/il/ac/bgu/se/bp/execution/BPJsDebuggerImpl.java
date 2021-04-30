@@ -23,6 +23,7 @@ import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.response.DebugResponse;
 import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
 import il.ac.bgu.se.bp.socket.console.ConsoleMessage;
+import il.ac.bgu.se.bp.socket.console.LogType;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
 import il.ac.bgu.se.bp.socket.state.EventInfo;
 import il.ac.bgu.se.bp.utils.DebuggerBProgramRunnerListener;
@@ -247,7 +248,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
             return createErrorResponse(ErrorCode.BP_SETUP_FAIL);
         } catch (Exception e) {
             logger.error("runStartSync Failed {0}", e.getMessage());
-            notifySubscribers(new BPConsoleEvent(debuggerId, new ConsoleMessage(e.getMessage(), "error")));
+            notifySubscribers(new BPConsoleEvent(debuggerId, new ConsoleMessage(e.getMessage(), LogType.error)));
         }
         return createSuccessResponse();
     }
@@ -299,7 +300,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
             return false;
         } catch (Exception e) {
             logger.error("runNextSync Failed {0}", e.getMessage());
-            notifySubscribers(new BPConsoleEvent(debuggerId, new ConsoleMessage(e.getMessage(), "error")));
+            notifySubscribers(new BPConsoleEvent(debuggerId, new ConsoleMessage(e.getMessage(), LogType.error)));
         }
         return true;
     }
@@ -380,7 +381,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
             return execSvc.submit(callable).get();
         } catch (Exception e) {
             logger.error("failed running callable task via executor service, error: {0}", e, e.getMessage());
-            notifySubscribers(new BPConsoleEvent(debuggerId, new ConsoleMessage(e.getMessage(), "error")));
+            notifySubscribers(new BPConsoleEvent(debuggerId, new ConsoleMessage(e.getMessage(), LogType.error)));
         }
         return null;
     }

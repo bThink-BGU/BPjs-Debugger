@@ -2,6 +2,7 @@ package il.ac.bgu.se.bp.utils;
 
 import il.ac.bgu.se.bp.debugger.engine.events.BPConsoleEvent;
 import il.ac.bgu.se.bp.socket.console.ConsoleMessage;
+import il.ac.bgu.se.bp.socket.console.LogType;
 import il.ac.bgu.se.bp.utils.observer.BPEvent;
 import il.ac.bgu.se.bp.utils.observer.Publisher;
 import il.ac.bgu.se.bp.utils.observer.Subscriber;
@@ -45,6 +46,6 @@ public class DebuggerPrintStream extends PrintStream implements Publisher<BPEven
     }
     @Override
     public void println(String s) {
-        notifySubscribers(new BPConsoleEvent(debuggerId, new ConsoleMessage(s, "log")));
+        notifySubscribers(new BPConsoleEvent(debuggerId, new ConsoleMessage(s, LogType.log)));
     }
 }

@@ -7,19 +7,18 @@ public class ConsoleMessage implements Serializable {
     private static final long serialVersionUID = -5291444590847219727L;
 
     private String message;
-    private String type;
+    private LogType type;
 
-
-    public ConsoleMessage(String message, String type) {
+    public ConsoleMessage(String message, LogType type) {
         this.message = message;
         this.type = type;
     }
 
-    public String getType() {
+    public LogType getType() {
         return type;
     }
 
-    public void setType(String type) {
+    public void setType(LogType type) {
         this.type = type;
     }
 
