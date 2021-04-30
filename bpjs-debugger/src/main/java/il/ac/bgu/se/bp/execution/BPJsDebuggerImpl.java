@@ -7,6 +7,7 @@ import il.ac.bgu.cs.bp.bpjs.model.*;
 import il.ac.bgu.cs.bp.bpjs.model.eventselection.EventSelectionResult;
 import il.ac.bgu.cs.bp.bpjs.model.eventselection.EventSelectionStrategy;
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
+import il.ac.bgu.se.bp.debugger.DebuggerLevel;
 import il.ac.bgu.se.bp.debugger.RunnerState;
 import il.ac.bgu.se.bp.debugger.commands.*;
 import il.ac.bgu.se.bp.debugger.engine.DebuggerEngine;
@@ -69,17 +70,22 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     private final List<BProgramRunnerListener> listeners = new ArrayList<>();
     private final List<Subscriber<BPEvent>> subscribers = new ArrayList<>();
 
+
     @Autowired
     private ProgramValidator<BPJsDebugger> bPjsProgramValidator;
 
     @Autowired
     private AsyncOperationRunner asyncOperationRunner;
 
-    public BPJsDebuggerImpl(String debuggerId, String filename) {
+    public BPJsDebuggerImpl(String debuggerId, String filename, DebuggerLevel debuggerLevel) {
         this.debuggerId = debuggerId;
         this.filename = filename;
-        debuggerStateHelper  = new DebuggerStateHelper(this, syncSnapshotHolder);
+        debuggerStateHelper  = new DebuggerStateHelper(this, syncSnapshotHolder, debuggerLevel);
         initDebugger();
+    }
+
+    public BPJsDebuggerImpl(String debuggerId, String filename) {
+        this(debuggerId, filename, DebuggerLevel.NORMAL);
     }
 
     private void initDebugger() {
@@ -221,12 +227,14 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
             state.setDebuggerState(RunnerState.State.SYNC_STATE);
             debuggerEngine.setSyncSnapshot(syncSnapshot);
             syncSnapshotHolder.addSyncSnapshot(syncSnapshot, null);
-            logger.debug("Generate state from startSync");
-            debuggerEngine.onStateChanged();
             logger.info("~FIRST SYNC STATE~");
             state.setDebuggerState(RunnerState.State.SYNC_STATE);
             if (isSkipSyncPoints) {
                 nextSync();
+            }
+            else{
+                logger.debug("Generate state from startSync");
+                debuggerEngine.onStateChanged();
             }
         } catch (InterruptedException e) {
             logger.warning("got InterruptedException in startSync");
@@ -307,21 +315,23 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         state.setDebuggerState(RunnerState.State.SYNC_STATE);
         syncSnapshotHolder.addSyncSnapshot(lastSnapshot, event);
         debuggerEngine.setSyncSnapshot(syncSnapshot);
-        logger.debug("Generate state from nextSync");
-        debuggerEngine.onStateChanged();
         logger.info("~NEW SYNC STATE~");
         if (isSkipSyncPoints)
             nextSync();
+        else{
+            logger.debug("Generate state from nextSync");
+            debuggerEngine.onStateChanged();
+        }
     }
 
     private Set<BEvent> nextSyncOnNoPossibleEvents(EventSelectionStrategy eventSelectionStrategy, Set<BEvent> possibleEvents) {
+        debuggerEngine.onStateChanged();
         if (!bprog.isWaitForExternalEvents()) {
             logger.info("Event queue empty, not need to wait to external event. terminating....");
             listeners.forEach(l->l.ended(bprog));
             onExit();
             return possibleEvents;
         }
-
         try {
             state.setDebuggerState(RunnerState.State.WAITING_FOR_EXTERNAL_EVENT);
             listeners.forEach( l->l.superstepDone(bprog) );

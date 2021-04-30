@@ -45,7 +45,6 @@ public class DebuggerPrintStream extends PrintStream implements Publisher<BPEven
     }
     @Override
     public void println(String s) {
-        notifySubscribers(new BPConsoleEvent(debuggerId, new ConsoleMessage(s)));
-
+        notifySubscribers(new BPConsoleEvent(debuggerId, new ConsoleMessage(s, "log")));
     }
 }

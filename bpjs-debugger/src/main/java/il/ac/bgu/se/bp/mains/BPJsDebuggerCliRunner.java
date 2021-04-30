@@ -3,6 +3,7 @@ package il.ac.bgu.se.bp.mains;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import il.ac.bgu.se.bp.config.BPJsDebuggerConfiguration;
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
+import il.ac.bgu.se.bp.debugger.DebuggerLevel;
 import il.ac.bgu.se.bp.debugger.manage.DebuggerFactory;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
@@ -53,7 +54,7 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
     private void init() {
         System.out.println("Debugger id: " + debuggerId);
         sc = new Scanner(System.in);
-        bpJsDebugger = debuggerFactory.getBPJsDebugger(debuggerId, filename);
+        bpJsDebugger = debuggerFactory.getBPJsDebugger(debuggerId, filename, DebuggerLevel.NORMAL);
         bpJsDebugger.subscribe(this);
     }
 

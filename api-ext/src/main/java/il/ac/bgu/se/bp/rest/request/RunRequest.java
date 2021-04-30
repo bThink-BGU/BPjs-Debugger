@@ -7,6 +7,15 @@ public class RunRequest implements Serializable {
     private static final long serialVersionUID = 4758855571059683558L;
 
     protected String sourceCode;
+    protected boolean waitForExternalEvents;
+
+    public boolean isWaitForExternalEvents() {
+        return waitForExternalEvents;
+    }
+
+    public void setWaitForExternalEvents(boolean waitForExternalEvents) {
+        this.waitForExternalEvents = waitForExternalEvents;
+    }
 
     public RunRequest() {
     }

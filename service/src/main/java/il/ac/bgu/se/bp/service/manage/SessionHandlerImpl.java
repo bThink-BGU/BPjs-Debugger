@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import il.ac.bgu.cs.bp.bpjs.execution.BProgramRunner;
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
 import il.ac.bgu.se.bp.logger.Logger;
+import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.service.code.SourceCodeHelper;
 import il.ac.bgu.se.bp.service.notification.NotificationHandler;
 import il.ac.bgu.se.bp.socket.console.ConsoleMessage;
@@ -23,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 @EnableScheduling
-public class SessionHandlerImpl implements SessionHandler<BProgramRunner> {
+public class SessionHandlerImpl implements SessionHandler {
 
     private static final Logger logger = new Logger(SessionHandlerImpl.class);
 
@@ -31,7 +32,7 @@ public class SessionHandlerImpl implements SessionHandler<BProgramRunner> {
     private static final int BP_JS_PROGRAM_TTL = 3 * ONE_HOUR;
 
     private static final Map<String, UserProgramSession<BPJsDebugger>> bpDebugProgramsByUsers = new ConcurrentHashMap<>();
-    private static final Map<String, UserProgramSession<BProgramRunner>> bpRunProgramsByUsers = new ConcurrentHashMap<>();
+    private static final Map<String, UserProgramSession<BPJsDebugger>> bpRunProgramsByUsers = new ConcurrentHashMap<>();
     private static final Map<String, UserSession> unknownSessions = new ConcurrentHashMap<>();
     private final Gson gson = new Gson();
 
@@ -56,21 +57,20 @@ public class SessionHandlerImpl implements SessionHandler<BProgramRunner> {
     }
 
     @Override
-    public void addNewRunExecution(String userId, BProgramRunner bProgramRunner, String filename) {
+    public void addNewRunExecution(String userId, BPJsDebugger bpProgramDebugger, String filename) {
         UserSession existingUserSession = unknownSessions.get(userId);
         if (existingUserSession == null) {
             return;
         }
 
-        //todo: add thread id
-//        existingUserSession.setThreadId(bProgramRunner.getDebuggerExecutorId());
-        bpRunProgramsByUsers.put(userId, existingUserSession.withProgram(bProgramRunner).withFilename(filename));
+        existingUserSession.setThreadId(bpProgramDebugger.getDebuggerExecutorId());
+        bpRunProgramsByUsers.put(userId, existingUserSession.withProgram(bpProgramDebugger).withFilename(filename));
         updateLastOperationTime(userId);
     }
 
     @Override
-    public BProgramRunner getBPjsRunnerByUser(String userId) {
-        UserProgramSession<BProgramRunner> userSession = bpRunProgramsByUsers.get(userId);
+    public BPJsDebugger getBPjsRunnerByUser(String userId) {
+        UserProgramSession<BPJsDebugger> userSession = bpRunProgramsByUsers.get(userId);
         if (userSession == null) {
             return null;
         }
@@ -98,6 +98,15 @@ public class SessionHandlerImpl implements SessionHandler<BProgramRunner> {
         }
 
         return userSession.getProgram();
+    }
+
+    @Override
+    public BPJsDebugger getBPjsDebuggerOrRunnerByUser(String userId) {
+        BPJsDebugger bpJsDebugger = getBPjsDebuggerByUser(userId);
+        if (bpJsDebugger == null) {
+            return getBPjsRunnerByUser(userId);
+        }
+        return bpJsDebugger;
     }
 
     @Override

@@ -7,9 +7,20 @@ public class ConsoleMessage implements Serializable {
     private static final long serialVersionUID = -5291444590847219727L;
 
     private String message;
+    private String type;
 
-    public ConsoleMessage(String message) {
+
+    public ConsoleMessage(String message, String type) {
         this.message = message;
+        this.type = type;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 
     public String getMessage() {
@@ -29,18 +40,19 @@ public class ConsoleMessage implements Serializable {
             return false;
         }
         ConsoleMessage that = (ConsoleMessage) o;
-        return Objects.equals(message, that.message);
+        return Objects.equals(message, that.message) && Objects.equals(type,that.type);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(message);
+        return Objects.hash(message,type);
     }
 
     @Override
     public String toString() {
         return "ConsoleMessage{" +
                 "message='" + message + '\'' +
+                "type='" + type + '\'' +
                 '}';
     }
 }
