@@ -112,8 +112,7 @@ public class IDESteps {
 
     @Then("wait until program of user (.*) is over")
     public void waitUntilTheProgramIsOver(String username) {
-        waitUntilPredicateSatisfied(() -> sessionHandler.getUsersLastConsoleMessage(getUserIdByName(username)) != null &&
-                sessionHandler.getUsersLastConsoleMessage(getUserIdByName(username)).getMessage().contains(END_OF_EXECUTION_INDICATOR_MESSAGE), 1000, 3);
+        waitUntilPredicateSatisfied(() -> sessionHandler.isUserFinishedRunning(getUserIdByName(username)), 1000, 3);
     }
 
     @Then("The response should be (.*) with errorCode (.*)")
@@ -204,8 +203,6 @@ public class IDESteps {
                         optionalBThreadInfoListStr[i], optionalEventsHistoryStr[i]);
                 return;
             } catch (Exception ignored) {
-                System.out.println("ASDASD");
-                System.out.println(ignored.getMessage());
             }
         }
         fail("all optional sync states are not matching actual sync state");
