@@ -1,8 +1,5 @@
 package il.ac.bgu.se.bp.service;
 
-import il.ac.bgu.cs.bp.bpjs.execution.BProgramRunner;
-import il.ac.bgu.cs.bp.bpjs.execution.listeners.PrintBProgramRunnerListener;
-import il.ac.bgu.cs.bp.bpjs.model.ResourceBProgram;
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
 import il.ac.bgu.se.bp.debugger.DebuggerLevel;
 import il.ac.bgu.se.bp.debugger.manage.DebuggerFactory;
@@ -15,15 +12,12 @@ import il.ac.bgu.se.bp.rest.response.EventsHistoryResponse;
 import il.ac.bgu.se.bp.service.code.SourceCodeHelper;
 import il.ac.bgu.se.bp.service.manage.PrototypeContextFactory;
 import il.ac.bgu.se.bp.service.manage.SessionHandler;
-import il.ac.bgu.se.bp.utils.DebuggerBProgramRunnerListener;
-import il.ac.bgu.se.bp.utils.DebuggerPrintStream;
 import org.mozilla.javascript.ContextFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.util.StringUtils;
 
 import javax.annotation.PostConstruct;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -36,7 +30,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
     private static final Logger logger = new Logger(BPjsIDEServiceImpl.class);
 
     @Autowired
-    private SessionHandler sessionHandler;
+    private SessionHandler<BPJsDebugger<BooleanResponse>> sessionHandler;
 
     @Autowired
     private SourceCodeHelper sourceCodeHelper;

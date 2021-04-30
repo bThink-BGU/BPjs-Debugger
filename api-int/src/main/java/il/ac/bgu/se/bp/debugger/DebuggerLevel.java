@@ -5,8 +5,9 @@ public enum DebuggerLevel {
     NORMAL(1);
 
     private final int level;
+
     DebuggerLevel(int level) {
-      this.level = level;
+        this.level = level;
     }
 
     public int getLevel() {
