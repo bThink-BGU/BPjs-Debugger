@@ -7,12 +7,21 @@ public class RunRequest implements Serializable {
     private static final long serialVersionUID = 4758855571059683558L;
 
     protected String sourceCode;
+    protected boolean waitForExternalEvents;
 
     public RunRequest() {
     }
 
     public RunRequest(String sourceCode) {
         this.sourceCode = sourceCode;
+    }
+
+    public boolean isWaitForExternalEvents() {
+        return waitForExternalEvents;
+    }
+
+    public void setWaitForExternalEvents(boolean waitForExternalEvents) {
+        this.waitForExternalEvents = waitForExternalEvents;
     }
 
     public String getSourceCode() {
@@ -26,21 +35,27 @@ public class RunRequest implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         RunRequest that = (RunRequest) o;
-        return Objects.equals(sourceCode, that.sourceCode);
+        return waitForExternalEvents == that.waitForExternalEvents &&
+                Objects.equals(sourceCode, that.sourceCode);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(sourceCode);
+        return Objects.hash(sourceCode, waitForExternalEvents);
     }
 
     @Override
     public String toString() {
         return "RunRequest{" +
                 "sourceCode='" + sourceCode + '\'' +
+                ", waitForExternalEvents=" + waitForExternalEvents +
                 '}';
     }
 }
