@@ -21,6 +21,7 @@ Feature: Breakpoints
       | alex     | sessionId1 | 4655ae8e-cdfe-4ce3-ac2b-dc03743a780f | testFile1 | false                 | true                 | {10:bt-world-son}{21:bt-world,bt-world-son} | false                      | 10,21       | {10:z=alex}     | {10:x=5.0,y=16.7}{21:m=50,n=100,p=150} |
       | tal      | sessionId2 | d1b10451-bbb0-43e2-b5ad-d10afa73449e | testFile2 | false                 | true                 | {4:Thread1}{9:Thread2}{11:Thread2}          | false                      | 4,9,11      | {11:var2=alex}  | {4:t=6.0}{9:varT2B=1}{11:varT2B=1}     |
 
+
   Scenario Outline: toggle mute breakpoints after first breakpoint
     Given user <username> has connected with userId <userId>
     And <username> has connected to websocket with <sessionId>
@@ -39,6 +40,7 @@ Feature: Breakpoints
       | username | sessionId  | userId                               | filename  | toggleMuteBreakpoints | toggleMuteSyncPoints | bThreadNameByBreakpoint                     | toggleWaitForExternalEvent | breakpoints | stringVariables | doubleVariables                                                           |
       | alex     | sessionId1 | 4655ae8e-cdfe-4ce3-ac2b-dc03743a780f | testFile1 | false                 | true                 | {10:bt-world-son}{21:bt-world,bt-world-son} | flase                      | 10,21       | {10:z=alex}     | {10:x=5.0,y=16.7}{21:m=50,n=100,p=150} |
       | tal      | sessionId2 | d1b10451-bbb0-43e2-b5ad-d10afa73449e | testFile2 | false                 | true                 | {4:Thread1}{9:Thread2}{11:Thread2}          | false                      | 4,9,11      | {11:var2=alex}  | {4:t=6.0}{9:varT2B=1}{11:varT2B=1}     |
+
 
   Scenario: four users request to debug with multiple breakpoints
     Given user alex has connected with userId 4655ae8e-cdfe-4ce3-ac2b-dc03743a780f
@@ -113,25 +115,56 @@ Feature: Breakpoints
     Then ron should get breakpoint notification with BThread {4:Thread1}{9:Thread2}{11:Thread2}, doubles {4:t=6.0}{9:varT2B=1}{11:varT2B=1}, strings {11:var2=alex} and breakpoint lines 4,9,11
     And verify all breakpoints of user ron were reached
 
-#  Scenario: step into, step over, step out
-#    Given user alex has connected with userId 4655ae8e-cdfe-4ce3-ac2b-dc03743a780f
-#    And alex has connected to websocket with ron-session
-#
-#    When alex asks to debug with filename testFile1 and toggleMuteBreakpoints false and toggleMuteSyncPoints true and toggleWaitForExternalEvent false and breakpoints 10,21,30,50,-1,16
-#    Then The debug response should be true with errorCode null and breakpoints 10,21 for user alex
-#    And wait until user alex has reached breakpoint
-#    And alex should get breakpoint notification with BThread {10:bt-world-son}{21:bt-world,bt-world-son}, doubles {10:x=5.0,y=16.7}{21:m=50,n=100,p=150}, strings {10:z=alex} and breakpoint lines 10,21
-#    #TODO: if 21: step into, if 10: step over
-#
-#
-#    When alex clicks on step into
-#
-#
-#
-#    When alex toggles mute breakpoints to true
-#    Then The response should be true with errorCode null
-#
-#    When alex clicks on continue
-#    Then The response should be true with errorCode null
-#    And wait until program of user alex is over
-#    And verify user alex has reached only 1 breakpoints
+
+  Scenario: step into, step over, step out
+    Given user alex has connected with userId 4655ae8e-cdfe-4ce3-ac2b-dc03743a780f
+    And alex has connected to websocket with ron-session
+
+    When alex asks to debug with filename testFile3 and toggleMuteBreakpoints false and toggleMuteSyncPoints true and toggleWaitForExternalEvent false and breakpoints 3,10,-1,50
+    Then The debug response should be true with errorCode null and breakpoints 3,10 for user alex
+    And wait until user alex has reached breakpoint
+    And alex should get notification with BThread bt-world on line 3, envs [{FUNCNAME:BTMain}] and breakpoint lines 3,10
+
+    When alex clicks on step into
+    Then The response should be true with errorCode null
+    And wait until user alex has reached breakpoint
+    And alex should get notification with BThread bt-world on line 6, envs [{FUNCNAME:foo, bt:1.0, m:null, n:null, p:null, t:null}, {FUNCNAME:BTMain}] and breakpoint lines 3,10
+
+    When alex clicks on step over
+    Then The response should be true with errorCode null
+    And wait until user alex has reached breakpoint
+    And alex should get notification with BThread bt-world on line 7, envs [{FUNCNAME:foo, bt:1.0, m:null, n:null, p:null, t:null},{FUNCNAME:BTMain}] and breakpoint lines 3,10
+
+    When alex clicks on step over
+    Then The response should be true with errorCode null
+    And wait until user alex has reached breakpoint
+    And alex should get notification with BThread bt-world on line 8, envs [{FUNCNAME:foo, bt:1.0, m:50.0, n:null, p:null, t:null},{FUNCNAME:BTMain}] and breakpoint lines 3,10
+
+    When alex clicks on continue
+    Then The response should be true with errorCode null
+    And wait until user alex has reached breakpoint
+    And alex should get notification with BThread bt-world on line 10, envs [{FUNCNAME:foo, bt:1.0, m:50.0, n:100.0, p:150.0, t:null},{FUNCNAME:BTMain}] and breakpoint lines 3,10
+
+    When alex clicks on step into
+    Then The response should be true with errorCode null
+    And wait until user alex has reached breakpoint
+    And alex should get notification with BThread bt-world on line 14, envs [{FUNCNAME:goo, g1:null, g2:null, g3: null},{FUNCNAME:foo, bt:1.0, m:50.0, n:100.0, p:150.0, t:null},{FUNCNAME:BTMain}] and breakpoint lines 3,10
+
+    When alex clicks on step over
+    Then The response should be true with errorCode null
+    And wait until user alex has reached breakpoint
+    And alex should get notification with BThread bt-world on line 15, envs [{FUNCNAME:goo, g1:null, g2:null, g3: null},{FUNCNAME:foo, bt:1.0, m:50.0, n:100.0, p:150.0, t:null},{FUNCNAME:BTMain}] and breakpoint lines 3,10
+
+    When alex clicks on step over
+    Then The response should be true with errorCode null
+    And wait until user alex has reached breakpoint
+    And alex should get notification with BThread bt-world on line 16, envs [{FUNCNAME:goo, g1:50.0, g2:null, g3: null},{FUNCNAME:foo, bt:1.0, m:50.0, n:100.0, p:150.0, t:null},{FUNCNAME:BTMain}] and breakpoint lines 3,10
+
+    When alex clicks on step out
+    Then The response should be true with errorCode null
+    And wait until user alex has reached breakpoint
+    And alex should get notification with BThread bt-world on line 11, envs [{FUNCNAME:foo, bt:1.0, m:50.0, n:100.0, p:150.0, t:null},{FUNCNAME:BTMain}] and breakpoint lines 3,10
+
+    When alex clicks on step out
+    Then The response should be true with errorCode null
+    And wait until program of user alex is over

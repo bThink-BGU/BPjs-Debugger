@@ -1,5 +1,6 @@
 package il.ac.bgu.se.bp.common;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import il.ac.bgu.se.bp.socket.state.BThreadInfo;
 import il.ac.bgu.se.bp.socket.state.EventInfo;
@@ -42,6 +43,15 @@ public class Utils {
         return getBThreadsNamesByBreakpoints(bThreads).get(currentLineNumber);
     }
 
+    public static BThreadInfo getBThreadInfoByName(List<BThreadInfo> bThreadInfoList, String bThread) {
+        for (BThreadInfo bThreadInfo : bThreadInfoList) {
+            if (bThreadInfo.getName().equals(bThread)) {
+                return bThreadInfo;
+            }
+        }
+        return null;
+    }
+
     private static Map<Integer, List<String>> getBThreadsNamesByBreakpoints(String bThreads) {
         Map<Integer, List<String>> bThreadsByBreakpoint = new HashMap<>();
         String[] splatBThreadsPerBreakpoint = bThreads.split("[{}]");
@@ -64,6 +74,16 @@ public class Utils {
             varsByBreakpointsMap.put(strToInt(splatEnv[0]), strToStringVarsList(splatEnv[1]));
         }
         return varsByBreakpointsMap;
+    }
+
+    public static List<Map<String, String>> createEnvsMappings(String envsStr) {
+        try {
+            String envsStrWithQuotes = envsStr.replaceAll("([\\w.]+)", "\"$1\"");
+            return objectMapper.readValue(envsStrWithQuotes, List.class);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     private static List<Pair<String, String>> strToStringVarsList(String stringVars) {
