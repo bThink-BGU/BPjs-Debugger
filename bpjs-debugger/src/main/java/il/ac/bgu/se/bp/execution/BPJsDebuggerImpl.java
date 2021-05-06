@@ -105,7 +105,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
 
     @Override
     public DebugResponse setup(Map<Integer, Boolean> breakpoints, boolean isSkipBreakpoints, boolean isSkipSyncPoints, boolean isWaitForExternalEvents) {
-        logger.info("setup isSkipBreakpoints: " + isSkipBreakpoints + " isSkipSyncPoints: " + isSkipSyncPoints + " isWaitForExternalEvents:" + isWaitForExternalEvents);
+        logger.info("setup isSkipBreakpoints: {0}, isSkipSyncPoints: {1}, isWaitForExternalEvents: {2}", isSkipSyncPoints, isSkipBreakpoints, isWaitForExternalEvents);
         if (!isBProgSetup) { // may get twice to setup - must do bprog setup first time only
             listeners.forEach(l -> l.starting(bprog));
             syncSnapshot = awaitForExecutorServiceToFinishTask(bprog::setup);
@@ -151,7 +151,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
 
     @Override
     public BooleanResponse setSyncSnapshot(long snapShotTime) {
-        logger.info("setSyncSnapshot , snapShotTime: " + snapShotTime + " state: " + state.getDebuggerState().toString());
+        logger.info("setSyncSnapshot() snapShotTime: {0}, state: {1}", snapShotTime, state.getDebuggerState().toString());
         if (!RunnerState.State.SYNC_STATE.equals(state.getDebuggerState())) {
             return createErrorResponse(ErrorCode.NOT_IN_BP_SYNC_STATE);
         }
@@ -207,16 +207,16 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
 
     @Override
     public DebugResponse startSync(Map<Integer, Boolean> breakpointsMap, boolean isSkipSyncPoints, boolean isSkipBreakpoints, boolean isWaitForExternalEvents) {
-        DebugResponse setupResponse = setup(breakpointsMap, isSkipBreakpoints, isSkipSyncPoints, isWaitForExternalEvents);
-        if (setupResponse.isSuccess()) {
+        DebugResponse debugResponse = setup(breakpointsMap, isSkipBreakpoints, isSkipSyncPoints, isWaitForExternalEvents);
+        if (debugResponse.isSuccess()) {
             bpExecutorService.execute(this::runStartSync);
         }
-        return setupResponse;
+        return debugResponse;
     }
 
     private BooleanResponse runStartSync() {
-        setIsStarted(true);
         try {
+            setIsStarted(true);
             listeners.forEach(l -> l.started(bprog));
             syncSnapshot = syncSnapshot.start(jsExecutorService);
             if (!syncSnapshot.isStateValid()) {
@@ -227,7 +227,6 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
             debuggerEngine.setSyncSnapshot(syncSnapshot);
             syncSnapshotHolder.addSyncSnapshot(syncSnapshot, null);
             logger.info("~FIRST SYNC STATE~");
-            state.setDebuggerState(RunnerState.State.SYNC_STATE);
             if (isSkipSyncPoints) {
                 nextSync();
             }
