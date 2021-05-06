@@ -1,4 +1,4 @@
-Feature: Breakpoints
+Feature: Breakpoints & Steps
   Scenario Outline: multiple valid breakpoints
     Given user <username> has connected with userId <userId>
     And <username> has connected to websocket with <sessionId>
