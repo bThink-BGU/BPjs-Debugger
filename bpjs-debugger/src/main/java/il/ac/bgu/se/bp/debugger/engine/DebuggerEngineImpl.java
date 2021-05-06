@@ -125,6 +125,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
     @Override
     public void stop() {
         dimHelper.stop();
+        execSvc.shutdownNow();
         setIsRunning(false);
     }
 

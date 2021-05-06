@@ -16,21 +16,24 @@ import il.ac.bgu.se.bp.utils.visitor.PublisherVisitor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 
 public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisitor {
 
     private static final String debuggerId = UUID.randomUUID().toString();
-    private static final String filename = "BPJSDebuggerForTesting.js";        // "BPJSDebuggerRecTest.js"
+    private static final String filename = "BPJSDebuggerForTesting.js";
+//    private static final String filename = "BPJSDebuggerRecTest.js";
 
     private boolean isTerminated = false;
-    private Scanner sc;
+    private BufferedReader bufferedReader;
     private boolean isSkipSyncPoints = false;
     private boolean isSkipBreakPoints = false;
+    private boolean isWaitForExternalEvents = false;
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     @Autowired
@@ -53,25 +56,23 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
 
     private void init() {
         System.out.println("Debugger id: " + debuggerId);
-        sc = new Scanner(System.in);
+        bufferedReader = new BufferedReader(new InputStreamReader(System.in));
         bpJsDebugger = debuggerFactory.getBPJsDebugger(debuggerId, filename, DebuggerLevel.NORMAL);
         bpJsDebugger.subscribe(this);
     }
 
     private void runBPJsDebuggerCliRunner() {
         init();
-
         while (!isTerminated) {
-            boolean isStop = !userMenuLoop(sc, bpJsDebugger);
+            boolean isStop = !userMenuLoop(bufferedReader, bpJsDebugger);
             isTerminated = isTerminated || isStop;
         }
 
-        bpJsDebugger.stop();
         System.out.println("BPJsDebuggerCliRunner exiting..");
     }
 
-    private boolean userMenuLoop(Scanner sc, BPJsDebugger<BooleanResponse> bpJsDebugger) {
-        String[] splat = getUserInput(sc);
+    private boolean userMenuLoop(BufferedReader bufferedReader, BPJsDebugger<BooleanResponse> bpJsDebugger) {
+        String[] splat = getUserInput(bufferedReader);
         String cmd = splat[0];
         switch (cmd) {
             case "b": {
@@ -92,7 +93,7 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
             }
             case "go":
                 if (!bpJsDebugger.isStarted()) {
-                    sendRequest(() -> bpJsDebugger.startSync(breakpoints, isSkipSyncPoints, isSkipBreakPoints, false ));
+                    sendRequest(() -> bpJsDebugger.startSync(breakpoints, isSkipSyncPoints, isSkipBreakPoints, isWaitForExternalEvents ));
                 }
                 else {
                     sendRequest(bpJsDebugger::continueRun);
@@ -158,7 +159,9 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
                 sendRequest(() -> bpJsDebugger.setSyncSnapshot(Long.parseLong(splat[1])));
                 break;
             case "stop":
-                sendRequest(bpJsDebugger::stop);
+                if (!isTerminated) {
+                    sendRequest(bpJsDebugger::stop);
+                }
                 break;
             case "gets":
                 sendRequest(bpJsDebugger::getState);
@@ -187,14 +190,20 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
         }
     }
 
-    private static String[] getUserInput(Scanner sc) {
-        try {
-            printMenu();
-            String cmd = sc.nextLine();
-            return cmd.split(" ");
-        } catch (Exception e) {
-            return new String[]{"stop"};
+    private String[] getUserInput(BufferedReader bufferedReader) {
+        while (!isTerminated) {
+            try {
+                printMenu();
+                while (!bufferedReader.ready() && !isTerminated) {
+                    Thread.sleep(200);
+                }
+                String cmd = isTerminated ? "stop" : bufferedReader.readLine();
+                return cmd.split(" ");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
+        return null;
     }
 
     private static void printMenu() {

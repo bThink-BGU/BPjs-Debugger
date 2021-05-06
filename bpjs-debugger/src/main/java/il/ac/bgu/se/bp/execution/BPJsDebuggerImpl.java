@@ -66,13 +66,11 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
 
     private final RunnerState state = new RunnerState();
 
-
     public final SyncSnapshotHolder<BProgramSyncSnapshot, BEvent> syncSnapshotHolder = new SyncSnapshotHolderImpl();
     private final DebuggerStateHelper debuggerStateHelper;
     private final DebuggerPrintStream debuggerPrintStream = new DebuggerPrintStream();
     private final List<BProgramRunnerListener> listeners = new ArrayList<>();
     private final List<Subscriber<BPEvent>> subscribers = new ArrayList<>();
-
 
     @Autowired
     private ProgramValidator<BPJsDebugger> bPjsProgramValidator;
@@ -106,7 +104,6 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         listeners.add(new DebuggerBProgramRunnerListener(debuggerStateHelper));
         bprog.setAddBThreadCallback((bp, bt) -> listeners.forEach(l -> l.bthreadAdded(bp, bt)));
     }
-
 
     @Override
     public DebugResponse setup(Map<Integer, Boolean> breakpoints, boolean isSkipBreakpoints, boolean isSkipSyncPoints, boolean isWaitForExternalEvents) {
@@ -364,6 +361,8 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     }
 
     private void onExit() {
+        debuggerEngine.stop();
+        execSvc.shutdownNow();
         notifySubscribers(new BPExitEvent(debuggerId));
     }
 
@@ -422,7 +421,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         }
         setIsStarted(false);
         onExit();
-        return new Stop().applyCommand(debuggerEngine);
+        return createSuccessResponse();
     }
 
     @Override
