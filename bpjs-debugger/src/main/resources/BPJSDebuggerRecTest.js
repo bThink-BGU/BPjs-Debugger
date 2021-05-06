@@ -20,6 +20,7 @@ bp.registerBThread("bt-hello", function(){
 function foo() {
     var m = 50;
     var n = 100;
+    bp.log.info("foo foo foo foo")
     foo();
     var p = m+n;
     const t = 200

@@ -17,13 +17,36 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Stream.generate;
+
 public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisitor {
+
+    private static final String commands = "b / rb / go / si / sov / sou / getss / n / e / re / we / h / tmb / tsp / sss / stop";
+    private static final String menu;
+
+    static {
+        String menuWrapper = generate(() -> "=").limit(commands.length()).collect(joining());
+        String prefix = "==========";
+        String suffix = "==========";
+        String newLine = "\n";
+        String enterCommand = " Enter command ";
+        int whiteSpacesLengthForEnterCommand = (menuWrapper.length() - suffix.length()) / 2;
+        String whiteSpacesForEnterCommand = generate(() -> "=").limit(whiteSpacesLengthForEnterCommand).collect(joining());
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(prefix).append("==").append(menuWrapper).append("==").append(suffix).append(newLine)
+                .append(prefix).append(whiteSpacesForEnterCommand).append(enterCommand).append(whiteSpacesForEnterCommand).append(suffix).append(newLine)
+                .append(prefix).append("> ").append(commands).append(" <").append(suffix).append(newLine)
+                .append(prefix).append("==").append(menuWrapper).append("==").append(suffix);
+        menu = stringBuilder.toString();
+    }
 
     private static final String debuggerId = UUID.randomUUID().toString();
     private static final String filename = "BPJSDebuggerForTesting.js";
@@ -39,7 +62,7 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
     @Autowired
     private DebuggerFactory<BooleanResponse> debuggerFactory;
 
-    private BPJsDebugger bpJsDebugger;
+    private BPJsDebugger<BooleanResponse> bpJsDebugger;
 
     private Map<Integer, Boolean> breakpoints = new HashMap<>();
 
@@ -63,6 +86,7 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
 
     private void runBPJsDebuggerCliRunner() {
         init();
+//        testGoStop();
         while (!isTerminated) {
             boolean isStop = !userMenuLoop(bufferedReader, bpJsDebugger);
             isTerminated = isTerminated || isStop;
@@ -71,29 +95,57 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
         System.out.println("BPJsDebuggerCliRunner exiting..");
     }
 
+    private void testGoStop() {
+        applyCommand(bpJsDebugger, new String[]{"go"}, "go");
+        sleep(1000);
+        applyCommand(bpJsDebugger, new String[]{"stop"}, "stop");
+    }
+
+    private void sleep(int time) {
+        try {
+            Thread.sleep(time);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
     private boolean userMenuLoop(BufferedReader bufferedReader, BPJsDebugger<BooleanResponse> bpJsDebugger) {
-        String[] splat = getUserInput(bufferedReader);
-        String cmd = splat[0];
+        try {
+            String[] splat = getUserInput(bufferedReader);
+            String cmd = splat[0];
+            applyCommand(bpJsDebugger, splat, cmd);
+            return !cmd.equals("stop");
+        } catch (IOException e) {
+            e.printStackTrace();
+            return true;
+        }
+    }
+
+    private void applyCommand(BPJsDebugger<BooleanResponse> bpJsDebugger, String[] splat, String cmd) {
         switch (cmd) {
             case "b": {
                 int lineNumber = Integer.parseInt(splat[1]);
                 if (!bpJsDebugger.isSetup()) {
                     breakpoints.put(lineNumber, true);
-                } else
+                }
+                else {
                     sendRequest(() -> bpJsDebugger.setBreakpoint(lineNumber, true));
+                }
                 break;
             }
             case "rb": {
                 int lineNumber = Integer.parseInt(splat[1]);
                 if (!bpJsDebugger.isSetup()) {
                     breakpoints.remove(lineNumber);
-                } else
+                }
+                else {
                     sendRequest(() -> bpJsDebugger.setBreakpoint(lineNumber, false));
+                }
                 break;
             }
             case "go":
                 if (!bpJsDebugger.isStarted()) {
-                    sendRequest(() -> bpJsDebugger.startSync(breakpoints, isSkipSyncPoints, isSkipBreakPoints, isWaitForExternalEvents ));
+                    sendRequest(() -> bpJsDebugger.startSync(breakpoints, isSkipSyncPoints, isSkipBreakPoints, isWaitForExternalEvents));
                 }
                 else {
                     sendRequest(bpJsDebugger::continueRun);
@@ -167,7 +219,6 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
                 sendRequest(bpJsDebugger::getState);
                 break;
         }
-        return !cmd.equals("stop");
     }
 
     private void sendRequest(Callable<BooleanResponse> callable) {
@@ -190,24 +241,19 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
         }
     }
 
-    private String[] getUserInput(BufferedReader bufferedReader) {
-        while (!isTerminated) {
-            try {
-                printMenu();
-                while (!bufferedReader.ready() && !isTerminated) {
-                    Thread.sleep(200);
-                }
-                String cmd = isTerminated ? "stop" : bufferedReader.readLine();
-                return cmd.split(" ");
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+    private String[] getUserInput(BufferedReader bufferedReader) throws IOException {
+        printMenu();
+        while (!bufferedReader.ready() && !isTerminated) {
+            sleep(200);
         }
-        return null;
+        String cmd = isTerminated ? "stop" : bufferedReader.readLine();
+        return cmd.split(" ");
     }
 
     private static void printMenu() {
-        System.out.println("Enter command: b / rb / go / si / sov / sou / getss / n / e / re / we / h / tmb / tsp / sss / stop");
+        System.out.println(menu);
+//        System.out.println("\t==========>\n" +
+//                "\t==========>\tEnter command: b / rb / go / si / sov / sou / getss / n / e / re / we / h / tmb / tsp / sss / stop\t<==========");
     }
 
     @Override

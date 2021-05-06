@@ -27,4 +27,5 @@ public interface DebuggerEngine<S> extends GuiCallback, Publisher<BPEvent> {
     boolean[] getBreakpoints();
 
     boolean isMuteBreakpoints();
+    boolean isRunning();
 }

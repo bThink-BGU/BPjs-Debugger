@@ -10,6 +10,7 @@ import il.ac.bgu.se.bp.debugger.engine.events.BPStateEvent;
 import il.ac.bgu.se.bp.logger.Logger;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
 import il.ac.bgu.se.bp.utils.DebuggerStateHelper;
+import il.ac.bgu.se.bp.utils.DebuggerStopException;
 import il.ac.bgu.se.bp.utils.observer.BPEvent;
 import il.ac.bgu.se.bp.utils.observer.BPEventPublisherImpl;
 import il.ac.bgu.se.bp.utils.observer.Publisher;
@@ -70,6 +71,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
 
     @Override
     public void enterInterrupt(Dim.StackFrame stackFrame, String s, String s1) {
+        verifyState();
         state.setDebuggerState(RunnerState.State.JS_DEBUG);
         lastContextData = stackFrame.contextData();
 
@@ -89,6 +91,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
 
     @Override
     public void dispatchNextGuiEvent() {
+        verifyState();
         try {
             if (!debuggerStateHelper.getLastState().equals(debuggerStateHelper.peekNextState(syncSnapshot, state, lastContextData,dimHelper.getSourceInfo(filename)))) {
                 logger.info("Getting state from dispatchNextGuiEvent");
@@ -100,7 +103,15 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
                 debuggerCommand.applyCommand(this);
             }
         } catch (Exception e) {
-            logger.error("failed on dispatchNextGuiEvent", e);
+            if (isRunning()) {
+                logger.error("failed on dispatchNextGuiEvent", e);
+            }
+        }
+    }
+
+    private void verifyState() {
+        if (!isRunning()) {
+            throw new DebuggerStopException("debugger is not running [probably force stop scenario]");
         }
     }
 
@@ -109,7 +120,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
         queue.add(command);
     }
 
-    private synchronized boolean isRunning() {
+    public synchronized boolean isRunning() {
         return isRunning;
     }
 
@@ -124,6 +135,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
 
     @Override
     public void stop() {
+        logger.info("stopping debugger engine");
         dimHelper.stop();
         execSvc.shutdownNow();
         setIsRunning(false);
