@@ -118,7 +118,7 @@ Feature: Breakpoints
 
   Scenario: step into, step over, step out
     Given user alex has connected with userId 4655ae8e-cdfe-4ce3-ac2b-dc03743a780f
-    And alex has connected to websocket with ron-session
+    And alex has connected to websocket with alex-session
 
     When alex asks to debug with filename testFile3 and toggleMuteBreakpoints false and toggleMuteSyncPoints true and toggleWaitForExternalEvent false and breakpoints 3,10,-1,50
     Then The debug response should be true with errorCode null and breakpoints 3,10 for user alex
