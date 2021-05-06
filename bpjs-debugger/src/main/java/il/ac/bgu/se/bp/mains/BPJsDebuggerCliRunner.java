@@ -8,7 +8,7 @@ import il.ac.bgu.se.bp.debugger.manage.DebuggerFactory;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
 import il.ac.bgu.se.bp.socket.console.ConsoleMessage;
-import il.ac.bgu.se.bp.socket.exit.ProgramExit;
+import il.ac.bgu.se.bp.socket.exit.ProgramStatus;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
 import il.ac.bgu.se.bp.utils.observer.BPEvent;
 import il.ac.bgu.se.bp.utils.observer.Subscriber;
@@ -274,7 +274,7 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
     }
 
     @Override
-    public void visit(String userId, ProgramExit programExit) {
+    public void visit(String userId, ProgramStatus programExit) {
         isTerminated = true;
         System.out.println("programExit event received");
     }

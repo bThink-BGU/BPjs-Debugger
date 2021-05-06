@@ -37,9 +37,7 @@ public class SyncSnapshotHolderImpl implements SyncSnapshotHolder<BProgramSyncSn
             return null;
         }
 
-        BEvent bEvent = snapshotsByTimeChosen.get(snapshotTime).getRight();
-
-        return bEvent;
+        return snapshotsByTimeChosen.get(snapshotTime).getRight();
     }
     private BProgramSyncSnapshot cloneBProgramSyncSnapshot(BProgramSyncSnapshot oldBProgramSyncSnapshot) {
         BProgram aBProgram = oldBProgramSyncSnapshot.getBProgram();

@@ -15,7 +15,7 @@ import il.ac.bgu.se.bp.debugger.engine.DebuggerEngineImpl;
 import il.ac.bgu.se.bp.debugger.engine.SyncSnapshotHolder;
 import il.ac.bgu.se.bp.debugger.engine.SyncSnapshotHolderImpl;
 import il.ac.bgu.se.bp.debugger.engine.events.BPConsoleEvent;
-import il.ac.bgu.se.bp.debugger.engine.events.BPExitEvent;
+import il.ac.bgu.se.bp.debugger.engine.events.ProgramStatusEvent;
 import il.ac.bgu.se.bp.debugger.manage.ProgramValidator;
 import il.ac.bgu.se.bp.error.ErrorCode;
 import il.ac.bgu.se.bp.logger.Logger;
@@ -207,6 +207,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
 
     @Override
     public DebugResponse startSync(Map<Integer, Boolean> breakpointsMap, boolean isSkipSyncPoints, boolean isSkipBreakpoints, boolean isWaitForExternalEvents) {
+        notifySubscribers(new ProgramStatusEvent(debuggerId, true));
         DebugResponse debugResponse = setup(breakpointsMap, isSkipBreakpoints, isSkipSyncPoints, isWaitForExternalEvents);
         if (debugResponse.isSuccess()) {
             bpExecutorService.execute(this::runStartSync);
@@ -371,7 +372,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         if (!jsExecutorService.isTerminated()) {
             forceStopDebugger();
         }
-        notifySubscribers(new BPExitEvent(debuggerId));
+        notifySubscribers(new ProgramStatusEvent(debuggerId, false));
     }
 
     private void forceStopDebugger() {
@@ -558,26 +559,4 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         return debuggerEngine.isMuteBreakpoints();
     }
 
-    public DebuggerEngine<BProgramSyncSnapshot> getDebuggerEngine() {
-        return debuggerEngine;
-    }
-
-//    //OLD METHOD TO RUN BPROG - JUST FOR REFERENCE
-//    public void start(Map<Integer, Boolean> breakpoints) {
-//        if (!isSetup) {
-//            setup(breakpoints, false);
-//            return;
-//        }
-//        BProgramRunner rnr = new BProgramRunner();
-//        rnr.addListener(new PrintBProgramRunnerListener());
-//        rnr.addListener(new BProgramRunnerListenerAdapter() {
-//            @Override
-//            public void ended(BProgram bp) {
-//                setItStarted(false);
-//            }
-//        });
-//        rnr.setBProgram(bProg);
-//        setItStarted(true);
-//        new Thread(rnr).start();
-//    }
 }

@@ -2,7 +2,7 @@ package il.ac.bgu.se.bp.mocks;
 
 import il.ac.bgu.se.bp.service.manage.SessionHandlerImpl;
 import il.ac.bgu.se.bp.socket.console.ConsoleMessage;
-import il.ac.bgu.se.bp.socket.exit.ProgramExit;
+import il.ac.bgu.se.bp.socket.exit.ProgramStatus;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
 
 import java.util.LinkedList;
@@ -16,21 +16,25 @@ public class SessionHandlerMock extends SessionHandlerImpl {
 
     @Override
     public void visit(String userId, BPDebuggerState debuggerState) {
-        debuggerStatesPerUser.putIfAbsent(userId, new LinkedList<>());
         debuggerStatesPerUser.get(userId).add(debuggerState);
     }
 
     @Override
     public void visit(String userId, ConsoleMessage consoleMessage) {
-        consoleMessagesPerUser.putIfAbsent(userId, new LinkedList<>());
         consoleMessagesPerUser.get(userId).add(consoleMessage);
     }
 
     @Override
-    public void visit(String userId, ProgramExit programExit) {
-        super.visit(userId, programExit);
-        debuggerStatesPerUser.remove(userId);
-        consoleMessagesPerUser.remove(userId);
+    public void visit(String userId, ProgramStatus programStatus) {
+        super.visit(userId, programStatus);
+        if (programStatus.isRunning()) {
+            debuggerStatesPerUser.put(userId, new LinkedList<>());
+            consoleMessagesPerUser.put(userId, new LinkedList<>());
+        }
+        else {
+            debuggerStatesPerUser.remove(userId);
+            consoleMessagesPerUser.remove(userId);
+        }
     }
 
     public Boolean isUserFinishedRunning(String userId) {
