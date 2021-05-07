@@ -68,7 +68,24 @@ public class CodeFilesHelper {
     }
 
     private static String testFile3() {
-        return null;
+        return "bp.registerBThread('bt-world', function () {\n" +
+                "    bp.sync({ request: bp.Event('aba') });\n" +
+                "    foo(1)\n" +                                                // 3
+                "})\n" +
+                "\n" +
+                "function foo(bt) {\n" +
+                "    var m = 50;\n" +
+                "    var n = 100;\n" +
+                "    var p = m + n;\n" +
+                "    goo()\n" +                                                 // 10
+                "    const t = 200\n" +
+                "}\n" +
+                "\n" +
+                "function goo() {\n" +
+                "    var g1 = 50;\n" +                                          // 15
+                "    var g2 = 100;\n" +
+                "    const g3 = 200\n" +
+                "}";
     }
 
     private static String testFile4() {

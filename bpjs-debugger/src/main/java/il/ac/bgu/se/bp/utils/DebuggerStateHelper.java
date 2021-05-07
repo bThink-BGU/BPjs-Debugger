@@ -70,7 +70,7 @@ public class DebuggerStateHelper {
 
     private BPDebuggerState generateDebuggerStateInner(BProgramSyncSnapshot syncSnapshot, RunnerState state, Dim.ContextData lastContextData, Dim.SourceInfo sourceInfo) {
         SortedMap<Long, EventInfo> eventsHistory = generateEventsHistory(INITIAL_INDEX_FOR_EVENTS_HISTORY_ON_SYNC_STATE, FINAL_INDEX_FOR_EVENTS_HISTORY_ON_SYNC_STATE);
-        DebuggerConfigs debuggerConfigs = bpJsDebugger == null? null :new DebuggerConfigs(bpJsDebugger.isMuteBreakPoints(),bpJsDebugger.isWaitForExternalEvents(), bpJsDebugger.isSkipSyncPoints());
+        DebuggerConfigs debuggerConfigs = generateDebuggerConfigs(bpJsDebugger);
 
         if(debuggerLevel.getLevel() > DebuggerLevel.LIGHT.getLevel()){
             List<BThreadInfo> bThreadInfoList = generateBThreadInfos(syncSnapshot, state, lastContextData);
@@ -81,6 +81,11 @@ public class DebuggerStateHelper {
         }
 
         return new BPDebuggerState(new LinkedList<>(), new EventsStatus(), eventsHistory, currentRunningBT, null,debuggerConfigs, new Boolean[0]);
+    }
+
+    private DebuggerConfigs generateDebuggerConfigs(BPJsDebugger bpJsDebugger) {
+        return bpJsDebugger == null ? null :
+                new DebuggerConfigs(bpJsDebugger.isMuteBreakPoints(),bpJsDebugger.isWaitForExternalEvents(), bpJsDebugger.isSkipSyncPoints());
     }
 
     private List<BThreadInfo> generateBThreadInfos(BProgramSyncSnapshot syncSnapshot, RunnerState state, Dim.ContextData lastContextData) {
@@ -108,7 +113,10 @@ public class DebuggerStateHelper {
         List<EventInfo> waitEvents = wait.stream().map((e)-> e.equals(none) ? null : new EventInfo(getEventName(e))).filter(Objects::nonNull).collect(Collectors.toList());
         List<EventInfo> blockedEvents = blocked.stream().map((e) -> e.equals(none) ? null : new EventInfo(getEventName(e))).filter(Objects::nonNull).collect(Collectors.toList());
         Set<EventInfo> requestedEvents = requested.stream().map((e) -> new EventInfo(getEventName(e))).collect(Collectors.toSet());
-        List<EventInfo> externalEvents = syncSnapshot.getExternalEvents().stream().map((e) -> e.equals(none) ? null : new EventInfo(((BEvent) e).getName())).filter(Objects::nonNull).collect(Collectors.toList());
+        List<EventInfo> externalEvents = syncSnapshot.getExternalEvents().stream()
+                .filter(e -> !e.equals(none))
+                .map(e -> new EventInfo(e.getName()))
+                .collect(Collectors.toList());
         if(currentEvent == null)
             return new EventsStatus(waitEvents, blockedEvents, requestedEvents, externalEvents);
         else
@@ -175,12 +183,12 @@ public class DebuggerStateHelper {
         else return Objects.toString(eventSet);
     }
     private BThreadInfo createBThreadInfo(BThreadSyncSnapshot bThreadSS, RunnerState state, Dim.ContextData lastContextData) {
-        ScriptableObject scope = (ScriptableObject) bThreadSS.getScope();
         try {
+            Scriptable scope = bThreadSS.getScope();
             Object implementation = getValue(scope, "implementation");
             Dim.StackFrame debuggerFrame = getValue(implementation, "debuggerFrame");
             Map<Integer, Map<String, String>> env = state == null ? null :
-                    (state.getDebuggerState() == RunnerState.State.JS_DEBUG &&  Context.getCurrentContext() != null)? getEnvDebug(implementation, lastContextData, bThreadSS.getName()) :
+                    (state.getDebuggerState() == RunnerState.State.JS_DEBUG && Context.getCurrentContext() != null) ? getEnvDebug(implementation, lastContextData, bThreadSS.getName()) :
                             getEnv(implementation, debuggerFrame != null ? debuggerFrame.contextData() : null);
             EventSet waitFor = bThreadSS.getSyncStatement().getWaitFor();
             EventInfo waitEvent = waitFor.equals(none) ? null : new EventInfo(getEventName(waitFor));
@@ -210,28 +218,29 @@ public class DebuggerStateHelper {
      */
     private Map<Integer, Map<String, String>> getEnvDebug(Object interpreterCallFrame, Dim.ContextData lastContextData, String btName) {
         Map<Integer, Map<String, String>> env = new HashMap<>();
-        Integer key = 0;
+        int key = 0;
         Context cx = Context.getCurrentContext();
         boolean currentRunningBT = false;
         try {
-            Object lastInterpreterFrame = getValue(cx, "lastInterpreterFrame");
-            if (lastInterpreterFrame == null) {
+            Object cxInterpreterFrame = getValue(cx, "lastInterpreterFrame");
+            if (cxInterpreterFrame == null) {
                 return getEnv(interpreterCallFrame, lastContextData);
             }
-            Object parentFrame = getValue(lastInterpreterFrame, "parentFrame");
-            ScriptableObject interruptedScope = parentFrame != null ? getValue(parentFrame, "scope") :
-                    getValue(lastInterpreterFrame, "scope");
-            ScriptableObject paramScope = getValue(interpreterCallFrame, "scope");
-            if (paramScope == interruptedScope) { //current running BT
-                currentRunningBT = true;
+            Object myScope =getValue(interpreterCallFrame, "scope");
+            currentRunningBT = isScopesRelated(cxInterpreterFrame, myScope);
+            Object parentFrame = interpreterCallFrame;
+            if (currentRunningBT) { //current running BT
+                logger.info("currentRunningBT + " +btName);
                 for (int i = 0; i < lastContextData.frameCount(); i++) {
                     ScriptableObject scope = (ScriptableObject) lastContextData.getFrame(i).scope();
                     env.put(i, getScope(scope));
+                    key ++;
                 }
                 key = lastContextData.frameCount();
                 this.currentRunningBT = btName;
+                parentFrame = getValue(cxInterpreterFrame, "parentFrame");
             }
-            parentFrame = interpreterCallFrame;
+
             while (parentFrame != null) {
                 if (currentRunningBT) {
                     Dim.StackFrame stackFrame = getValue(parentFrame, "debuggerFrame");
@@ -240,14 +249,14 @@ public class DebuggerStateHelper {
                         for (int i = 0; i < debuggerFrame.frameCount(); i++) {
                             ScriptableObject scope = (ScriptableObject) debuggerFrame.getFrame(i).scope();
                             env.put(key, getScope(scope));
+                            key ++ ;
                         }
-                        key += debuggerFrame.frameCount();
                     }
                 }
                 else {
                     ScriptableObject scope = getValue(parentFrame, "scope");
                     env.put(key, getScope(scope));
-                    key += 1;
+                    key ++ ;
                 }
                 parentFrame = getValue(parentFrame, "parentFrame");
             }
@@ -255,6 +264,23 @@ public class DebuggerStateHelper {
             logger.error("getEnvDebug: failed to get env, e: {0}", e, e.getMessage());
         }
         return env;
+    }
+
+    private boolean isScopesRelated(Object cxInterpreterFrame, Object myScope) {
+        Object scope;
+        Object parentFrame = cxInterpreterFrame;
+        try {
+            while (parentFrame != null) {
+                scope = getValue(parentFrame, "scope");
+                if(scope == myScope)
+                    return true;
+                parentFrame = getValue(parentFrame, "parentFrame");
+            }
+            return false;
+        } catch (Exception e) {
+            logger.error("isScopesRelated: failed e: {0}", e, e.getMessage());
+            return false;
+        }
     }
 
     private Map<Integer, Map<String, String>> getEnv(Object interpreterCallFrame, Dim.ContextData contextData) {

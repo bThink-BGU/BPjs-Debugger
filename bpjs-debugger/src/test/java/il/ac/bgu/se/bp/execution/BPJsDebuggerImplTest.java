@@ -62,6 +62,7 @@ public class BPJsDebuggerImplTest {
         onStateChangedQueue.clear();
         Arrays.stream(BREAKPOINTS_LINES).forEach(lineNumber -> breakpoints.put(lineNumber, Boolean.TRUE));
         doAnswer(a -> onStateChangedTester(new BPDebuggerState())).when(debuggerEngine).onStateChanged();
+        when(debuggerEngine.getBreakpoints()).thenReturn(new boolean[0]);
     }
 
     private void setupDebugger() {
@@ -117,12 +118,13 @@ public class BPJsDebuggerImplTest {
     }
 
     @Test
-    public void setSyncSnapshots_noSnapshotsAddedTest() {
+    public void setSyncSnapshots_noSnapshotsAddedTest() throws InterruptedException {
         setupDebugger();
         assertErrorResponse(bpJsDebugger.setSyncSnapshot(123123L), ErrorCode.NOT_IN_BP_SYNC_STATE);
         assertErrorResponse(bpJsDebugger.setSyncSnapshot(-1L), ErrorCode.NOT_IN_BP_SYNC_STATE);
 
-        assertSuccessResponse(bpJsDebugger.startSync(new HashMap<>(), false, false,false ));
+        assertSuccessResponse(bpJsDebugger.startSync(new HashMap<>(), false, false,false));
+        sleepUntil(e -> !onStateChangedQueue.isEmpty(), 3);
         assertErrorResponse(bpJsDebugger.setSyncSnapshot(123123L), ErrorCode.CANNOT_REPLACE_SNAPSHOT);
         assertErrorResponse(bpJsDebugger.setSyncSnapshot(-1L), ErrorCode.CANNOT_REPLACE_SNAPSHOT);
     }

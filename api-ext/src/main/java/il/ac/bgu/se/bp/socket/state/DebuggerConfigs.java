@@ -3,8 +3,9 @@ package il.ac.bgu.se.bp.socket.state;
 import java.io.Serializable;
 import java.util.Objects;
 
-public class DebuggerConfigs  implements Serializable {
+public class DebuggerConfigs implements Serializable {
     private static final long serialVersionUID = 983874658293202361L;
+
     private boolean toggleMuteBreakPoint;
     private boolean toggleWaitForExternalEvents;
     private boolean toggleMuteSyncPoints;
@@ -44,8 +45,12 @@ public class DebuggerConfigs  implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         DebuggerConfigs debuggerConfigs = (DebuggerConfigs) o;
         return toggleMuteBreakPoint == debuggerConfigs.toggleMuteBreakPoint &&
                 toggleMuteSyncPoints == debuggerConfigs.toggleMuteSyncPoints &&
@@ -54,14 +59,15 @@ public class DebuggerConfigs  implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(toggleMuteBreakPoint,toggleMuteSyncPoints, toggleWaitForExternalEvents);
+        return Objects.hash(toggleMuteBreakPoint, toggleMuteSyncPoints, toggleWaitForExternalEvents);
     }
 
     @Override
     public String toString() {
-        return "toggleMuteBreakPoint: " + toggleMuteBreakPoint  +
-                "\ntoggleMuteSyncPoints: " + toggleMuteSyncPoints +
-                "\ntoggleWaitForExternalEvents: " + toggleWaitForExternalEvents;
+        return "DebuggerConfigs{" +
+                "toggleMuteBreakPoint=" + toggleMuteBreakPoint +
+                ", toggleWaitForExternalEvents=" + toggleWaitForExternalEvents +
+                ", toggleMuteSyncPoints=" + toggleMuteSyncPoints +
+                '}';
     }
-
 }

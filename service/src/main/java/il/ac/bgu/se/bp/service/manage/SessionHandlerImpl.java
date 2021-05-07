@@ -7,7 +7,7 @@ import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.service.code.SourceCodeHelper;
 import il.ac.bgu.se.bp.service.notification.NotificationHandler;
 import il.ac.bgu.se.bp.socket.console.ConsoleMessage;
-import il.ac.bgu.se.bp.socket.exit.ProgramExit;
+import il.ac.bgu.se.bp.socket.exit.ProgramStatus;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
 import il.ac.bgu.se.bp.utils.observer.BPEvent;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +42,10 @@ public class SessionHandlerImpl implements SessionHandler<BPJsDebugger<BooleanRe
     @Autowired
     @Qualifier("consoleNotificationHandlerImpl")
     private NotificationHandler consoleNotificationHandler;
+
+    @Autowired
+    @Qualifier("programStatusNotificationHandlerImpl")
+    private NotificationHandler programStatusNotificationHandler;
 
     @Autowired
     private SourceCodeHelper sourceCodeHelper;
@@ -161,7 +165,6 @@ public class SessionHandlerImpl implements SessionHandler<BPJsDebugger<BooleanRe
         if (!validateUserId(userId)) {
             return;
         }
-//        logger.debug("sending BPDebuggerState update");
         logger.debug(gson.toJson(debuggerState));
         stateNotificationHandler.sendNotification(userId, gson.toJson(debuggerState));
     }
@@ -171,13 +174,18 @@ public class SessionHandlerImpl implements SessionHandler<BPJsDebugger<BooleanRe
         if (!validateUserId(userId)) {
             return;
         }
-//        logger.debug("sending ConsoleMessage update");
         consoleNotificationHandler.sendNotification(userId, consoleMessage);
     }
 
     @Override
-    public void visit(String userId, ProgramExit programExit) {
-        removeUserPrograms(userId);
+    public void visit(String userId, ProgramStatus programStatus) {
+        if (!validateUserId(userId)) {
+            return;
+        }
+        programStatusNotificationHandler.sendNotification(userId, programStatus);
+        if (!programStatus.isRunning()) {
+            removeUserPrograms(userId);
+        }
     }
 
     @Override

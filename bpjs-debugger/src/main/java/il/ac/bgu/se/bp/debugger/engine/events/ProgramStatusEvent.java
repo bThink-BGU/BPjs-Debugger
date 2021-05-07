@@ -1,13 +1,13 @@
 package il.ac.bgu.se.bp.debugger.engine.events;
 
-import il.ac.bgu.se.bp.socket.exit.ProgramExit;
+import il.ac.bgu.se.bp.socket.exit.ProgramStatus;
 import il.ac.bgu.se.bp.utils.observer.BPEvent;
 import il.ac.bgu.se.bp.utils.visitor.PublisherVisitor;
 
-public class BPExitEvent extends BPEvent<ProgramExit> {
+public class ProgramStatusEvent extends BPEvent<ProgramStatus> {
 
-    public BPExitEvent(String debuggerId) {
-        super(debuggerId, new ProgramExit());
+    public ProgramStatusEvent(String debuggerId, boolean isRunning) {
+        super(debuggerId, new ProgramStatus(isRunning));
     }
 
     @Override

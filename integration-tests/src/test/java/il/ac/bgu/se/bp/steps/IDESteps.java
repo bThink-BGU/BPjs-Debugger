@@ -31,7 +31,6 @@ import static org.junit.Assert.*;
 @ContextConfiguration(classes = IDECommonTestConfiguration.class)
 public class IDESteps {
 
-    //    private String activeUserId;
     private Map<String, String> userIdsByNames;
     private BooleanResponse lastResponse;
     private DebugResponse lastDebugResponse;
@@ -95,6 +94,15 @@ public class IDESteps {
             case "stop":
                 lastResponse = testService.stop(userId);
                 break;
+            case "step into":
+                lastResponse = testService.stepInto(userId);
+                break;
+            case "step over":
+                lastResponse = testService.stepOver(userId);
+                break;
+            case "step out":
+                lastResponse = testService.stepOut(userId);
+                break;
         }
     }
 
@@ -112,7 +120,7 @@ public class IDESteps {
 
     @Then("wait until program of user (.*) is over")
     public void waitUntilTheProgramIsOver(String username) {
-        waitUntilPredicateSatisfied(() -> sessionHandler.isUserFinishedRunning(getUserIdByName(username)), 1000, 3);
+        waitUntilPredicateSatisfied(() -> sessionHandler.isUserFinishedRunning(getUserIdByName(username)), 500, 3);
     }
 
     @Then("The response should be (.*) with errorCode (.*)")
@@ -175,13 +183,13 @@ public class IDESteps {
     @Then("wait until user (.*) has reached sync state")
     public void waitUntilUserHasReachedSyncState(String username) {
         waitUntilPredicateSatisfied(() -> sessionHandler.getUsersLastDebuggerState(getUserIdByName(username)) != null &&
-                sessionHandler.getUsersLastDebuggerState(getUserIdByName(username)).getCurrentLineNumber() == null, 2000, 3);
+                sessionHandler.getUsersLastDebuggerState(getUserIdByName(username)).getCurrentLineNumber() == null, 500, 3);
     }
 
     @Then("wait until user (.*) has reached breakpoint")
     public void waitUntilBreakpointReached(String username) {
         waitUntilPredicateSatisfied(() -> sessionHandler.getUsersLastDebuggerState(getUserIdByName(username)) != null &&
-                sessionHandler.getUsersLastDebuggerState(getUserIdByName(username)).getCurrentLineNumber() != null, 2000, 3);
+                sessionHandler.getUsersLastDebuggerState(getUserIdByName(username)).getCurrentLineNumber() != null, 500, 3);
     }
 
     @Then("(.*) should get optional sync state notification wait events (.*), blocked events (.*), requested events (.*), current event (.*), b-threads info list (.*), and events history (.*)")
@@ -283,11 +291,45 @@ public class IDESteps {
         assertNotNull("BPDebuggerState was not received for user: " + username, lastDebuggerState);
 
         List<Integer> breakpoints = strToIntList(breakpointsStr);
-        assertBreakpoints(username, breakpoints, lastDebuggerState);
+        assertBreakpoints(username, breakpoints, lastDebuggerState, true);
 
         List<String> bThreadsOfCurrentBreakpoint = getBThreadNamesByBreakpoint(bThreads, lastDebuggerState.getCurrentLineNumber());
         Map<String, String> actualEnv = getLastEnvOfMatchingBThread(lastDebuggerState.getbThreadInfoList(), bThreadsOfCurrentBreakpoint);
         assertEnvVariables(actualEnv, lastDebuggerState.getCurrentLineNumber(), doubleVars, stringVars);
+    }
+
+    @Then("(.*) should get notification with BThread (.*) on line (.*), envs (.*) and breakpoint lines (.*)")
+    public void userShouldGetBreakpointNotificationWithDoubleVariablesAndStringVariables(String username, String bThread, String currentLine,
+                                                                                         String envsStr, String breakpointsStr) {
+        BPDebuggerState lastDebuggerState = sessionHandler.getUsersLastDebuggerState(getUserIdByName(username));
+        assertNotNull("BPDebuggerState was not received for user: " + username, lastDebuggerState);
+
+        List<Integer> breakpoints = strToIntList(breakpointsStr);
+        assertBreakpoints(username, breakpoints, lastDebuggerState, false);
+        assertEquals(strToInt(currentLine), lastDebuggerState.getCurrentLineNumber().intValue());
+
+        BThreadInfo bThreadInfo = getBThreadInfoByName(lastDebuggerState.getbThreadInfoList(), bThread);
+        assertNotNull(bThread + " was not found", bThreadInfo);
+
+        List<Map<String, String>> expectedEnvs = createEnvsMappings(envsStr);
+        assertNotNull(expectedEnvs);
+        assertEnvs(expectedEnvs, bThreadInfo.getEnv());
+    }
+
+    private void assertEnvs(List<Map<String, String>> expectedEnvs, Map<Integer, Map<String, String>> actualEnvs) {
+        assertEquals(expectedEnvs.size(), actualEnvs.size());
+
+        for (int i = 0; i < expectedEnvs.size(); i++) {
+            Map<String, String> actualEnv = actualEnvs.get(i);
+            Map<String, String> expectedEnv = expectedEnvs.get(i);
+
+            assertEquals(expectedEnv.size(), actualEnv.size());
+            expectedEnv.forEach((expectedVariable, expectedValue) -> {
+                assertTrue("missing variable: " + expectedVariable, actualEnv.containsKey(expectedVariable));
+                assertEquals(expectedValue, actualEnv.get(expectedVariable));
+            });
+        }
+
     }
 
     private void assertEnvVariables(Map<String, String> actualEnv, int currentBreakpoint, String doubleVars, String stringVars) {
@@ -301,10 +343,12 @@ public class IDESteps {
         }
     }
 
-    private void assertBreakpoints(String username, List<Integer> breakpoints, BPDebuggerState bpDebuggerState) {
+    private void assertBreakpoints(String username, List<Integer> breakpoints, BPDebuggerState bpDebuggerState, boolean isBreakpointStoppage) {
         Integer currentBreakpoint = bpDebuggerState.getCurrentLineNumber();
         assertNotNull("current line is null", currentBreakpoint);
-        assertTrue(breakpoints.contains(currentBreakpoint));
+        if (isBreakpointStoppage) {
+            assertTrue(breakpoints.contains(currentBreakpoint));
+        }
         breakpointsVerifierPerUser.get(username).put(currentBreakpoint, true);
 
         Boolean[] actualBreakpointsLines = bpDebuggerState.getBreakpoints();
