@@ -8,8 +8,9 @@ import il.ac.bgu.se.bp.debugger.manage.DebuggerFactory;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
 import il.ac.bgu.se.bp.socket.console.ConsoleMessage;
-import il.ac.bgu.se.bp.socket.exit.ProgramStatus;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
+import il.ac.bgu.se.bp.socket.status.ProgramStatus;
+import il.ac.bgu.se.bp.socket.status.Status;
 import il.ac.bgu.se.bp.utils.observer.BPEvent;
 import il.ac.bgu.se.bp.utils.observer.Subscriber;
 import il.ac.bgu.se.bp.utils.visitor.PublisherVisitor;
@@ -31,20 +32,19 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
 
     private static final String commands = "b / rb / go / si / sov / sou / getss / n / e / re / we / h / tmb / tsp / sss / stop";
     private static final String menu;
+    private static final String prefix = "==========";
+    private static final String suffix = "==========";
+    private static final String menuWrapper = generate(() -> "=").limit(commands.length()).collect(joining());
+    private Status status;
 
     static {
-        String menuWrapper = generate(() -> "=").limit(commands.length()).collect(joining());
-        String prefix = "==========";
-        String suffix = "==========";
         String newLine = "\n";
         String enterCommand = " Enter command ";
         int whiteSpacesLengthForEnterCommand = (menuWrapper.length() - suffix.length()) / 2;
         String whiteSpacesForEnterCommand = generate(() -> "=").limit(whiteSpacesLengthForEnterCommand).collect(joining());
         StringBuilder stringBuilder = new StringBuilder()
-//                .append(prefix).append("==").append(menuWrapper).append("==").append(suffix).append(newLine)
                 .append(prefix).append(whiteSpacesForEnterCommand).append(enterCommand).append(whiteSpacesForEnterCommand).append(suffix).append(newLine)
-                .append(prefix).append("> ").append(commands).append(" <").append(suffix).append(newLine)
-                .append(prefix).append("==").append(menuWrapper).append("==").append(suffix);
+                .append(prefix).append("> ").append(commands).append(" <").append(suffix);
         menu = stringBuilder.toString();
     }
 
@@ -250,10 +250,25 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
         return cmd.split(" ");
     }
 
-    private static void printMenu() {
+    private void printMenu() {
         System.out.println(menu);
-//        System.out.println("\t==========>\n" +
-//                "\t==========>\tEnter command: b / rb / go / si / sov / sou / getss / n / e / re / we / h / tmb / tsp / sss / stop\t<==========");
+        if (status == null) {
+            System.out.println(prefix + "==" + menuWrapper + "==" + suffix);
+        }
+        else {
+//            String enterCommand = " Enter command ";
+//            int whiteSpacesLengthForEnterCommand = (menuWrapper.length() - suffix.length()) / 2;
+//            String whiteSpacesForEnterCommand = generate(() -> "=").limit(whiteSpacesLengthForEnterCommand).collect(joining());
+//            StringBuilder stringBuilder = new StringBuilder()
+//                    .append(prefix).append(whiteSpacesForEnterCommand).append(enterCommand).append(whiteSpacesForEnterCommand).append(suffix).append(newLine)
+
+
+
+            String statusStr = " Status: " + status + " ";
+            int whiteSpacesLengthForStatus = (menuWrapper.length() - suffix.length()) / 2;
+            String whiteSpacesForStatus = generate(() -> "=").limit(whiteSpacesLengthForStatus).collect(joining());
+            System.out.println(prefix + whiteSpacesForStatus + statusStr + whiteSpacesForStatus + suffix);
+        }
     }
 
     @Override
@@ -275,7 +290,8 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
 
     @Override
     public void visit(String userId, ProgramStatus programStatus) {
-        isTerminated = !programStatus.isRunning();
-        System.out.println("programStatus event received");
+        isTerminated = Status.STOP.equals(programStatus.getStatus());
+        status = programStatus.getStatus();
+        printMenu();
     }
 }

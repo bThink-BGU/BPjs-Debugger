@@ -13,6 +13,7 @@ import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
 import il.ac.bgu.se.bp.socket.state.BThreadInfo;
 import il.ac.bgu.se.bp.socket.state.EventInfo;
 import il.ac.bgu.se.bp.socket.state.EventsStatus;
+import il.ac.bgu.se.bp.socket.status.Status;
 import il.ac.bgu.se.bp.utils.Pair;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -180,16 +181,12 @@ public class IDESteps {
         assertEquals(strToInt(numOfBreakpointsReachedStr), actualNumOfBreakpointsReached.get());
     }
 
-    @Then("wait until user (.*) has reached sync state")
-    public void waitUntilUserHasReachedSyncState(String username) {
-        waitUntilPredicateSatisfied(() -> sessionHandler.getUsersLastDebuggerState(getUserIdByName(username)) != null &&
-                sessionHandler.getUsersLastDebuggerState(getUserIdByName(username)).getCurrentLineNumber() == null, 500, 3);
-    }
-
-    @Then("wait until user (.*) has reached breakpoint")
-    public void waitUntilBreakpointReached(String username) {
-        waitUntilPredicateSatisfied(() -> sessionHandler.getUsersLastDebuggerState(getUserIdByName(username)) != null &&
-                sessionHandler.getUsersLastDebuggerState(getUserIdByName(username)).getCurrentLineNumber() != null, 500, 3);
+    @Then("wait until user (.*) has reached status (.*)")
+    public void waitUntilStatusReached(String username, String status) {
+        Status requiredStatus = Status.valueOf(status.toUpperCase());
+        waitUntilPredicateSatisfied(() -> requiredStatus.equals(sessionHandler.getUsersStatus(getUserIdByName(username))),
+                500, 3);
+        sessionHandler.removeUsersStatus(getUserIdByName(username));
     }
 
     @Then("(.*) should get optional sync state notification wait events (.*), blocked events (.*), requested events (.*), current event (.*), b-threads info list (.*), and events history (.*)")

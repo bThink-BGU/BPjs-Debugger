@@ -1,5 +1,6 @@
 package il.ac.bgu.se.bp.debugger.engine;
 
+import il.ac.bgu.se.bp.debugger.DebuggerLevel;
 import il.ac.bgu.se.bp.debugger.commands.DebuggerCommand;
 import il.ac.bgu.se.bp.utils.observer.BPEvent;
 import il.ac.bgu.se.bp.utils.observer.Publisher;
@@ -23,6 +24,7 @@ public interface DebuggerEngine<S> extends GuiCallback, Publisher<BPEvent> {
     void addCommand(DebuggerCommand command) throws Exception;
 
     void onStateChanged();
+    void changeDebuggerLevel(DebuggerLevel debuggerLevel);
 
     boolean[] getBreakpoints();
 

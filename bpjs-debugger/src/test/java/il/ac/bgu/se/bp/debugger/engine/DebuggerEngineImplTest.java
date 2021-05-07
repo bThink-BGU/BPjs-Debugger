@@ -10,9 +10,10 @@ import il.ac.bgu.se.bp.debugger.DebuggerLevel;
 import il.ac.bgu.se.bp.debugger.RunnerState;
 import il.ac.bgu.se.bp.debugger.commands.StepInto;
 import il.ac.bgu.se.bp.debugger.engine.events.BPStateEvent;
-import il.ac.bgu.se.bp.execution.BPJsDebuggerImpl;
+import il.ac.bgu.se.bp.debugger.engine.events.ProgramStatusEvent;
 import il.ac.bgu.se.bp.execution.manage.ProgramValidatorImpl;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
+import il.ac.bgu.se.bp.socket.status.Status;
 import il.ac.bgu.se.bp.utils.DebuggerStateHelper;
 import il.ac.bgu.se.bp.utils.Pair;
 import il.ac.bgu.se.bp.utils.asyncHelper.AsyncOperationRunnerImpl;
@@ -47,6 +48,8 @@ public class DebuggerEngineImplTest {
     private final static BlockingQueue<BPDebuggerState> onStateChangedQueue = new ArrayBlockingQueue<>(5);
     private RunnerState state = new RunnerState();
     private BPDebuggerState expectedState;
+    private Stack<Status> expectedStatus;
+    private boolean testStatus;
 
     @Mock
     private DebuggerStateHelper debuggerStateHelper;
@@ -68,9 +71,12 @@ public class DebuggerEngineImplTest {
     public void setUp() {
         MockitoAnnotations.initMocks(this);
         debuggerEngine = new DebuggerEngineImpl(debuggerId, TEST_FILENAME, state, debuggerStateHelper, "debuggerTestId");
+        debuggerEngine.changeDebuggerLevel(DebuggerLevel.NORMAL);
         setMockPublisher();
         onStateChangedQueue.clear();
         Arrays.stream(BREAKPOINTS_LINES).forEach(lineNumber -> breakpoints.put(lineNumber, true));
+        expectedStatus = new Stack<>();
+        testStatus = true;
     }
 
     private void setMockPublisher() {
@@ -89,7 +95,8 @@ public class DebuggerEngineImplTest {
     }
     @Test
     public void testIsBreakPointAllowed() throws InterruptedException {
-        doAnswer(invocation -> onStateChangedTester(invocation.getArgument(0, BPStateEvent.class))).when(publisher).notifySubscribers(any());
+        expectedStatus.push(Status.BREAKPOINT);
+        doAnswer(invocation -> onStateChangedTester(invocation.getArgument(0))).when(publisher).notifySubscribers(any());
         expectedState = new BPDebuggerState(new LinkedList<>(), null);
         BProgram bProg = new ResourceBProgram(TEST_FILENAME);
         BProgramSyncSnapshot bProgramSyncSnapshot = bProg.setup();
@@ -102,18 +109,10 @@ public class DebuggerEngineImplTest {
         bProgramSyncSnapshot.start(execSvc);
     }
 
-//    @Test(expected = IllegalArgumentException.class)
-//    public void testSetBreakpointIllegalArgument() {
-//        expectedState = new BPDebuggerState(new LinkedList<>(), null);
-//        BProgram bProg = new ResourceBProgram(TEST_FILENAME);
-//        BProgramSyncSnapshot bProgramSyncSnapshot = bProg.setup();
-//
-//        debuggerEngine.setBreakpoint(50, true);
-//    }
-
     @Test
     public void testSetBreakpointPositive() {
-        doAnswer(invocation -> onStateChangedTester(invocation.getArgument(0, BPStateEvent.class))).when(publisher).notifySubscribers(any());
+        testStatus = false;
+        doAnswer(invocation -> onStateChangedTester(invocation.getArgument(0))).when(publisher).notifySubscribers(any());
         expectedState = new BPDebuggerState(new LinkedList<>(), null);
         BProgram bProg = new ResourceBProgram(TEST_FILENAME);
         BProgramSyncSnapshot bProgramSyncSnapshot = bProg.setup();
@@ -135,7 +134,9 @@ public class DebuggerEngineImplTest {
 
     @Test
     public void testEnvChangedInBreakPoints() throws InterruptedException {
-        doAnswer(invocation -> onStateChangedTester(invocation.getArgument(0, BPStateEvent.class))).when(publisher).notifySubscribers(any());
+        expectedStatus.push(Status.BREAKPOINT);
+        expectedStatus.push(Status.BREAKPOINT);
+        doAnswer(invocation -> onStateChangedTester(invocation.getArgument(0))).when(publisher).notifySubscribers(any());
         expectedState = new BPDebuggerState(new LinkedList<>(), null);
         BProgram bProg = new ResourceBProgram(TEST_FILENAME);
         BProgramSyncSnapshot bProgramSyncSnapshot = bProg.setup();
@@ -191,10 +192,21 @@ public class DebuggerEngineImplTest {
     }
 
 
-    private static Void onStateChangedTester(BPStateEvent bpStateEvent) {
-        assertEquals(debuggerId, bpStateEvent.getDebuggerId());
-        onStateChangedQueue.add(bpStateEvent.getEvent());
+    private <T> Void onStateChangedTester(T event) {
+        if (event instanceof BPStateEvent) {
+            BPStateEvent bpStateEvent = castToMyType(event);
+            assertEquals(debuggerId, bpStateEvent.getDebuggerId());
+            onStateChangedQueue.add(bpStateEvent.getEvent());
+        }
+        else if (testStatus && event instanceof ProgramStatusEvent) {
+            ProgramStatusEvent programStatusEvent = castToMyType(event);
+            assertEquals(expectedStatus.pop(), programStatusEvent.getEvent().getStatus());
+        }
         return null;
+    }
+
+    private <T> T castToMyType(Object object) {
+        return (T) object;
     }
 
 }
