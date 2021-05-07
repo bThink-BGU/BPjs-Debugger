@@ -176,7 +176,7 @@ public class Utils {
         fail("predicate was not satisfied after " + maxToTry + " retries");
     }
 
-    private static void sleep(int timeToSleep) {
+    public static void sleep(int timeToSleep) {
         try {
             double secToSleep = ((double) timeToSleep) / 1000.0;
             System.out.println("sleeping " + secToSleep + " sec");

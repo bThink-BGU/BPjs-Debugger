@@ -185,8 +185,9 @@ public class IDESteps {
     public void waitUntilStatusReached(String username, String status) {
         Status requiredStatus = Status.valueOf(status.toUpperCase());
         waitUntilPredicateSatisfied(() -> requiredStatus.equals(sessionHandler.getUsersStatus(getUserIdByName(username))),
-                500, 3);
+                400, 3);
         sessionHandler.removeUsersStatus(getUserIdByName(username));
+        sleep(800);         // status is received before the state
     }
 
     @Then("(.*) should get optional sync state notification wait events (.*), blocked events (.*), requested events (.*), current event (.*), b-threads info list (.*), and events history (.*)")
@@ -326,7 +327,6 @@ public class IDESteps {
                 assertEquals(expectedValue, actualEnv.get(expectedVariable));
             });
         }
-
     }
 
     private void assertEnvVariables(Map<String, String> actualEnv, int currentBreakpoint, String doubleVars, String stringVars) {
