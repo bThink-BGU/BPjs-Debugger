@@ -7,8 +7,9 @@ import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.service.code.SourceCodeHelper;
 import il.ac.bgu.se.bp.service.notification.NotificationHandler;
 import il.ac.bgu.se.bp.socket.console.ConsoleMessage;
-import il.ac.bgu.se.bp.socket.exit.ProgramStatus;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
+import il.ac.bgu.se.bp.socket.status.ProgramStatus;
+import il.ac.bgu.se.bp.socket.status.Status;
 import il.ac.bgu.se.bp.utils.observer.BPEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -183,7 +184,7 @@ public class SessionHandlerImpl implements SessionHandler<BPJsDebugger<BooleanRe
             return;
         }
         programStatusNotificationHandler.sendNotification(userId, programStatus);
-        if (!programStatus.isRunning()) {
+        if (Status.STOP.equals(programStatus.getStatus())) {
             removeUserPrograms(userId);
         }
     }

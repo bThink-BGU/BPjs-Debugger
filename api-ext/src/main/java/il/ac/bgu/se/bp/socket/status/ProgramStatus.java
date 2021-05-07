@@ -1,4 +1,4 @@
-package il.ac.bgu.se.bp.socket.exit;
+package il.ac.bgu.se.bp.socket.status;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -6,19 +6,20 @@ import java.util.Objects;
 public class ProgramStatus implements Serializable {
     private static final long serialVersionUID = -1206523140785645037L;
 
-    private boolean isRunning;
+    private Status status;
 
-    public ProgramStatus(boolean isRunning) {
-        this.isRunning = isRunning;
+    public ProgramStatus(Status status) {
+        this.status = status;
     }
 
-    public boolean isRunning() {
-        return isRunning;
+    public Status getStatus() {
+        return status;
     }
 
-    public void setRunning(boolean running) {
-        isRunning = running;
+    public void setStatus(Status status) {
+        this.status = status;
     }
+
 
     @Override
     public boolean equals(Object o) {
@@ -29,18 +30,18 @@ public class ProgramStatus implements Serializable {
             return false;
         }
         ProgramStatus that = (ProgramStatus) o;
-        return isRunning == that.isRunning;
+        return status == that.status;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(isRunning);
+        return Objects.hash(status);
     }
 
     @Override
     public String toString() {
         return "ProgramStatus{" +
-                "isRunning=" + isRunning +
+                "status=" + status +
                 '}';
     }
 }

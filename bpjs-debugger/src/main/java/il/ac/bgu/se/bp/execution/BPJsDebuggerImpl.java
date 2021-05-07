@@ -26,6 +26,7 @@ import il.ac.bgu.se.bp.socket.console.ConsoleMessage;
 import il.ac.bgu.se.bp.socket.console.LogType;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
 import il.ac.bgu.se.bp.socket.state.EventInfo;
+import il.ac.bgu.se.bp.socket.status.Status;
 import il.ac.bgu.se.bp.utils.DebuggerBProgramRunnerListener;
 import il.ac.bgu.se.bp.utils.DebuggerPrintStream;
 import il.ac.bgu.se.bp.utils.DebuggerStateHelper;
@@ -40,6 +41,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static il.ac.bgu.se.bp.utils.ProgramStatusHelper.getRunStatusByDebuggerLevel;
 import static il.ac.bgu.se.bp.utils.ResponseHelper.createErrorResponse;
 import static il.ac.bgu.se.bp.utils.ResponseHelper.createSuccessResponse;
 import static java.util.Collections.reverseOrder;
@@ -65,7 +67,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     private int numOfLines;
 
     private final RunnerState state = new RunnerState();
-
+    private final DebuggerLevel debuggerLevel;
     private final SyncSnapshotHolder<BProgramSyncSnapshot, BEvent> syncSnapshotHolder = new SyncSnapshotHolderImpl();
     private final DebuggerStateHelper debuggerStateHelper;
     private final DebuggerPrintStream debuggerPrintStream = new DebuggerPrintStream();
@@ -78,6 +80,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     public BPJsDebuggerImpl(String debuggerId, String filename, DebuggerLevel debuggerLevel) {
         this.debuggerId = debuggerId;
         this.filename = filename;
+        this.debuggerLevel = debuggerLevel;
         debuggerStateHelper = new DebuggerStateHelper(this, syncSnapshotHolder, debuggerLevel);
         initDebugger();
     }
@@ -92,6 +95,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         bpExecutorService = ExecutorServiceMaker.makeWithName(debuggerExecutorId);
         logger = new Logger(BPJsDebuggerImpl.class, debuggerId);
         debuggerEngine = new DebuggerEngineImpl(debuggerId, filename, state, debuggerStateHelper, debuggerExecutorId);
+        debuggerEngine.changeDebuggerLevel(debuggerLevel);
         debuggerPrintStream.setDebuggerId(debuggerId);
         bprog = new ResourceBProgram(filename);
         initListeners(bprog);
@@ -165,7 +169,6 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         debuggerStateHelper.cleanFields();
         debuggerEngine.setSyncSnapshot(syncSnapshot);
         debuggerEngine.onStateChanged();
-//        return nextSync();
         return createSuccessResponse();
     }
 
@@ -207,7 +210,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
 
     @Override
     public DebugResponse startSync(Map<Integer, Boolean> breakpointsMap, boolean isSkipSyncPoints, boolean isSkipBreakpoints, boolean isWaitForExternalEvents) {
-        notifySubscribers(new ProgramStatusEvent(debuggerId, true));
+        notifySubscribers(new ProgramStatusEvent(debuggerId, getRunStatusByDebuggerLevel(debuggerLevel)));
         DebugResponse debugResponse = setup(breakpointsMap, isSkipBreakpoints, isSkipSyncPoints, isWaitForExternalEvents);
         if (debugResponse.isSuccess()) {
             bpExecutorService.execute(this::runStartSync);
@@ -234,6 +237,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
             else {
                 logger.debug("Generate state from startSync");
                 debuggerEngine.onStateChanged();
+                notifySubscribers(new ProgramStatusEvent(debuggerId, Status.SYNCSTATE));
             }
         } catch (InterruptedException e) {
             if (debuggerEngine.isRunning()) {
@@ -277,10 +281,18 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     private boolean runNextSync() {
         logger.info("runNextSync state: {0}", state.getDebuggerState());
 
-        if(!isThereAnyPossibleEvents()){
+        if (!isThereAnyPossibleEvents()){
+            if (!bprog.isWaitForExternalEvents()) {
+                debuggerEngine.onStateChanged();
+                logger.info("Event queue empty, not need to wait to external event. terminating....");
+                listeners.forEach(l -> l.ended(bprog));
+                onExit();
+                return true;
+            }
             nextSyncOnNoPossibleEvents();
         }
         state.setDebuggerState(RunnerState.State.RUNNING);
+        notifySubscribers(new ProgramStatusEvent(debuggerId, getRunStatusByDebuggerLevel(debuggerLevel)));
         EventSelectionStrategy eventSelectionStrategy = bprog.getEventSelectionStrategy();
         Set<BEvent> possibleEvents = eventSelectionStrategy.selectableEvents(syncSnapshot);
 
@@ -335,6 +347,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         }
         else {
             logger.debug("Generate state from nextSync");
+            notifySubscribers(new ProgramStatusEvent(debuggerId, Status.SYNCSTATE));
             debuggerEngine.onStateChanged();
         }
     }
@@ -342,12 +355,6 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     private void nextSyncOnNoPossibleEvents() {
         debuggerEngine.onStateChanged();
         state.setDebuggerState(RunnerState.State.WAITING_FOR_EXTERNAL_EVENT);
-        if (!bprog.isWaitForExternalEvents()) {
-            logger.info("Event queue empty, not need to wait to external event. terminating....");
-            listeners.forEach(l -> l.ended(bprog));
-            onExit();
-            return;
-        }
         try {
             listeners.forEach(l -> l.superstepDone(bprog));
             BEvent next = bprog.takeExternalEvent(); // and now we wait for external event
@@ -372,7 +379,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         if (!jsExecutorService.isTerminated()) {
             forceStopDebugger();
         }
-        notifySubscribers(new ProgramStatusEvent(debuggerId, false));
+        notifySubscribers(new ProgramStatusEvent(debuggerId, Status.STOP));
     }
 
     private void forceStopDebugger() {
@@ -475,7 +482,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         if(this.state.getDebuggerState() == RunnerState.State.WAITING_FOR_EXTERNAL_EVENT ){
             bprog.enqueueExternalEvent(bEvent);
         }
-        else{
+        else {
             List<BEvent> updatedExternals = new ArrayList<>(syncSnapshot.getExternalEvents());
             updatedExternals.add(bEvent);
             syncSnapshot = syncSnapshot.copyWith(updatedExternals);

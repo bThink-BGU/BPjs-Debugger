@@ -2,13 +2,16 @@ package il.ac.bgu.se.bp.debugger.engine;
 
 import il.ac.bgu.cs.bp.bpjs.internal.ExecutorServiceMaker;
 import il.ac.bgu.cs.bp.bpjs.model.BProgramSyncSnapshot;
+import il.ac.bgu.se.bp.debugger.DebuggerLevel;
 import il.ac.bgu.se.bp.debugger.RunnerState;
 import il.ac.bgu.se.bp.debugger.commands.DebuggerCommand;
 import il.ac.bgu.se.bp.debugger.engine.dim.DimHelper;
 import il.ac.bgu.se.bp.debugger.engine.dim.DimHelperImpl;
 import il.ac.bgu.se.bp.debugger.engine.events.BPStateEvent;
+import il.ac.bgu.se.bp.debugger.engine.events.ProgramStatusEvent;
 import il.ac.bgu.se.bp.logger.Logger;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
+import il.ac.bgu.se.bp.socket.status.Status;
 import il.ac.bgu.se.bp.utils.DebuggerStateHelper;
 import il.ac.bgu.se.bp.utils.DebuggerStopException;
 import il.ac.bgu.se.bp.utils.observer.BPEvent;
@@ -23,6 +26,8 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 
+import static il.ac.bgu.se.bp.utils.ProgramStatusHelper.getRunStatusByDebuggerLevel;
+
 public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> {
     private final String filename;
     private final RunnerState state;
@@ -36,11 +41,13 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
     private volatile boolean isRunning;
     private volatile boolean areBreakpointsMuted = false;
     private BProgramSyncSnapshot syncSnapshot = null;
+    private DebuggerLevel debuggerLevel;
 
     private final BlockingQueue<DebuggerCommand> queue = new ArrayBlockingQueue<>(1);
     private Publisher<BPEvent> publisher = new BPEventPublisherImpl();
 
-    public DebuggerEngineImpl(String debuggerId, String filename, RunnerState state, DebuggerStateHelper debuggerStateHelper, String debuggerThreadId) {
+    public DebuggerEngineImpl(String debuggerId, String filename, RunnerState state,
+                              DebuggerStateHelper debuggerStateHelper, String debuggerThreadId) {
         this.filename = filename;
         this.state = state;
         this.debuggerStateHelper = debuggerStateHelper;
@@ -56,6 +63,10 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
         dimHelper = new DimHelperImpl();
         dimHelper.setGuiCallback(this);
         dimHelper.attachTo(ContextFactory.getGlobal());
+    }
+
+    public void changeDebuggerLevel(DebuggerLevel debuggerLevel) {
+        this.debuggerLevel = debuggerLevel;
     }
 
     public void setupBreakpoints(Map<Integer, Boolean> breakpoints) throws IllegalArgumentException {
@@ -74,12 +85,12 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
         verifyState();
         state.setDebuggerState(RunnerState.State.JS_DEBUG);
         lastContextData = stackFrame.contextData();
-
         logger.debug("Get state from enterInterrupt, line number: {0}", stackFrame.getLineNumber());
-        if (areBreakpointsMuted) {
+        if (isMuteBreakpoints()) {
             continueRun();
         }
         else {
+            notifySubscribers(new ProgramStatusEvent(debuggerId, Status.BREAKPOINT));
             onStateChanged();
         }
     }
@@ -159,6 +170,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
 
     @Override
     public void continueRun() {
+        notifySubscribers(new ProgramStatusEvent(debuggerId, getRunStatusByDebuggerLevel(debuggerLevel)));
         dimHelper.go();
     }
 
@@ -196,7 +208,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
 
     @Override
     public boolean isMuteBreakpoints() {
-        return this.areBreakpointsMuted;
+        return areBreakpointsMuted;
     }
 
     @Override

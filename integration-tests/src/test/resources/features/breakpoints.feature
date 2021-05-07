@@ -4,15 +4,15 @@ Feature: Breakpoints
     And <username> has connected to websocket with <sessionId>
     When <username> asks to debug with filename <filename> and toggleMuteBreakpoints <toggleMuteBreakpoints> and toggleMuteSyncPoints <toggleMuteSyncPoints> and toggleWaitForExternalEvent <toggleWaitForExternalEvent> and breakpoints <breakpoints>
     Then The debug response should be true with errorCode null and breakpoints <breakpoints> for user <username>
-    And wait until user <username> has reached breakpoint
+    And wait until user <username> has reached status breakpoint
     And <username> should get breakpoint notification with BThread <bThreadNameByBreakpoint>, doubles <doubleVariables>, strings <stringVariables> and breakpoint lines <breakpoints>
     When <username> clicks on continue
     Then The response should be true with errorCode null
-    And wait until user <username> has reached breakpoint
+    And wait until user <username> has reached status breakpoint
     And <username> should get breakpoint notification with BThread <bThreadNameByBreakpoint>, doubles <doubleVariables>, strings <stringVariables> and breakpoint lines <breakpoints>
     When <username> clicks on continue
     Then The response should be true with errorCode null
-    And wait until user <username> has reached breakpoint
+    And wait until user <username> has reached status breakpoint
     And <username> should get breakpoint notification with BThread <bThreadNameByBreakpoint>, doubles <doubleVariables>, strings <stringVariables> and breakpoint lines <breakpoints>
     And verify all breakpoints of user <username> were reached
 
@@ -27,7 +27,7 @@ Feature: Breakpoints
     And <username> has connected to websocket with <sessionId>
     When <username> asks to debug with filename <filename> and toggleMuteBreakpoints <toggleMuteBreakpoints> and toggleMuteSyncPoints <toggleMuteSyncPoints> and toggleWaitForExternalEvent <toggleWaitForExternalEvent> and breakpoints <breakpoints>
     Then The debug response should be true with errorCode null and breakpoints <breakpoints> for user <username>
-    And wait until user <username> has reached breakpoint
+    And wait until user <username> has reached status breakpoint
     And <username> should get breakpoint notification with BThread <bThreadNameByBreakpoint>, doubles <doubleVariables>, strings <stringVariables> and breakpoint lines <breakpoints>
     When <username> toggles mute breakpoints to true
     Then The response should be true with errorCode null
@@ -56,8 +56,8 @@ Feature: Breakpoints
     When ron asks to debug with filename testFile2 and toggleMuteBreakpoints false and toggleMuteSyncPoints true and toggleWaitForExternalEvent false and breakpoints 4,9,11,30,50,-1,6
     Then The debug response should be true with errorCode null and breakpoints 4,9,11 for user ron
 
-    Then wait until user alex has reached breakpoint
-    And wait until user ron has reached breakpoint
+    Then wait until user alex has reached status breakpoint
+    And wait until user ron has reached status breakpoint
 
     Then alex should get breakpoint notification with BThread {10:bt-world-son}{21:bt-world,bt-world-son}, doubles {10:x=5.0,y=16.7}{21:m=50,n=100,p=150}, strings {10:z=alex} and breakpoint lines 10,21
     And ron should get breakpoint notification with BThread {4:Thread1}{9:Thread2}{11:Thread2}, doubles {4:t=6.0}{9:varT2B=1}{11:varT2B=1}, strings {11:var2=alex} and breakpoint lines 4,9,11
@@ -70,8 +70,8 @@ Feature: Breakpoints
     When tal asks to debug with filename testFile2 and toggleMuteBreakpoints false and toggleMuteSyncPoints true and toggleWaitForExternalEvent false and breakpoints 4,9,11,30,50,-1,6
     Then The debug response should be true with errorCode null and breakpoints 4,9,11 for user tal
 
-    And wait until user avishai has reached breakpoint
-    And wait until user tal has reached breakpoint
+    And wait until user avishai has reached status breakpoint
+    And wait until user tal has reached status breakpoint
 
     Then avishai should get breakpoint notification with BThread {10:bt-world-son}{21:bt-world,bt-world-son}, doubles {10:x=5.0,y=16.7}{21:m=50,n=100,p=150}, strings {10:z=alex} and breakpoint lines 10,21
     And tal should get breakpoint notification with BThread {4:Thread1}{9:Thread2}{11:Thread2}, doubles {4:t=6.0}{9:varT2B=1}{11:varT2B=1}, strings {11:var2=alex} and breakpoint lines 4,9,11
@@ -95,8 +95,8 @@ Feature: Breakpoints
     And wait until program of user tal is over
     And verify user tal has reached only 1 breakpoints
 
-    And wait until user avishai has reached breakpoint
-    And wait until user ron has reached breakpoint
+    And wait until user avishai has reached status breakpoint
+    And wait until user ron has reached status breakpoint
 
     Then avishai should get breakpoint notification with BThread {10:bt-world-son}{21:bt-world,bt-world-son}, doubles {10:x=5.0,y=16.7}{21:m=50,n=100,p=150}, strings {10:z=alex} and breakpoint lines 10,21
     And ron should get breakpoint notification with BThread {4:Thread1}{9:Thread2}{11:Thread2}, doubles {4:t=6.0}{9:varT2B=1}{11:varT2B=1}, strings {11:var2=alex} and breakpoint lines 4,9,11
@@ -106,8 +106,8 @@ Feature: Breakpoints
     When ron clicks on continue
     Then The response should be true with errorCode null
 
-    Then wait until user avishai has reached breakpoint
-    And wait until user ron has reached breakpoint
+    Then wait until user avishai has reached status breakpoint
+    And wait until user ron has reached status breakpoint
 
     Then avishai should get breakpoint notification with BThread {10:bt-world-son}{21:bt-world,bt-world-son}, doubles {10:x=5.0,y=16.7}{21:m=50,n=100,p=150}, strings {10:z=alex} and breakpoint lines 10,21
     And verify all breakpoints of user avishai were reached

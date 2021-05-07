@@ -20,8 +20,8 @@ Feature: Stop & Invalid States
     When ron asks to debug with filename testFile2 and toggleMuteBreakpoints true and toggleMuteSyncPoints false and toggleWaitForExternalEvent false and breakpoints 4,9,11
     Then The debug response should be true with errorCode null and breakpoints 4,9,11 for user ron
 
-    Then wait until user alex has reached breakpoint
-    And wait until user ron has reached sync state
+    Then wait until user alex has reached status breakpoint
+    And wait until user ron has reached status syncstate
 
     Then alex should get breakpoint notification with BThread {10:bt-world-son}{21:bt-world,bt-world-son}, doubles {10:x=5.0,y=16.7}{21:m=50,n=100,p=150}, strings {10:z=alex} and breakpoint lines 10,21
     And ron should get optional sync state notification wait events [blank]|[blank], blocked events [blank]|[blank], requested events [Thread1-EVENT,Thread2-EVENT]|[Thread1-EVENT,Thread2-EVENT], current event [blank]|[blank], b-threads info list {name:Thread1,requested:[Thread1-EVENT]}{name:Thread2,requested:[Thread2-EVENT]}|{name:Thread2,requested:[Thread2-EVENT]}{name:Thread1,requested:[Thread1-EVENT]}, and events history [blank]|[blank]
@@ -34,8 +34,8 @@ Feature: Stop & Invalid States
     When tal asks to debug with filename testFile2 and toggleMuteBreakpoints true and toggleMuteSyncPoints false and toggleWaitForExternalEvent false and breakpoints 4,9,11
     Then The debug response should be true with errorCode null and breakpoints 4,9,11 for user tal
 
-    And wait until user avishai has reached breakpoint
-    And wait until user tal has reached sync state
+    And wait until user avishai has reached status breakpoint
+    And wait until user tal has reached status syncstate
 
     Then avishai should get breakpoint notification with BThread {10:bt-world-son}{21:bt-world,bt-world-son}, doubles {10:x=5.0,y=16.7}{21:m=50,n=100,p=150}, strings {10:z=alex} and breakpoint lines 10,21
     And tal should get optional sync state notification wait events [blank]|[blank], blocked events [blank]|[blank], requested events [Thread1-EVENT,Thread2-EVENT]|[Thread1-EVENT,Thread2-EVENT], current event [blank]|[blank], b-threads info list {name:Thread1,requested:[Thread1-EVENT]}{name:Thread2,requested:[Thread2-EVENT]}|{name:Thread2,requested:[Thread2-EVENT]}{name:Thread1,requested:[Thread1-EVENT]}, and events history [blank]|[blank]
@@ -59,8 +59,8 @@ Feature: Stop & Invalid States
     When ron clicks on next sync
     Then The response should be true with errorCode null
 
-    Then wait until user avishai has reached breakpoint
-    And wait until user ron has reached sync state
+    Then wait until user avishai has reached status breakpoint
+    And wait until user ron has reached status syncstate
 
     Then avishai should get breakpoint notification with BThread {10:bt-world-son}{21:bt-world,bt-world-son}, doubles {10:x=5.0,y=16.7}{21:m=50,n=100,p=150}, strings {10:z=alex} and breakpoint lines 10,21
     Then ron should get optional sync state notification wait events [blank]|[blank], blocked events [blank]|[blank], requested events [Thread2-EVENT]|[Thread1-EVENT], current event [blank]|[blank], b-threads info list {name:Thread2,requested:[Thread2-EVENT]}|{name:Thread1,requested:[Thread1-EVENT]}, and events history [Thread1-EVENT]|[Thread2-EVENT]
@@ -70,8 +70,8 @@ Feature: Stop & Invalid States
     When ron clicks on next sync
     Then The response should be true with errorCode null
 
-    Then wait until user avishai has reached breakpoint
-    And wait until user ron has reached sync state
+    Then wait until user avishai has reached status breakpoint
+    And wait until user ron has reached status syncstate
 
     Then avishai should get breakpoint notification with BThread {10:bt-world-son}{21:bt-world,bt-world-son}, doubles {10:x=5.0,y=16.7}{21:m=50,n=100,p=150}, strings {10:z=alex} and breakpoint lines 10,21
     Then ron should get optional sync state notification wait events [blank]|[blank], blocked events [blank]|[blank], requested events [blank]|[blank], current event [blank]|[blank], b-threads info list [blank]|[blank], and events history [Thread1-EVENT,Thread2-EVENT]|[Thread2-EVENT,Thread1-EVENT]
@@ -86,5 +86,7 @@ Feature: Stop & Invalid States
     When ron clicks on next sync
     Then The response should be true with errorCode null
 
-    Then wait until program of user avishai is over
+    Then wait until user avishai has reached status stop
+    And wait until user ron has reached status stop
+    And wait until program of user avishai is over
     And wait until program of user ron is over
