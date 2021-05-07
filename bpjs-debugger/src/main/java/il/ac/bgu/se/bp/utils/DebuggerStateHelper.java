@@ -114,7 +114,7 @@ public class DebuggerStateHelper {
         List<EventInfo> blockedEvents = blocked.stream().map((e) -> e.equals(none) ? null : new EventInfo(getEventName(e))).filter(Objects::nonNull).collect(Collectors.toList());
         Set<EventInfo> requestedEvents = requested.stream().map((e) -> new EventInfo(getEventName(e))).collect(Collectors.toSet());
         List<EventInfo> externalEvents = syncSnapshot.getExternalEvents().stream()
-                .filter(e -> e.equals(none))
+                .filter(e -> !e.equals(none))
                 .map(e -> new EventInfo(e.getName()))
                 .collect(Collectors.toList());
         if(currentEvent == null)
