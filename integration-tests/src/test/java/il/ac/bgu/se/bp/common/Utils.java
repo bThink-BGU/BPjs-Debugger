@@ -178,7 +178,8 @@ public class Utils {
 
     private static void sleep(int timeToSleep) {
         try {
-            System.out.println("sleeping " + timeToSleep / 1000 + " sec");
+            double secToSleep = ((double) timeToSleep) / 1000.0;
+            System.out.println("sleeping " + secToSleep + " sec");
             Thread.sleep(timeToSleep);
         } catch (InterruptedException e) {
             e.printStackTrace();

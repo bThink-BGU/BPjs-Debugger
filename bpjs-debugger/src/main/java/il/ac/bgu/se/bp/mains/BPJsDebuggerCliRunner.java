@@ -256,14 +256,6 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
             System.out.println(prefix + "==" + menuWrapper + "==" + suffix);
         }
         else {
-//            String enterCommand = " Enter command ";
-//            int whiteSpacesLengthForEnterCommand = (menuWrapper.length() - suffix.length()) / 2;
-//            String whiteSpacesForEnterCommand = generate(() -> "=").limit(whiteSpacesLengthForEnterCommand).collect(joining());
-//            StringBuilder stringBuilder = new StringBuilder()
-//                    .append(prefix).append(whiteSpacesForEnterCommand).append(enterCommand).append(whiteSpacesForEnterCommand).append(suffix).append(newLine)
-
-
-
             String statusStr = " Status: " + status + " ";
             int whiteSpacesLengthForStatus = (menuWrapper.length() - suffix.length()) / 2;
             String whiteSpacesForStatus = generate(() -> "=").limit(whiteSpacesLengthForStatus).collect(joining());
@@ -290,8 +282,8 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
 
     @Override
     public void visit(String userId, ProgramStatus programStatus) {
-        isTerminated = Status.STOP.equals(programStatus.getStatus());
         status = programStatus.getStatus();
+        isTerminated = Status.STOP.equals(status);
         printMenu();
     }
 }
