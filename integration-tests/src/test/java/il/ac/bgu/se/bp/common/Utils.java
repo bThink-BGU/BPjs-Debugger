@@ -187,7 +187,7 @@ public class Utils {
     }
 
     public static String cleanString(String string) {
-        return string.replace("[blank]", "");
+        return StringUtils.isEmpty(string) ? "" : string.replace("[blank]", "");
     }
 
     public static List<BThreadInfo> strToBThreadInfo(String bThreadInfoListStr) {
