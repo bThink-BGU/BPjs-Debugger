@@ -87,7 +87,6 @@ public class ITStompSessionHandler implements StompSessionHandler {
         BPEvent bpEvent = createBPEvent(object);
         assert bpEvent != null;
         bpEvent.accept(usersSessionHandler);
-        System.out.println();
     }
 
     private BPEvent createBPEvent(Object object) {

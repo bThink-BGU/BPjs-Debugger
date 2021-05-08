@@ -50,11 +50,11 @@ public class ExpectedResults {
         bt2Env.put(0, env2);
         Set<EventInfo> requested1= new HashSet<>(), requested2= new HashSet<>(), requested = new HashSet<>();
         requested1.add(new EventInfo("bt-1-event-1"));
-        bThreadInfoList.add(new BThreadInfo("bt-test-1", bt1Env, null, null, requested1));
+        bThreadInfoList.add(new BThreadInfo("bt-test-1", bt1Env, new HashSet<>(), new HashSet<>(), requested1));
         requested2.add(new EventInfo("bt-2-event-1"));
         requested.addAll(requested1);
         requested.addAll(requested2);
-        bThreadInfoList.add(new BThreadInfo("bt-test-2", bt2Env, null, null, requested2));
+        bThreadInfoList.add(new BThreadInfo("bt-test-2", bt2Env, new HashSet<>(), new HashSet<>(), requested2));
         List<EventInfo> emptyEvents = new ArrayList<>();
         return new BPDebuggerState(bThreadInfoList, new EventsStatus(emptyEvents, emptyEvents, requested, new LinkedList<>()));
     }
