@@ -7,8 +7,8 @@ public class BThreadInfo implements Serializable {
 
     private String name;
     private Map<Integer, Map<String, String>> env;
-    private EventInfo wait;
-    private EventInfo blocked;
+    private Set<EventInfo> wait;
+    private Set<EventInfo> blocked;
     private Set<EventInfo> requested;
 
     public BThreadInfo() {
@@ -20,7 +20,7 @@ public class BThreadInfo implements Serializable {
         this.requested = new HashSet<>();
     }
 
-    public BThreadInfo(String name, Map<Integer, Map<String, String>> env, EventInfo wait, EventInfo blocked, Set<EventInfo> requested) {
+    public BThreadInfo(String name, Map<Integer, Map<String, String>> env, Set<EventInfo> wait, Set<EventInfo> blocked, Set<EventInfo> requested) {
         this.name = name;
         this.env = env == null ? new HashMap<>() : env;
         this.wait = wait;
@@ -44,19 +44,19 @@ public class BThreadInfo implements Serializable {
         this.env = env;
     }
 
-    public EventInfo getWait() {
+    public Set<EventInfo> getWait() {
         return wait;
     }
 
-    public void setWait(EventInfo wait) {
+    public void setWait(Set<EventInfo> wait) {
         this.wait = wait;
     }
 
-    public EventInfo getBlocked() {
+    public Set<EventInfo> getBlocked() {
         return blocked;
     }
 
-    public void setBlocked(EventInfo blocked) {
+    public void setBlocked(Set<EventInfo> blocked) {
         this.blocked = blocked;
     }
 

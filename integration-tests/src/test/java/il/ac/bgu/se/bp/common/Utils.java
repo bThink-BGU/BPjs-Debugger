@@ -204,7 +204,7 @@ public class Utils {
                 bThreadInfoDataMap.put(keyAndValue[0], keyAndValue[1]);
             }
             BThreadInfo bThreadInfo = new BThreadInfo(bThreadInfoDataMap.get("name"), null,
-                    toEventInfo(bThreadInfoDataMap.get("wait")), toEventInfo(bThreadInfoDataMap.get("blocked")),
+                    toEventInfoList(strToStringList(bThreadInfoDataMap.get("wait"))), toEventInfoList(strToStringList(bThreadInfoDataMap.get("blocked"))),
                     toEventInfoList(strToStringList(bThreadInfoDataMap.get("requested"))));
             bThreadInfoList.add(bThreadInfo);
         }

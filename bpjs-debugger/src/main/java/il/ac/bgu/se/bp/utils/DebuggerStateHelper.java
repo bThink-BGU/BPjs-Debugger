@@ -92,7 +92,7 @@ public class DebuggerStateHelper {
         Set<BThreadSyncSnapshot> bThreadSyncSnapshots = syncSnapshot.getBThreadSnapshots();
         List<BThreadInfo> bThreadInfoList = bThreadSyncSnapshots
                 .stream()
-                .map(bThreadSyncSnapshot -> createBThreadInfo(bThreadSyncSnapshot, state, lastContextData))
+                .map(bThreadSyncSnapshot -> createBThreadInfo(bThreadSyncSnapshot, state, lastContextData,syncSnapshot))
                 .collect(Collectors.toList());
 
         if (state.getDebuggerState() == RunnerState.State.JS_DEBUG && Context.getCurrentContext() != null) {
@@ -106,10 +106,10 @@ public class DebuggerStateHelper {
 
     private EventsStatus generateEventsStatus(BProgramSyncSnapshot syncSnapshot) {
         Set<SyncStatement> statements = syncSnapshot.getStatements();
-
-        List<EventSet> wait = statements.stream().map(SyncStatement::getWaitFor).collect(Collectors.toList());
-        List<EventSet> blocked = statements.stream().map(SyncStatement::getBlock).collect(Collectors.toList());
         List<BEvent> requested = statements.stream().map(SyncStatement::getRequest).flatMap(Collection::stream).collect(Collectors.toList());
+
+        List<EventSet> wait = statements.stream().map(SyncStatement::getWaitFor).filter(e-> requested.stream().anyMatch(req-> e.contains(req))).collect(Collectors.toList());
+        List<EventSet> blocked = statements.stream().map(SyncStatement::getBlock).filter(e-> requested.stream().anyMatch(req-> e.contains(req))).collect(Collectors.toList());
         List<EventInfo> waitEvents = wait.stream().map((e)-> e.equals(none) ? null : new EventInfo(getEventName(e))).filter(Objects::nonNull).collect(Collectors.toList());
         List<EventInfo> blockedEvents = blocked.stream().map((e) -> e.equals(none) ? null : new EventInfo(getEventName(e))).filter(Objects::nonNull).collect(Collectors.toList());
         Set<EventInfo> requestedEvents = requested.stream().map((e) -> new EventInfo(getEventName(e))).collect(Collectors.toSet());
@@ -182,7 +182,7 @@ public class DebuggerStateHelper {
             return ((BEvent) eventSet).getName();
         else return Objects.toString(eventSet);
     }
-    private BThreadInfo createBThreadInfo(BThreadSyncSnapshot bThreadSS, RunnerState state, Dim.ContextData lastContextData) {
+    private BThreadInfo createBThreadInfo(BThreadSyncSnapshot bThreadSS, RunnerState state, Dim.ContextData lastContextData,BProgramSyncSnapshot syncSnapshot) {
         try {
             Scriptable scope = bThreadSS.getScope();
             Object implementation = getValue(scope, "implementation");
@@ -190,12 +190,20 @@ public class DebuggerStateHelper {
             Map<Integer, Map<String, String>> env = state == null ? null :
                     (state.getDebuggerState() == RunnerState.State.JS_DEBUG && Context.getCurrentContext() != null) ? getEnvDebug(implementation, lastContextData, bThreadSS.getName()) :
                             getEnv(implementation, debuggerFrame != null ? debuggerFrame.contextData() : null);
+
+            Set<SyncStatement> statements = syncSnapshot.getStatements();
+            List<BEvent> allRequestedBEvents = statements.stream().map(SyncStatement::getRequest).flatMap(Collection::stream).collect(Collectors.toList());
+
             EventSet waitFor = bThreadSS.getSyncStatement().getWaitFor();
-            EventInfo waitEvent = waitFor.equals(none) ? null : new EventInfo(getEventName(waitFor));
             EventSet blocked = bThreadSS.getSyncStatement().getBlock();
-            EventInfo blockedEvent = blocked.equals(none) ? null : new EventInfo(getEventName(blocked));
+            Set<BEvent> waitBEvents =  allRequestedBEvents.stream().filter(req-> waitFor.contains(req)).collect(Collectors.toSet());
+            Set<BEvent> blockedBEvents =  allRequestedBEvents.stream().filter(req-> blocked.contains(req)).collect(Collectors.toSet());
+
+            Set<EventInfo> waitEvents = waitBEvents.stream().map((e)-> e.equals(none) ? null : new EventInfo(getEventName(e))).filter(Objects::nonNull).collect(Collectors.toSet());
+            Set<EventInfo> blockedEvents = blockedBEvents.stream().map((e)-> e.equals(none) ? null : new EventInfo(getEventName(e))).filter(Objects::nonNull).collect(Collectors.toSet());
             Set<EventInfo> requested = new ArrayList<>(bThreadSS.getSyncStatement().getRequest()).stream().map((r) -> new EventInfo(r.getName())).collect(Collectors.toSet());
-            return new BThreadInfo(bThreadSS.getName(), env, waitEvent, blockedEvent, requested);
+
+            return new BThreadInfo(bThreadSS.getName(), env, waitEvents, blockedEvents, requested);
         } catch (Exception e) {
             logger.error("failed to create BThread info, e: {0}", e, e.getMessage());
         }
