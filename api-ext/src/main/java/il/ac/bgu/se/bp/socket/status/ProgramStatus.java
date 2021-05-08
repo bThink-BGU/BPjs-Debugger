@@ -8,6 +8,9 @@ public class ProgramStatus implements Serializable {
 
     private Status status;
 
+    public ProgramStatus() {
+    }
+
     public ProgramStatus(Status status) {
         this.status = status;
     }

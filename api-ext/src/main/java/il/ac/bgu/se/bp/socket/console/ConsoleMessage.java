@@ -9,6 +9,8 @@ public class ConsoleMessage implements Serializable {
     private String message;
     private LogType type;
 
+    public ConsoleMessage() {}
+
     public ConsoleMessage(String message, LogType type) {
         this.message = message;
         this.type = type;

@@ -1,7 +1,7 @@
 package il.ac.bgu.se.bp.steps;
 
 import il.ac.bgu.se.bp.config.IDECommonTestConfiguration;
-import il.ac.bgu.se.bp.mocks.SessionHandlerMock;
+import il.ac.bgu.se.bp.mocks.session.ITSessionManager;
 import il.ac.bgu.se.bp.mocks.testService.TestService;
 import il.ac.bgu.se.bp.rest.request.DebugRequest;
 import il.ac.bgu.se.bp.rest.request.ToggleBreakpointsRequest;
@@ -41,14 +41,7 @@ public class IDESteps {
     private TestService testService;
 
     @Autowired
-    private SessionHandlerMock sessionHandler;
-
-    private final static String END_OF_EXECUTION_INDICATOR_MESSAGE = "Ended";
-
-//    @Given("the current user is (.*)")
-//    public void theCurrentUserIsUserId(String userId) {
-//        activeUserId = userId;
-//    }
+    private ITSessionManager itSessionManager;
 
     @Given("user (.*) has connected with userId (.*)")
     public void userUserHasConnectedWithUserIdUserId(String userName, String userId) {
@@ -66,7 +59,7 @@ public class IDESteps {
 
     @When("(.*) asks to debug with filename (.*) and toggleMuteBreakpoints (.*) and toggleMuteSyncPoints (.*) and toggleWaitForExternalEvent (.*) and breakpoints (.*)")
     public void userAsksToDebugWithFilenameAndToggleMuteBreakpointsAndToggleMuteSyncPointsAndBreakpoints(String username, String filename, String toggleMuteBreakpoints, String toggleMuteSyncPoints, String toggleWaitForExternalEvent, String breakpoints) {
-        sessionHandler.cleanUserMockData(getUserIdByName(username));
+        itSessionManager.cleanUserMockData(getUserIdByName(username));
 
         DebugRequest debugRequest = new DebugRequest(getCodeByFileName(filename), strToIntList(breakpoints));
         debugRequest.setSkipBreakpointsToggle(strToBoolean(toggleMuteBreakpoints));
@@ -78,7 +71,7 @@ public class IDESteps {
 
     @When("(.*) clicks on (.*)")
     public void userClicksOnCommand(String username, String command) {
-        sessionHandler.cleanUserMockData(getUserIdByName(username));
+        itSessionManager.cleanUserMockData(getUserIdByName(username));
         applyCommandByUser(username, command);
     }
 
@@ -121,7 +114,7 @@ public class IDESteps {
 
     @Then("wait until program of user (.*) is over")
     public void waitUntilTheProgramIsOver(String username) {
-        waitUntilPredicateSatisfied(() -> sessionHandler.isUserFinishedRunning(getUserIdByName(username)), 500, 3);
+        waitUntilPredicateSatisfied(() -> itSessionManager.isUserFinishedRunning(getUserIdByName(username)), 500, 3);
     }
 
     @Then("The response should be (.*) with errorCode (.*)")
@@ -184,9 +177,9 @@ public class IDESteps {
     @Then("wait until user (.*) has reached status (.*)")
     public void waitUntilStatusReached(String username, String status) {
         Status requiredStatus = Status.valueOf(status.toUpperCase());
-        waitUntilPredicateSatisfied(() -> requiredStatus.equals(sessionHandler.getUsersStatus(getUserIdByName(username))),
+        waitUntilPredicateSatisfied(() -> requiredStatus.equals(itSessionManager.getUsersStatus(getUserIdByName(username))),
                 400, 3);
-        sessionHandler.removeUsersStatus(getUserIdByName(username));
+        itSessionManager.removeUsersStatus(getUserIdByName(username));
         sleep(800);         // status is received before the state
     }
 
@@ -226,7 +219,7 @@ public class IDESteps {
         EventInfo expectedCurrentEvent = expectedCurrentEventName.isEmpty() ? null : new EventInfo(expectedCurrentEventName);
         List<BThreadInfo> expectedBThreadInfoList = strToBThreadInfo(bThreadInfoListStr);
 
-        BPDebuggerState actualDebuggerState = sessionHandler.getUsersLastDebuggerState(getUserIdByName(username));
+        BPDebuggerState actualDebuggerState = itSessionManager.getUsersLastDebuggerState(getUserIdByName(username));
         EventsStatus actualEventsStatus = actualDebuggerState.getEventsStatus();
 
         assertEventInfoEquals(expectedWaitEvents, actualEventsStatus.getWait());
@@ -285,7 +278,7 @@ public class IDESteps {
 
     @Then("(.*) should get breakpoint notification with BThread (.*), doubles (.*), strings (.*) and breakpoint lines (.*)")
     public void userShouldGetNotificationWithDoubleVariablesAndStringVariables(String username, String bThreads, String doubleVars, String stringVars, String breakpointsStr) {
-        BPDebuggerState lastDebuggerState = sessionHandler.getUsersLastDebuggerState(getUserIdByName(username));
+        BPDebuggerState lastDebuggerState = itSessionManager.getUsersLastDebuggerState(getUserIdByName(username));
         assertNotNull("BPDebuggerState was not received for user: " + username, lastDebuggerState);
 
         List<Integer> breakpoints = strToIntList(breakpointsStr);
@@ -299,7 +292,7 @@ public class IDESteps {
     @Then("(.*) should get notification with BThread (.*) on line (.*), envs (.*) and breakpoint lines (.*)")
     public void userShouldGetBreakpointNotificationWithDoubleVariablesAndStringVariables(String username, String bThread, String currentLine,
                                                                                          String envsStr, String breakpointsStr) {
-        BPDebuggerState lastDebuggerState = sessionHandler.getUsersLastDebuggerState(getUserIdByName(username));
+        BPDebuggerState lastDebuggerState = itSessionManager.getUsersLastDebuggerState(getUserIdByName(username));
         assertNotNull("BPDebuggerState was not received for user: " + username, lastDebuggerState);
 
         List<Integer> breakpoints = strToIntList(breakpointsStr);

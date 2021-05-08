@@ -476,10 +476,10 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         if (StringUtils.isEmpty(externalEvent)) {
             return createErrorResponse(ErrorCode.INVALID_EVENT);
         }
-        logger.info("Adding external event: {0} , debugger state: {1}",externalEvent, this.state.getDebuggerState());
+        logger.info("Adding external event: {0} , debugger state: {1}",externalEvent, state.getDebuggerState());
         BEvent bEvent = new BEvent(externalEvent);
 
-        if(this.state.getDebuggerState() == RunnerState.State.WAITING_FOR_EXTERNAL_EVENT ){
+        if (state.getDebuggerState() == RunnerState.State.WAITING_FOR_EXTERNAL_EVENT){
             bprog.enqueueExternalEvent(bEvent);
         }
         else {
@@ -489,9 +489,8 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
             debuggerEngine.setSyncSnapshot(syncSnapshot);
             debuggerEngine.onStateChanged();
         }
-        if(this.state.getDebuggerState() != RunnerState.State.WAITING_FOR_EXTERNAL_EVENT  && this.state.getDebuggerState() != RunnerState.State.SYNC_STATE )
+        if (state.getDebuggerState() != RunnerState.State.WAITING_FOR_EXTERNAL_EVENT && state.getDebuggerState() != RunnerState.State.SYNC_STATE )
             bprog.enqueueExternalEvent(bEvent);
-
 
         return createSuccessResponse();
     }

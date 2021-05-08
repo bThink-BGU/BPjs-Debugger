@@ -1,4 +1,4 @@
-package il.ac.bgu.se.bp.mocks;
+package il.ac.bgu.se.bp.mocks.session;
 
 import il.ac.bgu.se.bp.service.manage.SessionHandlerImpl;
 import il.ac.bgu.se.bp.socket.console.ConsoleMessage;
@@ -11,18 +11,28 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public class SessionHandlerMock extends SessionHandlerImpl {
+public class ITSessionManagerImpl extends SessionHandlerImpl implements ITSessionManager {
     private ConcurrentMap<String, List<BPDebuggerState>> debuggerStatesPerUser = new ConcurrentHashMap<>();
     private ConcurrentMap<String, List<ConsoleMessage>> consoleMessagesPerUser = new ConcurrentHashMap<>();
     private ConcurrentMap<String, Status> usersStatus = new ConcurrentHashMap<>();
 
     @Override
     public void visit(String userId, BPDebuggerState debuggerState) {
+        addDebuggerState(userId, debuggerState);
+    }
+
+    @Override
+    public void addDebuggerState(String userId, BPDebuggerState debuggerState) {
         debuggerStatesPerUser.get(userId).add(debuggerState);
     }
 
     @Override
     public void visit(String userId, ConsoleMessage consoleMessage) {
+        addConsoleMessage(userId, consoleMessage);
+    }
+
+    @Override
+    public void addConsoleMessage(String userId, ConsoleMessage consoleMessage) {
         consoleMessagesPerUser.get(userId).add(consoleMessage);
     }
 
@@ -30,6 +40,11 @@ public class SessionHandlerMock extends SessionHandlerImpl {
     public void visit(String userId, ProgramStatus programStatus) {
         super.visit(userId, programStatus);
         Status userStatus = programStatus.getStatus();
+        addUserStatus(userId, userStatus);
+    }
+
+    @Override
+    public void addUserStatus(String userId, Status userStatus) {
         if (Status.DEBUG.equals(userStatus)) {
             debuggerStatesPerUser.put(userId, new LinkedList<>());
             consoleMessagesPerUser.put(userId, new LinkedList<>());
@@ -41,7 +56,8 @@ public class SessionHandlerMock extends SessionHandlerImpl {
         usersStatus.put(userId, userStatus);
     }
 
-    public Boolean isUserFinishedRunning(String userId) {
+    @Override
+    public boolean isUserFinishedRunning(String userId) {
         return !debuggerStatesPerUser.containsKey(userId) && !consoleMessagesPerUser.containsKey(userId);
     }
 
@@ -50,24 +66,27 @@ public class SessionHandlerMock extends SessionHandlerImpl {
         consoleMessagesPerUser.clear();
     }
 
+    @Override
     public void cleanUserMockData(String userId) {
         debuggerStatesPerUser.getOrDefault(userId, new LinkedList<>()).clear();
         consoleMessagesPerUser.getOrDefault(userId, new LinkedList<>()).clear();
     }
 
-
     public List<BPDebuggerState> getUsersDebuggerStates(String userId) {
         return debuggerStatesPerUser.get(userId);
     }
 
+    @Override
     public BPDebuggerState getUsersLastDebuggerState(String userId) {
         return getLastIfNotEmpty(getUsersDebuggerStates(userId));
     }
 
+    @Override
     public Status getUsersStatus(String userId) {
         return usersStatus.get(userId);
     }
 
+    @Override
     public void removeUsersStatus(String userId) {
         usersStatus.remove(userId);
     }
