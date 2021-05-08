@@ -1,9 +1,8 @@
 package il.ac.bgu.se.bp.config;
 
+import il.ac.bgu.se.bp.mocks.session.ITSessionManagerImpl;
 import il.ac.bgu.se.bp.mocks.testService.RestServiceTestHelper;
 import il.ac.bgu.se.bp.mocks.testService.TestService;
-import il.ac.bgu.se.bp.service.manage.SessionHandler;
-import il.ac.bgu.se.bp.service.manage.SessionHandlerImpl;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -13,12 +12,12 @@ import org.springframework.context.annotation.Profile;
 public class IDEPostDeploymentConfiguration {
 
     @Bean
-    TestService serviceTestHelper() {
-        return new RestServiceTestHelper();
+    ITSessionManagerImpl sessionHandler() {
+        return new ITSessionManagerImpl();
     }
 
     @Bean
-    SessionHandler sessionHandler() {
-        return new SessionHandlerImpl();
+    TestService serviceTestHelper(ITSessionManagerImpl sessionHandler) {
+        return new RestServiceTestHelper(sessionHandler);
     }
 }

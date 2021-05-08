@@ -166,8 +166,7 @@ public class SessionHandlerImpl implements SessionHandler<BPJsDebugger<BooleanRe
         if (!validateUserId(userId)) {
             return;
         }
-        logger.debug(gson.toJson(debuggerState));
-        stateNotificationHandler.sendNotification(userId, gson.toJson(debuggerState));
+        stateNotificationHandler.sendNotification(userId, debuggerState);
     }
 
     @Override
