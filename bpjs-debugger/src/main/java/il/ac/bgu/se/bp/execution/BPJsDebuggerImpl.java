@@ -253,6 +253,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
             }
         } catch (RejectedExecutionException e) {
             logger.error("Forced to stop");
+            onExit();
             return createErrorResponse(ErrorCode.BP_SETUP_FAIL);
         } catch (Exception e) {
             logger.error("runStartSync failed, error: {0}", e.getMessage());
@@ -317,7 +318,6 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         } catch (InterruptedException e) {
             if (debuggerEngine.isRunning()) {
                 logger.error("runNextSync: got InterruptedException in nextSync");
-                onExit();
                 return false;
             }
         } catch (Exception e) {
