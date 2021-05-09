@@ -113,10 +113,15 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         if (!isBProgSetup) { // may get twice to setup - must do bprog setup first time only
             listeners.forEach(l -> l.starting(bprog));
             syncSnapshot = awaitForExecutorServiceToFinishTask(bprog::setup);
+            if (syncSnapshot == null) {
+                onExit();
+                return new DebugResponse(false, ErrorCode.BP_SETUP_FAIL, new boolean[0]);
+            }
             bprog.setLoggerOutputStreamer(debuggerPrintStream);
             syncSnapshot.getBThreadSnapshots().forEach(sn -> listeners.forEach(l -> l.bthreadAdded(bprog, sn)));
             isBProgSetup = true;
             if (syncSnapshot.getFailedAssertion() != null) {
+                onExit();
                 return new DebugResponse(false, ErrorCode.BP_SETUP_FAIL, new boolean[0]);
             }
         }
@@ -225,6 +230,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
             syncSnapshot = syncSnapshot.start(jsExecutorService);
             if (!syncSnapshot.isStateValid()) {
                 onInvalidStateError("Start sync fatal error");
+                onExit();
                 return createErrorResponse(ErrorCode.BP_SETUP_FAIL);
             }
             state.setDebuggerState(RunnerState.State.SYNC_STATE);
@@ -242,6 +248,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         } catch (InterruptedException e) {
             if (debuggerEngine.isRunning()) {
                 logger.warning("got InterruptedException in startSync");
+                onExit();
                 return createErrorResponse(ErrorCode.BP_SETUP_FAIL);
             }
         } catch (RejectedExecutionException e) {
@@ -310,6 +317,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         } catch (InterruptedException e) {
             if (debuggerEngine.isRunning()) {
                 logger.error("runNextSync: got InterruptedException in nextSync");
+                onExit();
                 return false;
             }
         } catch (Exception e) {
