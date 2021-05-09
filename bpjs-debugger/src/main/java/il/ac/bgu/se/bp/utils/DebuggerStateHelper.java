@@ -361,11 +361,12 @@ public class DebuggerStateHelper {
     private Object collectJsValue(Object jsValue) {
         if (jsValue == null) {
             return null;
-
         }
         else if (jsValue instanceof NativeFunction) {
-            return ((NativeFunction) jsValue).getEncodedSource();
-
+            return ((NativeFunction) jsValue).getTypeOf();
+        }
+        else if (jsValue instanceof ArrowFunction) {
+            return ((ArrowFunction) jsValue).getTypeOf();
         }
         else if (jsValue instanceof NativeArray) {
             NativeArray jsArr = (NativeArray) jsValue;
@@ -374,7 +375,6 @@ public class DebuggerStateHelper {
                 retVal.add(collectJsValue(jsArr.get(idx)));
             }
             return retVal;
-
         }
         else if (jsValue instanceof ScriptableObject) {
             ScriptableObject jsObj = (ScriptableObject) jsValue;
@@ -383,22 +383,17 @@ public class DebuggerStateHelper {
                 retVal.put(key, collectJsValue(jsObj.get(key)));
             }
             return retVal;
-
         }
         else if (jsValue instanceof ConsString) {
             return ((ConsString) jsValue).toString();
-
         }
         else if (jsValue instanceof NativeJavaObject) {
             NativeJavaObject jsJavaObj = (NativeJavaObject) jsValue;
-            Object obj = jsJavaObj.unwrap();
-            return obj;
-
+            return jsJavaObj.unwrap();
         }
         else {
             return jsValue;
         }
-
     }
 
     public void setRecentlyRegisteredBThreads(Set<Pair<String, Object>> recentlyRegistered) {
