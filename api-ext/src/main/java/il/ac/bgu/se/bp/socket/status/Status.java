@@ -5,5 +5,6 @@ public enum Status {
     DEBUG,
     BREAKPOINT,
     SYNCSTATE,
+    WAITING_FOR_EXTERNAL_EVENT,
     STOP
 }

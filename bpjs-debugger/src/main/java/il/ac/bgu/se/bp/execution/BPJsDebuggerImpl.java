@@ -363,6 +363,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     private void nextSyncOnNoPossibleEvents() {
         debuggerEngine.onStateChanged();
         state.setDebuggerState(RunnerState.State.WAITING_FOR_EXTERNAL_EVENT);
+        notifySubscribers(new ProgramStatusEvent(debuggerId, Status.WAITING_FOR_EXTERNAL_EVENT));
         try {
             listeners.forEach(l -> l.superstepDone(bprog));
             BEvent next = bprog.takeExternalEvent(); // and now we wait for external event
