@@ -4,6 +4,7 @@ import il.ac.bgu.se.bp.config.IDECommonTestConfiguration;
 import il.ac.bgu.se.bp.mocks.session.ITSessionManager;
 import il.ac.bgu.se.bp.mocks.testService.TestService;
 import il.ac.bgu.se.bp.rest.request.DebugRequest;
+import il.ac.bgu.se.bp.rest.request.SetSyncSnapshotRequest;
 import il.ac.bgu.se.bp.rest.request.ToggleBreakpointsRequest;
 import il.ac.bgu.se.bp.rest.request.ToggleSyncStatesRequest;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
@@ -68,6 +69,42 @@ public class IDESteps {
 
         lastDebugResponse = testService.debug(getUserIdByName(username), debugRequest);
     }
+
+    @When("(.*) sets sync snapshot, before the first event selection")
+    public void userClicksOnSetSyncSnapshotToTheTimeTheFirstEventWasSelected(String username) {
+        BPDebuggerState actualDebuggerState = itSessionManager.getUsersLastDebuggerState(getUserIdByName(username));
+        LinkedList<Long> timestamps = new LinkedList<>(actualDebuggerState.getEventsHistory().keySet());
+        Long snapShotTime = timestamps.get(timestamps.size() - 1);
+        setSyncSnapShot(username, "first event", snapShotTime);
+    }
+
+    @When("(.*) sets sync snapshot, to the time event (.*) was chosen")
+    public void userClicksOnSetSyncSnapshotByEventName(String username, String eventName) {
+        BPDebuggerState actualDebuggerState = itSessionManager.getUsersLastDebuggerState(getUserIdByName(username));
+
+        Long snapShotTime = null;
+        for (Map.Entry<Long, EventInfo> entry : actualDebuggerState.getEventsHistory().entrySet()) {
+            Long time = entry.getKey();
+            EventInfo eventInfo = entry.getValue();
+            if (eventInfo.getName().equals(eventName)) {
+                snapShotTime = time;
+                break;
+            }
+        }
+
+        setSyncSnapShot(username, eventName, snapShotTime);
+    }
+
+    private void setSyncSnapShot(String username, String eventName, Long snapShotTime) {
+        if (snapShotTime == null) {
+            fail(eventName + " was not found, cannot set sync snapshot to the this event was selected");
+        }
+
+        SetSyncSnapshotRequest setSyncSnapshotRequest = new SetSyncSnapshotRequest();
+        setSyncSnapshotRequest.setSnapShotTime(snapShotTime);
+        lastResponse = testService.setSyncSnapshot(getUserIdByName(username), setSyncSnapshotRequest);
+    }
+
 
     @When("(.*) clicks on (.*)")
     public void userClicksOnCommand(String username, String command) {
