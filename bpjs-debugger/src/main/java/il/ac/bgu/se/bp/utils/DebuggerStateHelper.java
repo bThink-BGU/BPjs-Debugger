@@ -83,7 +83,6 @@ public class DebuggerStateHelper {
             boolean[] breakpoints = getBreakpoints(sourceInfo);
             return new BPDebuggerState(bThreadInfoList, eventsStatus, eventsHistory, currentRunningBT, lineNumber,debuggerConfigs, ArrayUtils.toObject(breakpoints), globalEnv);
         }
-
         return new BPDebuggerState(new LinkedList<>(), new EventsStatus(), eventsHistory, currentRunningBT, null,debuggerConfigs, new Boolean[0], globalEnv);
     }
 
@@ -227,12 +226,14 @@ public class DebuggerStateHelper {
 
             EventSet waitFor = bThreadSS.getSyncStatement().getWaitFor();
             EventSet blocked = bThreadSS.getSyncStatement().getBlock();
-            if(!state.equals(RunnerState.State.JS_DEBUG))
+            if (!RunnerState.State.JS_DEBUG.equals(state.getDebuggerState())) {
                 Context.enter();
+            }
             Set<BEvent> waitBEvents =  allRequestedBEvents.stream().filter(req-> waitFor.contains(req)).collect(Collectors.toSet());
             Set<BEvent> blockedBEvents =  allRequestedBEvents.stream().filter(req-> blocked.contains(req)).collect(Collectors.toSet());
-            if(!state.equals(RunnerState.State.JS_DEBUG))
+            if (!RunnerState.State.JS_DEBUG.equals(state.getDebuggerState())) {
                 Context.exit();
+            }
             Set<EventInfo> waitEvents = waitBEvents.stream().map((e)-> e.equals(none) ? null : new EventInfo(getEventName(e))).filter(Objects::nonNull).collect(Collectors.toSet());
             Set<EventInfo> blockedEvents = blockedBEvents.stream().map((e)-> e.equals(none) ? null : new EventInfo(getEventName(e))).filter(Objects::nonNull).collect(Collectors.toSet());
             Set<EventInfo> requested = new ArrayList<>(bThreadSS.getSyncStatement().getRequest()).stream().map((r) -> new EventInfo(r.getName())).collect(Collectors.toSet());
