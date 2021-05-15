@@ -1,7 +1,10 @@
 bp.registerBThread('bt-world', function () {
     var myvar1 = {a: 10,b: 20};
     var myvar2 = 20;
+
     bp.registerBThread('bt-world-son', function () {
+        const dynamic_son_recently_var = 20;
+        const dynamic_son_recently_var_2 = 30;
         bp.sync({ request: bp.Event('son-e') });
         var myvar1 = 10;
         var myvar2 = 20;
@@ -18,6 +21,7 @@ bp.registerBThread('bt-world', function () {
 function foo(bt) {
     var m = 50;
     var n = 100;
+    bp.sync({ request: bp.Event('EventInFoo') });
     var p = m + n;
     goo()
     const t = 200
