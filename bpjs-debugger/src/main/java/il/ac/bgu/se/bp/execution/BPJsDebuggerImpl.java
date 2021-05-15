@@ -113,12 +113,12 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         logger.info("setup isSkipBreakpoints: {0}, isSkipSyncPoints: {1}, isWaitForExternalEvents: {2}", isSkipSyncPoints, isSkipBreakpoints, isWaitForExternalEvents);
         if (!isBProgSetup) { // may get twice to setup - must do bprog setup first time only
             listeners.forEach(l -> l.starting(bprog));
+            bprog.setLoggerOutputStreamer(debuggerPrintStream);
             syncSnapshot = awaitForExecutorServiceToFinishTask(bprog::setup);
             if (syncSnapshot == null) {
                 onExit();
                 return new DebugResponse(false, ErrorCode.BP_SETUP_FAIL, new boolean[0]);
             }
-            bprog.setLoggerOutputStreamer(debuggerPrintStream);
             syncSnapshot.getBThreadSnapshots().forEach(sn -> listeners.forEach(l -> l.bthreadAdded(bprog, sn)));
             isBProgSetup = true;
             if (syncSnapshot.getFailedAssertion() != null) {
