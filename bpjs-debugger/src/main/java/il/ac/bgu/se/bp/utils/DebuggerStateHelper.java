@@ -73,15 +73,28 @@ public class DebuggerStateHelper {
         SortedMap<Long, EventInfo> eventsHistory = generateEventsHistory(INITIAL_INDEX_FOR_EVENTS_HISTORY_ON_SYNC_STATE, FINAL_INDEX_FOR_EVENTS_HISTORY_ON_SYNC_STATE);
         DebuggerConfigs debuggerConfigs = generateDebuggerConfigs(bpJsDebugger);
 
+        Map<String, String> globalEnv = getGlobalEnv(syncSnapshot);
         if(debuggerLevel.getLevel() > DebuggerLevel.LIGHT.getLevel()){
             List<BThreadInfo> bThreadInfoList = generateBThreadInfos(syncSnapshot, state, lastContextData);
             EventsStatus eventsStatus = generateEventsStatus(syncSnapshot,state);
             Integer lineNumber = lastContextData == null ? null : lastContextData.frameCount() > 0 ? lastContextData.getFrame(0).getLineNumber() : null;
             boolean[] breakpoints = getBreakpoints(sourceInfo);
-            return new BPDebuggerState(bThreadInfoList, eventsStatus, eventsHistory, currentRunningBT, lineNumber,debuggerConfigs, ArrayUtils.toObject(breakpoints));
+            return new BPDebuggerState(bThreadInfoList, eventsStatus, eventsHistory, currentRunningBT, lineNumber,debuggerConfigs, ArrayUtils.toObject(breakpoints), globalEnv);
         }
 
-        return new BPDebuggerState(new LinkedList<>(), new EventsStatus(), eventsHistory, currentRunningBT, null,debuggerConfigs, new Boolean[0]);
+        return new BPDebuggerState(new LinkedList<>(), new EventsStatus(), eventsHistory, currentRunningBT, null,debuggerConfigs, new Boolean[0], globalEnv);
+    }
+
+    private Map<String, String> getGlobalEnv(BProgramSyncSnapshot syncSnapshot) {
+        Map<String, String> globalEnv = new LinkedHashMap<>();
+
+        Object[] ids = Arrays.stream(  syncSnapshot.getBProgram().getGlobalScope().getIds()).filter((p) -> !p.toString().equals("bp") ).toArray();
+        for (Object id : ids) {
+            Object jsValue = collectJsValue(syncSnapshot.getBProgram().getFromGlobalScope(id.toString(), Object.class).get());
+            String var_value = getVarGsonValue(jsValue);
+            globalEnv.put(id.toString(), var_value);
+        }
+        return globalEnv;
     }
 
     private DebuggerConfigs generateDebuggerConfigs(BPJsDebugger bpJsDebugger) {

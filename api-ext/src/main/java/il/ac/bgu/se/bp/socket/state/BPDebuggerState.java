@@ -13,18 +13,21 @@ public class BPDebuggerState implements Serializable {
     private Integer currentLineNumber;
     private DebuggerConfigs debuggerConfigs;
     private Boolean[] breakpoints;
+    private Map<String, String> globalEnv;
 
 
     public BPDebuggerState() {
         this.bThreadInfoList = new ArrayList<>();
         this.eventsStatus = new EventsStatus(new ArrayList<>(), new ArrayList<>(), new HashSet<>() , new LinkedList<>());
         this.eventsHistory = new TreeMap<>();
+        this.globalEnv = new LinkedHashMap<>();
     }
 
     public BPDebuggerState(List<BThreadInfo> bThreadInfoList, EventsStatus eventsStatus) {
         this.bThreadInfoList = bThreadInfoList;
         this.eventsStatus = eventsStatus;
         this.eventsHistory = new TreeMap<>();
+        this.globalEnv = new LinkedHashMap<>();
     }
 
     public BPDebuggerState(List<BThreadInfo> bThreadInfoList, EventsStatus eventsStatus , SortedMap<Long,EventInfo> eventsHistory, String currentRunningBT, Integer currentLineNumber) {
@@ -33,9 +36,10 @@ public class BPDebuggerState implements Serializable {
         this.eventsHistory = eventsHistory;
         this.currentRunningBT = currentRunningBT;
         this.currentLineNumber = currentLineNumber;
+        this.globalEnv = new LinkedHashMap<>();
     }
 
-    public BPDebuggerState(List<BThreadInfo> bThreadInfoList, EventsStatus eventsStatus , SortedMap<Long,EventInfo> eventsHistory, String currentRunningBT, Integer currentLineNumber, DebuggerConfigs debuggerConfigs, Boolean[] breakpoints) {
+    public BPDebuggerState(List<BThreadInfo> bThreadInfoList, EventsStatus eventsStatus , SortedMap<Long,EventInfo> eventsHistory, String currentRunningBT, Integer currentLineNumber, DebuggerConfigs debuggerConfigs, Boolean[] breakpoints, Map<String, String> globalEnv) {
         this.bThreadInfoList = bThreadInfoList;
         this.eventsStatus = eventsStatus;
         this.eventsHistory = eventsHistory;
@@ -43,7 +47,17 @@ public class BPDebuggerState implements Serializable {
         this.currentLineNumber = currentLineNumber;
         this.debuggerConfigs = debuggerConfigs;
         this.breakpoints = breakpoints;
+        this.globalEnv= globalEnv;
     }
+
+    public Map<String, String> getGlobalEnv() {
+        return globalEnv;
+    }
+
+    public void setGlobalEnv(Map<String, String> globalEnv) {
+        this.globalEnv = globalEnv;
+    }
+
     public String getCurrentRunningBT() {
         return currentRunningBT;
     }
@@ -130,6 +144,7 @@ public class BPDebuggerState implements Serializable {
                 .append("\n")
                 .append("\tdebuggerConfigs:\n").append(debuggerConfigs.toString())
                 .append("\n")
+                .append("globalEnv: ").append(globalEnv)
                 .append("\t breakpoints:");
                 s.append(Arrays.toString(breakpoints))
                         .append("\n")

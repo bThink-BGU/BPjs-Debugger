@@ -1,3 +1,7 @@
+const global_var = 50
+const global_lambda = (aaa) => aaa+50;
+const global_event = bp.Event('IM GLOBAL EVENT!');
+
 bp.registerBThread('bt-world', function () {
     var myvar1 = {a: 10,b: 20};
     var myvar2 = 20;
