@@ -159,7 +159,8 @@ public class Utils {
     }
 
     public static List<Integer> strToIntList(String breakpoints) {
-        return Arrays.stream(breakpoints.split(",")).map(Integer::parseInt).collect(Collectors.toList());
+        return cleanString(breakpoints).isEmpty() ? new LinkedList<>() :
+                Arrays.stream(breakpoints.split(",")).map(Integer::parseInt).collect(Collectors.toList());
     }
 
     public static void waitUntilPredicateSatisfied(Callable<Boolean> predicate, int timeToSleep, int maxToTry) {
@@ -204,7 +205,8 @@ public class Utils {
                 bThreadInfoDataMap.put(keyAndValue[0], keyAndValue[1]);
             }
             BThreadInfo bThreadInfo = new BThreadInfo(bThreadInfoDataMap.get("name"), null,
-                    toEventInfoList(strToStringList(bThreadInfoDataMap.get("wait"))), toEventInfoList(strToStringList(bThreadInfoDataMap.get("blocked"))),
+                    toEventInfoList(strToStringList(bThreadInfoDataMap.get("wait"))),
+                    toEventInfoList(strToStringList(bThreadInfoDataMap.get("blocked"))),
                     toEventInfoList(strToStringList(bThreadInfoDataMap.get("requested"))));
             bThreadInfoList.add(bThreadInfo);
         }

@@ -85,6 +85,11 @@ public class RestServiceTestHelper implements TestService {
     }
 
     @Override
+    public BooleanResponse toggleWaitForExternal(String userId, ToggleWaitForExternalRequest toggleWaitForExternalRequest) {
+        return performPutRequest(userId, WAIT_EXTERNAL, toggleWaitForExternalRequest);
+    }
+
+    @Override
     public BooleanResponse stop(String userId) {
         return performGetRequest(userId, STOP);
     }

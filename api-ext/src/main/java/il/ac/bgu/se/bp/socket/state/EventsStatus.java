@@ -25,13 +25,15 @@ public class EventsStatus implements Serializable {
         this.requested = requested;
         this.externalEvents = externalEvents;
     }
-    public EventsStatus(List<EventInfo> wait, List<EventInfo> blocked, Set<EventInfo> requested, List<EventInfo> externalEvents,  EventInfo currentEvent) {
+
+    public EventsStatus(List<EventInfo> wait, List<EventInfo> blocked, Set<EventInfo> requested, List<EventInfo> externalEvents, EventInfo currentEvent) {
         this.wait = wait;
         this.blocked = blocked;
         this.requested = requested;
         this.externalEvents = externalEvents;
-        this.currentEvent= currentEvent;
+        this.currentEvent = currentEvent;
     }
+
     public List<EventInfo> getWait() {
         return wait;
     }
@@ -58,8 +60,12 @@ public class EventsStatus implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         EventsStatus that = (EventsStatus) o;
         return wait.containsAll(that.wait) && that.wait.containsAll(wait) &&
                 blocked.containsAll(that.blocked) && that.blocked.containsAll(blocked) &&
@@ -72,7 +78,7 @@ public class EventsStatus implements Serializable {
         return Objects.hash(wait, blocked, requested);
     }
 
-    public String prettier(String ... prefix) {
+    public String prettier(String... prefix) {
         String pref = prefix != null && prefix.length > 0 ? prefix[0] : "";
         return pref + "EventsStatus{\n" +
                 pref + "\twait=" + wait + ",\n" +
@@ -106,7 +112,7 @@ public class EventsStatus implements Serializable {
                 ", blocked=" + blocked +
                 ", requested=" + requested +
                 ", externalEvents=" + externalEvents +
-                ", currentEvent="+ Objects.toString(currentEvent)+
+                ", currentEvent=" + Objects.toString(currentEvent) +
                 '}';
     }
 }

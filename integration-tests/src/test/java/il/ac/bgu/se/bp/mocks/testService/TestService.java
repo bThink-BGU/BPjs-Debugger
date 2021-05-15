@@ -15,6 +15,7 @@ public interface TestService {
     BooleanResponse setBreakpoint(String userId, SetBreakpointRequest setBreakpointRequest);
     BooleanResponse toggleMuteBreakpoints(String userId, ToggleBreakpointsRequest toggleBreakpointsRequest);
     BooleanResponse toggleMuteSyncPoints(String userId, ToggleSyncStatesRequest toggleMuteSyncPoints);
+    BooleanResponse toggleWaitForExternal(String userId, ToggleWaitForExternalRequest toggleWaitForExternalRequest);
 
     BooleanResponse stop(String userId);
     BooleanResponse stepOut(String userId);

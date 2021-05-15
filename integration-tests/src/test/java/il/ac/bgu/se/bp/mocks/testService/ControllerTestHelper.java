@@ -11,7 +11,7 @@ import java.security.Principal;
 public class ControllerTestHelper implements TestService {
 
     @Autowired
-    BPjsIDERestController bPjsIDERestController;
+    private BPjsIDERestController bPjsIDERestController;
 
     @Override
     public void subscribeUser(String sessionId, Principal principal) {
@@ -41,6 +41,11 @@ public class ControllerTestHelper implements TestService {
     @Override
     public BooleanResponse toggleMuteSyncPoints(String userId, ToggleSyncStatesRequest toggleMuteSyncPoints) {
         return bPjsIDERestController.toggleMuteSyncPoints(userId, toggleMuteSyncPoints);
+    }
+
+    @Override
+    public BooleanResponse toggleWaitForExternal(String userId, ToggleWaitForExternalRequest toggleWaitForExternalRequest) {
+        return bPjsIDERestController.toggleWaitForExternal(userId, toggleWaitForExternalRequest);
     }
 
     @Override
