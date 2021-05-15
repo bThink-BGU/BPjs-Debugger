@@ -276,7 +276,7 @@ public class DebuggerStateHelper {
                 logger.info("currentRunningBT + " +btName);
                 for (int i = 0; i < lastContextData.frameCount(); i++) {
                     ScriptableObject scope = (ScriptableObject) lastContextData.getFrame(i).scope();
-                    env.put(i, getScope(scope));
+                    env.put(i, getScope(scope, lastContextData.getFrame(i).getLineNumber()));
                     key ++;
                 }
                 key = lastContextData.frameCount();
@@ -291,14 +291,15 @@ public class DebuggerStateHelper {
                     if (debuggerFrame != lastContextData) {
                         for (int i = 0; i < debuggerFrame.frameCount(); i++) {
                             ScriptableObject scope = (ScriptableObject) debuggerFrame.getFrame(i).scope();
-                            env.put(key, getScope(scope));
+                            env.put(key, getScope(scope, debuggerFrame.getFrame(i).getLineNumber()));
                             key ++ ;
                         }
                     }
                 }
                 else {
                     ScriptableObject scope = getValue(parentFrame, "scope");
-                    env.put(key, getScope(scope));
+                    Dim.StackFrame stackFrame = getValue(parentFrame, "debuggerFrame");
+                    env.put(key, getScope(scope, stackFrame.getLineNumber()));
                     key ++ ;
                 }
                 parentFrame = getValue(parentFrame, "parentFrame");
@@ -331,11 +332,13 @@ public class DebuggerStateHelper {
         int key = 0;
         try {
             ScriptableObject scope = getValue(interpreterCallFrame, "scope");
-            env.put(key++, getScope(scope));
+            Dim.StackFrame stackFrame = getValue(interpreterCallFrame, "debuggerFrame");
+            env.put(key++, getScope(scope, stackFrame.getLineNumber()));
             Object parentFrame = getValue(interpreterCallFrame, "parentFrame");
             while (parentFrame != null) {
                 scope = getValue(parentFrame, "scope");
-                env.put(key, getScope(scope));
+                stackFrame = getValue(parentFrame, "debuggerFrame");
+                env.put(key, getScope(scope, stackFrame.getLineNumber()));
                 key++;
                 parentFrame = getValue(parentFrame, "parentFrame");
             }
@@ -345,13 +348,14 @@ public class DebuggerStateHelper {
         return env;
     }
 
-    private Map<String, String> getScope(ScriptableObject scope) {
+    private Map<String, String> getScope(ScriptableObject scope, int lineNumber) {
         Map<String, String> myEnv = new LinkedHashMap<>();
         try {
             Object function = getValue(scope, "function");
             Object interpretedData = getValue(function, "idata");
             String itsName = getValue(interpretedData, "itsName");
             myEnv.put("FUNCNAME", itsName != null ? itsName : "BTMain");
+            myEnv.put("LINENUMBER", String.valueOf(lineNumber));
             Object[] ids = Arrays.stream(scope.getIds()).filter((p) -> !p.toString().equals("arguments") && !p.toString().equals(itsName + "param")).toArray();
             for (Object id : ids) {
                 Object jsValue = collectJsValue(scope.get(id));
