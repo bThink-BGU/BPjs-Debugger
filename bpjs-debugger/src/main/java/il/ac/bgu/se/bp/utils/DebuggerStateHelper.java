@@ -21,8 +21,10 @@ import org.mozilla.javascript.tools.debugger.Dim;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static il.ac.bgu.cs.bp.bpjs.model.eventsets.EventSets.none;
+import static il.ac.bgu.se.bp.utils.common.NO_MORE_WAIT_EXTERNAL;
 
 
 public class DebuggerStateHelper {
@@ -76,7 +78,7 @@ public class DebuggerStateHelper {
         Map<String, String> globalEnv = getGlobalEnv(syncSnapshot);
         if(debuggerLevel.getLevel() > DebuggerLevel.LIGHT.getLevel()){
             List<BThreadInfo> bThreadInfoList = generateBThreadInfos(syncSnapshot, state, lastContextData);
-            EventsStatus eventsStatus = generateEventsStatus(syncSnapshot,state);
+            EventsStatus eventsStatus = generateEventsStatus(syncSnapshot, state);
             Integer lineNumber = lastContextData == null ? null : lastContextData.frameCount() > 0 ? lastContextData.getFrame(0).getLineNumber() : null;
             boolean[] breakpoints = getBreakpoints(sourceInfo);
             return new BPDebuggerState(bThreadInfoList, eventsStatus, eventsHistory, currentRunningBT, lineNumber,debuggerConfigs, ArrayUtils.toObject(breakpoints), globalEnv);
@@ -99,14 +101,14 @@ public class DebuggerStateHelper {
 
     private DebuggerConfigs generateDebuggerConfigs(BPJsDebugger bpJsDebugger) {
         return bpJsDebugger == null ? null :
-                new DebuggerConfigs(bpJsDebugger.isMuteBreakPoints(),bpJsDebugger.isWaitForExternalEvents(), bpJsDebugger.isSkipSyncPoints());
+                new DebuggerConfigs(bpJsDebugger.isMuteBreakPoints(), bpJsDebugger.isWaitForExternalEvents(), bpJsDebugger.isSkipSyncPoints());
     }
 
     private List<BThreadInfo> generateBThreadInfos(BProgramSyncSnapshot syncSnapshot, RunnerState state, Dim.ContextData lastContextData) {
         Set<BThreadSyncSnapshot> bThreadSyncSnapshots = syncSnapshot.getBThreadSnapshots();
         List<BThreadInfo> bThreadInfoList = bThreadSyncSnapshots
                 .stream()
-                .map(bThreadSyncSnapshot -> createBThreadInfo(bThreadSyncSnapshot, state, lastContextData,syncSnapshot))
+                .map(bThreadSyncSnapshot -> createBThreadInfo(bThreadSyncSnapshot, state, lastContextData, syncSnapshot))
                 .collect(Collectors.toList());
 
         if (state.getDebuggerState() == RunnerState.State.JS_DEBUG && Context.getCurrentContext() != null) {
@@ -118,27 +120,41 @@ public class DebuggerStateHelper {
         return bThreadInfoList;
     }
 
-    private EventsStatus generateEventsStatus(BProgramSyncSnapshot syncSnapshot,RunnerState state) {
+    private EventsStatus generateEventsStatus(BProgramSyncSnapshot syncSnapshot, RunnerState state) {
         Set<SyncStatement> statements = syncSnapshot.getStatements();
         List<BEvent> requested = statements.stream().map(SyncStatement::getRequest).flatMap(Collection::stream).collect(Collectors.toList());
 
-        if(!state.equals(RunnerState.State.JS_DEBUG))
+        if (!RunnerState.State.JS_DEBUG.equals(state.getDebuggerState())) {
             Context.enter();
-        List<EventSet> wait = statements.stream().map(SyncStatement::getWaitFor).filter(e-> requested.stream().anyMatch(req-> e.contains(req))).collect(Collectors.toList());
-        List<EventSet> blocked = statements.stream().map(SyncStatement::getBlock).filter(e-> requested.stream().anyMatch(req-> e.contains(req))).collect(Collectors.toList());
-        if(!state.equals(RunnerState.State.JS_DEBUG))
+        }
+        List<EventSet> wait = getMatchingEventSet(requested, statements.stream().map(SyncStatement::getWaitFor));
+        List<EventInfo> waitEvents = getMatchingEventInfo(wait);
+
+        List<EventSet> blocked = getMatchingEventSet(requested, statements.stream().map(SyncStatement::getBlock));
+        List<EventInfo> blockedEvents = getMatchingEventInfo(blocked);
+        if (!RunnerState.State.JS_DEBUG.equals(state.getDebuggerState())) {
             Context.exit();
-        List<EventInfo> waitEvents = wait.stream().map((e)-> e.equals(none) ? null : new EventInfo(getEventName(e))).filter(Objects::nonNull).collect(Collectors.toList());
-        List<EventInfo> blockedEvents = blocked.stream().map((e) -> e.equals(none) ? null : new EventInfo(getEventName(e))).filter(Objects::nonNull).collect(Collectors.toList());
+        }
+
         Set<EventInfo> requestedEvents = requested.stream().map((e) -> new EventInfo(getEventName(e))).collect(Collectors.toSet());
         List<EventInfo> externalEvents = syncSnapshot.getExternalEvents().stream()
-                .filter(e -> !e.equals(none))
+                .filter(e -> !e.equals(none) && !e.equals(NO_MORE_WAIT_EXTERNAL))
                 .map(e -> new EventInfo(e.getName()))
                 .collect(Collectors.toList());
-        if(currentEvent == null)
+        if (currentEvent == null) {
             return new EventsStatus(waitEvents, blockedEvents, requestedEvents, externalEvents);
-        else
+        }
+        else {
             return new EventsStatus(waitEvents, blockedEvents, requestedEvents, externalEvents, new EventInfo(currentEvent));
+        }
+    }
+
+    private List<EventInfo> getMatchingEventInfo(List<EventSet> eventSets) {
+        return eventSets.stream().map((e) -> e.equals(none) ? null : new EventInfo(getEventName(e))).filter(Objects::nonNull).collect(Collectors.toList());
+    }
+
+    private List<EventSet> getMatchingEventSet(List<BEvent> bEvents, Stream<EventSet> eventSetStream) {
+        return eventSetStream.filter(e -> bEvents.stream().anyMatch(e::contains)).collect(Collectors.toList());
     }
 
     public SortedMap<Long, EventInfo> generateEventsHistory(int from, int to) {

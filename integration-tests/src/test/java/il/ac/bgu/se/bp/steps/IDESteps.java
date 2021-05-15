@@ -3,10 +3,7 @@ package il.ac.bgu.se.bp.steps;
 import il.ac.bgu.se.bp.config.IDECommonTestConfiguration;
 import il.ac.bgu.se.bp.mocks.session.ITSessionManager;
 import il.ac.bgu.se.bp.mocks.testService.TestService;
-import il.ac.bgu.se.bp.rest.request.DebugRequest;
-import il.ac.bgu.se.bp.rest.request.SetSyncSnapshotRequest;
-import il.ac.bgu.se.bp.rest.request.ToggleBreakpointsRequest;
-import il.ac.bgu.se.bp.rest.request.ToggleSyncStatesRequest;
+import il.ac.bgu.se.bp.rest.request.*;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.response.DebugResponse;
 import il.ac.bgu.se.bp.rest.socket.StompPrincipal;
@@ -59,7 +56,8 @@ public class IDESteps {
 
 
     @When("(.*) asks to debug with filename (.*) and toggleMuteBreakpoints (.*) and toggleMuteSyncPoints (.*) and toggleWaitForExternalEvent (.*) and breakpoints (.*)")
-    public void userAsksToDebugWithFilenameAndToggleMuteBreakpointsAndToggleMuteSyncPointsAndBreakpoints(String username, String filename, String toggleMuteBreakpoints, String toggleMuteSyncPoints, String toggleWaitForExternalEvent, String breakpoints) {
+    public void userAsksToDebugWithFilenameAndToggleMuteBreakpointsAndToggleMuteSyncPointsAndBreakpoints(String username, String filename, String toggleMuteBreakpoints,
+                                                                                                         String toggleMuteSyncPoints, String toggleWaitForExternalEvent, String breakpoints) {
         itSessionManager.cleanUserMockData(getUserIdByName(username));
 
         DebugRequest debugRequest = new DebugRequest(getCodeByFileName(filename), strToIntList(breakpoints));
@@ -105,6 +103,13 @@ public class IDESteps {
         lastResponse = testService.setSyncSnapshot(getUserIdByName(username), setSyncSnapshotRequest);
     }
 
+    @When("(.*) adds an external event (.*)")
+    public void userAddsAnExternalEvent(String username, String externalEvent) {
+        ExternalEventRequest externalEventRequest = new ExternalEventRequest();
+        externalEventRequest.setAddEvent(true);
+        externalEventRequest.setExternalEvent(externalEvent);
+        lastResponse = testService.externalEvent(getUserIdByName(username), externalEventRequest);
+    }
 
     @When("(.*) clicks on (.*)")
     public void userClicksOnCommand(String username, String command) {
@@ -145,6 +150,9 @@ public class IDESteps {
                 break;
             case "mute sync states":
                 lastResponse = testService.toggleMuteSyncPoints(getUserIdByName(username), new ToggleSyncStatesRequest(strToBoolean(toggleMode)));
+                break;
+            case "wait for external event":
+                lastResponse = testService.toggleWaitForExternal(getUserIdByName(username), new ToggleWaitForExternalRequest(strToBoolean(toggleMode)));
                 break;
         }
     }
@@ -213,7 +221,7 @@ public class IDESteps {
 
     @Then("wait until user (.*) has reached status (.*)")
     public void waitUntilStatusReached(String username, String status) {
-        Status requiredStatus = Status.valueOf(status.toUpperCase());
+        Status requiredStatus = Status.valueOf(status.replaceAll(" ", "_").toUpperCase());
         waitUntilPredicateSatisfied(() -> requiredStatus.equals(itSessionManager.getUsersStatus(getUserIdByName(username))),
                 400, 3);
         itSessionManager.removeUsersStatus(getUserIdByName(username));
@@ -235,7 +243,7 @@ public class IDESteps {
         for (int i = 0; i < numOfOptions; i++) {
             try {
                 userShouldGetSyncStateNotification(username, optionalWaitEventsStr[i], optionalBlockedEventsStr[i],
-                        optionalRequestedEventsStr[i], optionalCurrentEventStr[i],
+                        optionalRequestedEventsStr[i], "", optionalCurrentEventStr[i],
                         optionalBThreadInfoListStr[i], optionalEventsHistoryStr[i]);
                 return;
             } catch (Exception ignored) {
@@ -244,13 +252,14 @@ public class IDESteps {
         fail("all optional sync states are not matching actual sync state");
     }
 
-    @Then("(.*) should get sync state notification wait events (.*), blocked events (.*), requested events (.*), current event (.*), b-threads info list (.*), and events history (.*)")
+    @Then("(.*) should get sync state notification wait events (.*), blocked events (.*), requested events (.*), external events (.*), current event (.*), b-threads info list (.*), and events history (.*)")
     public void userShouldGetSyncStateNotification(String username, String waitEventsStr, String blockedEventsStr,
-                                                   String requestedEventsStr, String currentEventStr,
+                                                   String requestedEventsStr, String externalEventsStr, String currentEventStr,
                                                    String bThreadInfoListStr, String eventsHistoryStr) {
         List<String> expectedWaitEvents = strToStringList(waitEventsStr);
         List<String> expectedBlockedEvents = strToStringList(blockedEventsStr);
         List<String> expectedRequestedEvents = strToStringList(requestedEventsStr);
+        List<String> expectedExternalEvents = strToStringList(externalEventsStr);
         List<String> expectedEventsHistory = strToStringList(eventsHistoryStr);
         String expectedCurrentEventName = strToString(currentEventStr);
         EventInfo expectedCurrentEvent = expectedCurrentEventName.isEmpty() ? null : new EventInfo(expectedCurrentEventName);
@@ -262,6 +271,7 @@ public class IDESteps {
         assertEventInfoEquals(expectedWaitEvents, actualEventsStatus.getWait());
         assertEventInfoEquals(expectedBlockedEvents, actualEventsStatus.getBlocked());
         assertEventInfoEquals(expectedRequestedEvents, new LinkedList<>(actualEventsStatus.getRequested()));
+        assertEventInfoEquals(expectedExternalEvents, actualEventsStatus.getExternalEvents());
         assertEquals(expectedCurrentEvent, actualEventsStatus.getCurrentEvent());
         assertBTreadInfoList(expectedBThreadInfoList, actualDebuggerState.getbThreadInfoList());
         assertEventsHistory(expectedEventsHistory, actualDebuggerState.getEventsHistory());
@@ -269,9 +279,9 @@ public class IDESteps {
 
     private void assertBTreadInfoList(List<BThreadInfo> expectedBThreadInfoList, List<BThreadInfo> actualBThreadInfoList) {
         assertIntEqual(expectedBThreadInfoList.size(), actualBThreadInfoList.size());
-        for (int i = 0; i < expectedBThreadInfoList.size(); i++) {
-            BThreadInfo expectedBThreadInfo = expectedBThreadInfoList.get(i);
-            BThreadInfo actualBThreadInfo = actualBThreadInfoList.get(i);
+        for (BThreadInfo expectedBThreadInfo : expectedBThreadInfoList) {
+            BThreadInfo actualBThreadInfo = getBThreadInfoByName(actualBThreadInfoList, expectedBThreadInfo.getName());
+            assertNotNull(actualBThreadInfo);
 
             throwNotEquals(expectedBThreadInfo.getName(), actualBThreadInfo.getName());
             throwNotEquals(expectedBThreadInfo.getWait(), actualBThreadInfo.getWait());

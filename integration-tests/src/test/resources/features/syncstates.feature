@@ -17,7 +17,7 @@ Feature: Sync States
     Then wait until user alex has reached status syncstate
     And wait until user ron has reached status syncstate
 
-    Then alex should get sync state notification wait events [blank], blocked events [blank], requested events son-e, current event [blank], b-threads info list {name:bt-world-son,requested:[son-e]}, and events history [blank]
+    Then alex should get sync state notification wait events [blank], blocked events [blank], requested events son-e, external events [blank], current event [blank], b-threads info list {name:bt-world-son,requested:[son-e]}, and events history [blank]
     And ron should get optional sync state notification wait events [blank]|[blank], blocked events [blank]|[blank], requested events [Thread1-EVENT,Thread2-EVENT]|[Thread1-EVENT,Thread2-EVENT], current event [blank]|[blank], b-threads info list {name:Thread1,requested:[Thread1-EVENT]}{name:Thread2,requested:[Thread2-EVENT]}|{name:Thread2,requested:[Thread2-EVENT]}{name:Thread1,requested:[Thread1-EVENT]}, and events history [blank]|[blank]
 
     Given avishai has connected to websocket with avishai-session
@@ -31,7 +31,7 @@ Feature: Sync States
     And wait until user avishai has reached status syncstate
     And wait until user tal has reached status syncstate
 
-    Then avishai should get sync state notification wait events [blank], blocked events [blank], requested events son-e, current event [blank], b-threads info list {name:bt-world-son,requested:[son-e]}, and events history [blank]
+    Then avishai should get sync state notification wait events [blank], blocked events [blank], requested events son-e, external events [blank], current event [blank], b-threads info list {name:bt-world-son,requested:[son-e]}, and events history [blank]
     And tal should get optional sync state notification wait events [blank]|[blank], blocked events [blank]|[blank], requested events [Thread1-EVENT,Thread2-EVENT]|[Thread1-EVENT,Thread2-EVENT], current event [blank]|[blank], b-threads info list {name:Thread1,requested:[Thread1-EVENT]}{name:Thread2,requested:[Thread2-EVENT]}|{name:Thread2,requested:[Thread2-EVENT]}{name:Thread1,requested:[Thread1-EVENT]}, and events history [blank]|[blank]
 
     When alex toggles mute sync states to true
@@ -55,7 +55,7 @@ Feature: Sync States
     And wait until user avishai has reached status syncstate
     And wait until user ron has reached status syncstate
 
-    Then avishai should get sync state notification wait events [blank], blocked events [blank], requested events world12121, current event [blank], b-threads info list {name:bt-world-son,requested:[world12121]}, and events history [son-e]
+    Then avishai should get sync state notification wait events [blank], blocked events [blank], requested events world12121, external events [blank], current event [blank], b-threads info list {name:bt-world-son,requested:[world12121]}, and events history [son-e]
     Then ron should get optional sync state notification wait events [blank]|[blank], blocked events [blank]|[blank], requested events [Thread2-EVENT]|[Thread1-EVENT], current event [blank]|[blank], b-threads info list {name:Thread2,requested:[Thread2-EVENT]}|{name:Thread1,requested:[Thread1-EVENT]}, and events history [Thread1-EVENT]|[Thread2-EVENT]
 
     When avishai clicks on next sync
@@ -66,7 +66,7 @@ Feature: Sync States
     Then wait until user avishai has reached status syncstate
     And wait until user ron has reached status syncstate
 
-    Then avishai should get sync state notification wait events [blank], blocked events [blank], requested events [blank], current event [blank], b-threads info list {}, and events history [world12121,son-e]
+    Then avishai should get sync state notification wait events [blank], blocked events [blank], requested events [blank], external events [blank], current event [blank], b-threads info list {}, and events history [world12121,son-e]
     Then ron should get optional sync state notification wait events [blank]|[blank], blocked events [blank]|[blank], requested events [blank]|[blank], current event [blank]|[blank], b-threads info list [blank]|[blank], and events history [Thread1-EVENT,Thread2-EVENT]|[Thread2-EVENT,Thread1-EVENT]
 
     When avishai toggles mute sync states to true
@@ -94,7 +94,7 @@ Feature: Sync States
     Then The debug response should be true with errorCode null and breakpoints 10,21 for user alex
 
     Then wait until user alex has reached status syncstate
-    Then alex should get sync state notification wait events [blank], blocked events [blank], requested events son-e, current event [blank], b-threads info list {name:bt-world-son,requested:[son-e]}, and events history [blank]
+    Then alex should get sync state notification wait events [blank], blocked events [blank], requested events son-e, external events [blank], current event [blank], b-threads info list {name:bt-world-son,requested:[son-e]}, and events history [blank]
 
     Given tal has connected to websocket with avishai-session
 
@@ -109,7 +109,7 @@ Feature: Sync States
     Then The response should be true with errorCode null
 
     Then wait until user alex has reached status syncstate
-    And alex should get sync state notification wait events [blank], blocked events [blank], requested events world12121, current event [blank], b-threads info list {name:bt-world-son,requested:[world12121]}, and events history [son-e]
+    And alex should get sync state notification wait events [blank], blocked events [blank], requested events world12121, external events [blank], current event [blank], b-threads info list {name:bt-world-son,requested:[world12121]}, and events history [son-e]
 
     Then wait until user tal has reached status syncstate
     And tal should get optional sync state notification wait events [blank]|[blank], blocked events [blank]|[blank], requested events [Thread2-EVENT]|[Thread1-EVENT], current event [blank]|[blank], b-threads info list {name:Thread2,requested:[Thread2-EVENT]}|{name:Thread1,requested:[Thread1-EVENT]}, and events history [Thread1-EVENT]|[Thread2-EVENT]
@@ -120,7 +120,7 @@ Feature: Sync States
     Then The response should be true with errorCode null
 
     Then wait until user alex has reached status syncstate
-     And alex should get sync state notification wait events [blank], blocked events [blank], requested events [blank], current event [blank], b-threads info list {}, and events history [world12121,son-e]
+     And alex should get sync state notification wait events [blank], blocked events [blank], requested events [blank], external events [blank], current event [blank], b-threads info list {}, and events history [world12121,son-e]
 
     And wait until user tal has reached status syncstate
     Then tal should get optional sync state notification wait events [blank]|[blank], blocked events [blank]|[blank], requested events [blank]|[blank], current event [blank]|[blank], b-threads info list [blank]|[blank], and events history [Thread1-EVENT,Thread2-EVENT]|[Thread2-EVENT,Thread1-EVENT]
@@ -136,7 +136,7 @@ Feature: Sync States
     Then The response should be true with errorCode null
 
     Then wait until user alex has reached status syncstate
-    Then alex should get sync state notification wait events [blank], blocked events [blank], requested events world12121, current event [blank], b-threads info list {name:bt-world-son,requested:[world12121]}, and events history [son-e]
+    Then alex should get sync state notification wait events [blank], blocked events [blank], requested events world12121, external events [blank], current event [blank], b-threads info list {name:bt-world-son,requested:[world12121]}, and events history [son-e]
     And wait until user tal has reached status syncstate
     And tal should get optional sync state notification wait events [blank]|[blank], blocked events [blank]|[blank], requested events [Thread2-EVENT]|[Thread1-EVENT], current event [blank]|[blank], b-threads info list {name:Thread2,requested:[Thread2-EVENT]}|{name:Thread1,requested:[Thread1-EVENT]}, and events history [Thread1-EVENT]|[Thread2-EVENT]
 
@@ -146,7 +146,7 @@ Feature: Sync States
     Then The response should be true with errorCode null
 
     Then wait until user alex has reached status syncstate
-    And alex should get sync state notification wait events [blank], blocked events [blank], requested events [blank], current event [blank], b-threads info list {}, and events history [world12121,son-e]
+    And alex should get sync state notification wait events [blank], blocked events [blank], requested events [blank], external events [blank], current event [blank], b-threads info list {}, and events history [world12121,son-e]
     Then wait until user tal has reached status syncstate
     Then tal should get optional sync state notification wait events [blank]|[blank], blocked events [blank]|[blank], requested events [blank]|[blank], current event [blank]|[blank], b-threads info list [blank]|[blank], and events history [Thread1-EVENT,Thread2-EVENT]|[Thread2-EVENT,Thread1-EVENT]
 
