@@ -20,8 +20,10 @@ import org.mozilla.javascript.tools.debugger.Dim;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static il.ac.bgu.cs.bp.bpjs.model.eventsets.EventSets.none;
+import static il.ac.bgu.se.bp.utils.common.NO_MORE_WAIT_EXTERNAL;
 
 
 public class DebuggerStateHelper {
@@ -106,21 +108,32 @@ public class DebuggerStateHelper {
 
     private EventsStatus generateEventsStatus(BProgramSyncSnapshot syncSnapshot) {
         Set<SyncStatement> statements = syncSnapshot.getStatements();
-        List<BEvent> requested = statements.stream().map(SyncStatement::getRequest).flatMap(Collection::stream).collect(Collectors.toList());
 
-        List<EventSet> wait = statements.stream().map(SyncStatement::getWaitFor).filter(e-> requested.stream().anyMatch(req-> e.contains(req))).collect(Collectors.toList());
-        List<EventSet> blocked = statements.stream().map(SyncStatement::getBlock).filter(e-> requested.stream().anyMatch(req-> e.contains(req))).collect(Collectors.toList());
-        List<EventInfo> waitEvents = wait.stream().map((e)-> e.equals(none) ? null : new EventInfo(getEventName(e))).filter(Objects::nonNull).collect(Collectors.toList());
-        List<EventInfo> blockedEvents = blocked.stream().map((e) -> e.equals(none) ? null : new EventInfo(getEventName(e))).filter(Objects::nonNull).collect(Collectors.toList());
+        List<BEvent> requested = statements.stream().map(SyncStatement::getRequest).flatMap(Collection::stream).collect(Collectors.toList());
         Set<EventInfo> requestedEvents = requested.stream().map((e) -> new EventInfo(getEventName(e))).collect(Collectors.toSet());
+
+        List<EventSet> wait = getMatchingEventSet(requested, statements.stream().map(SyncStatement::getWaitFor));
+        List<EventInfo> waitEvents = getMatchingEventInfo(wait);
+
+        List<EventSet> blocked = getMatchingEventSet(requested, statements.stream().map(SyncStatement::getBlock));
+        List<EventInfo> blockedEvents = getMatchingEventInfo(blocked);
+
         List<EventInfo> externalEvents = syncSnapshot.getExternalEvents().stream()
-                .filter(e -> !e.equals(none))
+                .filter(e -> !e.equals(none) && !e.equals(NO_MORE_WAIT_EXTERNAL))
                 .map(e -> new EventInfo(e.getName()))
                 .collect(Collectors.toList());
         if(currentEvent == null)
             return new EventsStatus(waitEvents, blockedEvents, requestedEvents, externalEvents);
         else
             return new EventsStatus(waitEvents, blockedEvents, requestedEvents, externalEvents, new EventInfo(currentEvent));
+    }
+
+    private List<EventInfo> getMatchingEventInfo(List<EventSet> eventSets) {
+        return eventSets.stream().map((e) -> e.equals(none) ? null : new EventInfo(getEventName(e))).filter(Objects::nonNull).collect(Collectors.toList());
+    }
+
+    private List<EventSet> getMatchingEventSet(List<BEvent> bEvents, Stream<EventSet> eventSetStream) {
+        return eventSetStream.filter(e -> bEvents.stream().anyMatch(e::contains)).collect(Collectors.toList());
     }
 
     public SortedMap<Long, EventInfo> generateEventsHistory(int from, int to) {

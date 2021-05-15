@@ -89,6 +89,24 @@ public class CodeFilesHelper {
     }
 
     private static String testFile4() {
-        return null;
+        return "bp.registerBThread(\"bt-1\",function() {\n" +
+                "  bp.sync({request:bp.Event(\"developers\")});\n" +
+                "})\n" +
+                "\n" +
+                "bp.registerBThread(\"bt-2\", function() {\n" +
+                "  bp.sync({waitFor:bp.Event(\"israel\"), block:bp.Event(\"developers\")});\n" +
+                "})\n" +
+                "\n" +
+                "bp.registerBThread(\"bt-3\", function() {\n" +
+                "  bp.sync({waitFor:bp.Event(\"from\"), block:bp.Event(\"israel\")});\n" +
+                "})\n" +
+                "\n" +
+                "bp.registerBThread(\"bt-4\", function() {\n" +
+                "  bp.sync({waitFor:bp.Event(\"world\"), block:bp.Event(\"from\")});\n" +
+                "})\n" +
+                "\n" +
+                "bp.registerBThread(\"bt-5\", function() {\n" +
+                "  bp.sync({waitFor:bp.Event(\"hello\"), block:bp.Event(\"world\")});\n" +
+                "})";
     }
 }
