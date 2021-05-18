@@ -1,4 +1,4 @@
-package il.ac.bgu.se.bp.logger;
+package il.ac.bgu.se.bp.utils.logger;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;

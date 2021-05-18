@@ -12,8 +12,8 @@ import il.ac.bgu.se.bp.debugger.BPJsDebugger;
 import il.ac.bgu.se.bp.debugger.DebuggerLevel;
 import il.ac.bgu.se.bp.debugger.RunnerState;
 import il.ac.bgu.se.bp.debugger.engine.SyncSnapshotHolder;
-import il.ac.bgu.se.bp.logger.Logger;
 import il.ac.bgu.se.bp.socket.state.*;
+import il.ac.bgu.se.bp.utils.logger.Logger;
 import org.apache.commons.lang3.ArrayUtils;
 import org.mozilla.javascript.*;
 import org.mozilla.javascript.tools.debugger.Dim;
@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static il.ac.bgu.cs.bp.bpjs.model.eventsets.EventSets.none;
-import static il.ac.bgu.se.bp.utils.common.NO_MORE_WAIT_EXTERNAL;
+import static il.ac.bgu.se.bp.utils.Common.NO_MORE_WAIT_EXTERNAL;
 
 
 public class DebuggerStateHelper {

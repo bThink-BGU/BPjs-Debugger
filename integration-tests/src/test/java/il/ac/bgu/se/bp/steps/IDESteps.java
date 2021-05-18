@@ -1,17 +1,17 @@
 package il.ac.bgu.se.bp.steps;
 
 import il.ac.bgu.se.bp.config.IDECommonTestConfiguration;
-import il.ac.bgu.se.bp.mocks.session.ITSessionManager;
-import il.ac.bgu.se.bp.mocks.testService.TestService;
 import il.ac.bgu.se.bp.rest.request.*;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.response.DebugResponse;
 import il.ac.bgu.se.bp.rest.socket.StompPrincipal;
+import il.ac.bgu.se.bp.session.ITSessionManager;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
 import il.ac.bgu.se.bp.socket.state.BThreadInfo;
 import il.ac.bgu.se.bp.socket.state.EventInfo;
 import il.ac.bgu.se.bp.socket.state.EventsStatus;
 import il.ac.bgu.se.bp.socket.status.Status;
+import il.ac.bgu.se.bp.testService.TestService;
 import il.ac.bgu.se.bp.utils.Pair;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;

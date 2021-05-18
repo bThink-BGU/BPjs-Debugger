@@ -9,11 +9,11 @@ import il.ac.bgu.se.bp.debugger.engine.dim.DimHelper;
 import il.ac.bgu.se.bp.debugger.engine.dim.DimHelperImpl;
 import il.ac.bgu.se.bp.debugger.engine.events.BPStateEvent;
 import il.ac.bgu.se.bp.debugger.engine.events.ProgramStatusEvent;
-import il.ac.bgu.se.bp.logger.Logger;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
 import il.ac.bgu.se.bp.socket.status.Status;
 import il.ac.bgu.se.bp.utils.DebuggerStateHelper;
 import il.ac.bgu.se.bp.utils.DebuggerStopException;
+import il.ac.bgu.se.bp.utils.logger.Logger;
 import il.ac.bgu.se.bp.utils.observer.BPEvent;
 import il.ac.bgu.se.bp.utils.observer.BPEventPublisherImpl;
 import il.ac.bgu.se.bp.utils.observer.Publisher;
@@ -43,7 +43,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
     private BProgramSyncSnapshot syncSnapshot = null;
     private DebuggerLevel debuggerLevel;
 
-    private final BlockingQueue<DebuggerCommand> queue = new ArrayBlockingQueue<>(1);
+    private final BlockingQueue<DebuggerCommand> debuggerCommands = new ArrayBlockingQueue<>(1);
     private Publisher<BPEvent> publisher = new BPEventPublisherImpl();
 
     public DebuggerEngineImpl(String debuggerId, String filename, RunnerState state,
@@ -109,7 +109,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
                 onStateChanged();
             }
             if (isRunning()) {
-                DebuggerCommand debuggerCommand = queue.take();
+                DebuggerCommand debuggerCommand = debuggerCommands.take();
                 logger.info("applying command " + debuggerCommand.toString());
                 debuggerCommand.applyCommand(this);
             }
@@ -128,7 +128,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
 
     @Override
     public void addCommand(DebuggerCommand command) throws Exception {
-        queue.add(command);
+        debuggerCommands.add(command);
     }
 
     public synchronized boolean isRunning() {

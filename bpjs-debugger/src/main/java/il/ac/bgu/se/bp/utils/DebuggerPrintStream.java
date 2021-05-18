@@ -20,6 +20,7 @@ public class DebuggerPrintStream extends PrintStream implements Publisher<BPEven
         super(outputStream);
         subscribers = new ArrayList<>();
     }
+
     public DebuggerPrintStream() {
         this(System.out);
     }

@@ -1,8 +1,6 @@
 package il.ac.bgu.se.bp.service.manage;
 
-import com.google.gson.Gson;
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
-import il.ac.bgu.se.bp.logger.Logger;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.service.code.SourceCodeHelper;
 import il.ac.bgu.se.bp.service.notification.NotificationHandler;
@@ -10,6 +8,7 @@ import il.ac.bgu.se.bp.socket.console.ConsoleMessage;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
 import il.ac.bgu.se.bp.socket.status.ProgramStatus;
 import il.ac.bgu.se.bp.socket.status.Status;
+import il.ac.bgu.se.bp.utils.logger.Logger;
 import il.ac.bgu.se.bp.utils.observer.BPEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -34,7 +33,6 @@ public class SessionHandlerImpl implements SessionHandler<BPJsDebugger<BooleanRe
     private static final Map<String, UserProgramSession<BPJsDebugger<BooleanResponse>>> bpDebugProgramsByUsers = new ConcurrentHashMap<>();
     private static final Map<String, UserProgramSession<BPJsDebugger<BooleanResponse>>> bpRunProgramsByUsers = new ConcurrentHashMap<>();
     private static final Map<String, UserSession> unknownSessions = new ConcurrentHashMap<>();
-    private final Gson gson = new Gson();
 
     @Autowired
     @Qualifier("stateNotificationHandlerImpl")

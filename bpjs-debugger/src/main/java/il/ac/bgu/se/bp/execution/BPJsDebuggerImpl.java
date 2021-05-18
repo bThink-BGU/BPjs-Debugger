@@ -18,7 +18,6 @@ import il.ac.bgu.se.bp.debugger.engine.events.BPConsoleEvent;
 import il.ac.bgu.se.bp.debugger.engine.events.ProgramStatusEvent;
 import il.ac.bgu.se.bp.debugger.manage.ProgramValidator;
 import il.ac.bgu.se.bp.error.ErrorCode;
-import il.ac.bgu.se.bp.logger.Logger;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.response.DebugResponse;
 import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
@@ -30,6 +29,7 @@ import il.ac.bgu.se.bp.socket.status.Status;
 import il.ac.bgu.se.bp.utils.DebuggerBProgramRunnerListener;
 import il.ac.bgu.se.bp.utils.DebuggerPrintStream;
 import il.ac.bgu.se.bp.utils.DebuggerStateHelper;
+import il.ac.bgu.se.bp.utils.logger.Logger;
 import il.ac.bgu.se.bp.utils.observer.BPEvent;
 import il.ac.bgu.se.bp.utils.observer.Subscriber;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,10 +41,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static il.ac.bgu.se.bp.utils.Common.NO_MORE_WAIT_EXTERNAL;
 import static il.ac.bgu.se.bp.utils.ProgramStatusHelper.getRunStatusByDebuggerLevel;
 import static il.ac.bgu.se.bp.utils.ResponseHelper.createErrorResponse;
 import static il.ac.bgu.se.bp.utils.ResponseHelper.createSuccessResponse;
-import static il.ac.bgu.se.bp.utils.common.NO_MORE_WAIT_EXTERNAL;
 import static java.util.Collections.reverseOrder;
 
 public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {

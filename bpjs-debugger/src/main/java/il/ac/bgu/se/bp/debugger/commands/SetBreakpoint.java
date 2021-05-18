@@ -2,8 +2,8 @@ package il.ac.bgu.se.bp.debugger.commands;
 
 import il.ac.bgu.se.bp.debugger.engine.DebuggerEngine;
 import il.ac.bgu.se.bp.error.ErrorCode;
-import il.ac.bgu.se.bp.logger.Logger;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
+import il.ac.bgu.se.bp.utils.logger.Logger;
 
 import static il.ac.bgu.se.bp.utils.ResponseHelper.createErrorResponse;
 import static il.ac.bgu.se.bp.utils.ResponseHelper.createSuccessResponse;

@@ -1,6 +1,6 @@
 package il.ac.bgu.se.bp.service.code;
 
-import il.ac.bgu.se.bp.logger.Logger;
+import il.ac.bgu.se.bp.utils.logger.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

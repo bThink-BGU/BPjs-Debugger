@@ -12,9 +12,11 @@ import java.util.Set;
 public class DebuggerBProgramRunnerListener implements BProgramRunnerListener {
     private DebuggerStateHelper debuggerStateHelper;
     private Set<Pair<String, Object>> recentlyRegisteredBT = new HashSet<>();
+
     public DebuggerBProgramRunnerListener(DebuggerStateHelper debuggerStateHelper) {
         this.debuggerStateHelper = debuggerStateHelper;
     }
+
     @Override
     public void starting(BProgram bprog) {
         this.debuggerStateHelper.setRecentlyRegisteredBThreads(recentlyRegisteredBT);

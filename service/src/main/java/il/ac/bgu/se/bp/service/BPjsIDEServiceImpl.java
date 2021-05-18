@@ -4,7 +4,6 @@ import il.ac.bgu.se.bp.debugger.BPJsDebugger;
 import il.ac.bgu.se.bp.debugger.DebuggerLevel;
 import il.ac.bgu.se.bp.debugger.manage.DebuggerFactory;
 import il.ac.bgu.se.bp.error.ErrorCode;
-import il.ac.bgu.se.bp.logger.Logger;
 import il.ac.bgu.se.bp.rest.request.*;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.response.DebugResponse;
@@ -12,6 +11,7 @@ import il.ac.bgu.se.bp.rest.response.EventsHistoryResponse;
 import il.ac.bgu.se.bp.service.code.SourceCodeHelper;
 import il.ac.bgu.se.bp.service.manage.PrototypeContextFactory;
 import il.ac.bgu.se.bp.service.manage.SessionHandler;
+import il.ac.bgu.se.bp.utils.logger.Logger;
 import org.mozilla.javascript.ContextFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -138,6 +138,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
         sessionHandler.updateLastOperationTime(userId);
         return bpJsDebugger.toggleMuteBreakpoints(toggleBreakPointStatus.isSkipBreakpoints());
     }
+
     @Override
     public BooleanResponse toggleWaitForExternal(String userId, ToggleWaitForExternalRequest toggleWaitForExternalRequest) {
         if (toggleWaitForExternalRequest == null) {
@@ -152,6 +153,7 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
         sessionHandler.updateLastOperationTime(userId);
         return bpJsDebugger.toggleWaitForExternalEvents(toggleWaitForExternalRequest.isWaitForExternal());
     }
+
     @Override
     public BooleanResponse toggleMuteSyncPoints(String userId, ToggleSyncStatesRequest toggleMuteSyncPoints) {
         if (toggleMuteSyncPoints == null) {

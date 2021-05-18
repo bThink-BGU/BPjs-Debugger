@@ -1,6 +1,6 @@
 package il.ac.bgu.se.bp.utils.asyncHelper;
 
-import il.ac.bgu.se.bp.logger.Logger;
+import il.ac.bgu.se.bp.utils.logger.Logger;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Component;
