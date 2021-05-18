@@ -75,15 +75,27 @@ public class DebuggerStateHelper {
         SortedMap<Long, EventInfo> eventsHistory = generateEventsHistory(INITIAL_INDEX_FOR_EVENTS_HISTORY_ON_SYNC_STATE, FINAL_INDEX_FOR_EVENTS_HISTORY_ON_SYNC_STATE);
         DebuggerConfigs debuggerConfigs = generateDebuggerConfigs(bpJsDebugger);
 
-        if (debuggerLevel.getLevel() > DebuggerLevel.LIGHT.getLevel()) {
+        Map<String, String> globalEnv = getGlobalEnv(syncSnapshot);
+        if(debuggerLevel.getLevel() > DebuggerLevel.LIGHT.getLevel()){
             List<BThreadInfo> bThreadInfoList = generateBThreadInfos(syncSnapshot, state, lastContextData);
             EventsStatus eventsStatus = generateEventsStatus(syncSnapshot, state);
             Integer lineNumber = lastContextData == null ? null : lastContextData.frameCount() > 0 ? lastContextData.getFrame(0).getLineNumber() : null;
             boolean[] breakpoints = getBreakpoints(sourceInfo);
-            return new BPDebuggerState(bThreadInfoList, eventsStatus, eventsHistory, currentRunningBT, lineNumber, debuggerConfigs, ArrayUtils.toObject(breakpoints));
+            return new BPDebuggerState(bThreadInfoList, eventsStatus, eventsHistory, currentRunningBT, lineNumber,debuggerConfigs, ArrayUtils.toObject(breakpoints), globalEnv);
         }
+        return new BPDebuggerState(new LinkedList<>(), new EventsStatus(), eventsHistory, currentRunningBT, null,debuggerConfigs, new Boolean[0], globalEnv);
+    }
 
-        return new BPDebuggerState(new LinkedList<>(), new EventsStatus(), eventsHistory, currentRunningBT, null, debuggerConfigs, new Boolean[0]);
+    private Map<String, String> getGlobalEnv(BProgramSyncSnapshot syncSnapshot) {
+        Map<String, String> globalEnv = new LinkedHashMap<>();
+
+        Object[] ids = Arrays.stream(  syncSnapshot.getBProgram().getGlobalScope().getIds()).filter((p) -> !p.toString().equals("bp") ).toArray();
+        for (Object id : ids) {
+            Object jsValue = collectJsValue(syncSnapshot.getBProgram().getFromGlobalScope(id.toString(), Object.class).get());
+            String var_value = getVarGsonValue(jsValue);
+            globalEnv.put(id.toString(), var_value);
+        }
+        return globalEnv;
     }
 
     private DebuggerConfigs generateDebuggerConfigs(BPJsDebugger bpJsDebugger) {
@@ -197,16 +209,12 @@ public class DebuggerStateHelper {
         }
     }
 
-    private String getEventName(EventSet eventSet) {
-        if (eventSet instanceof BEvent) {
+    private String getEventName (EventSet eventSet){
+        if ( eventSet instanceof BEvent )
             return ((BEvent) eventSet).getName();
-        }
-        else {
-            return Objects.toString(eventSet);
-        }
+        else return Objects.toString(eventSet);
     }
-
-    private BThreadInfo createBThreadInfo(BThreadSyncSnapshot bThreadSS, RunnerState state, Dim.ContextData lastContextData, BProgramSyncSnapshot syncSnapshot) {
+    private BThreadInfo createBThreadInfo(BThreadSyncSnapshot bThreadSS, RunnerState state, Dim.ContextData lastContextData,BProgramSyncSnapshot syncSnapshot) {
         try {
             Object implementation = getValue(bThreadSS.getScope(), "implementation");
             Map<Integer, Map<String, String>> env = state == null ? null :
@@ -218,16 +226,16 @@ public class DebuggerStateHelper {
 
             EventSet waitFor = bThreadSS.getSyncStatement().getWaitFor();
             EventSet blocked = bThreadSS.getSyncStatement().getBlock();
-            if (!state.equals(RunnerState.State.JS_DEBUG)) {
+            if (!RunnerState.State.JS_DEBUG.equals(state.getDebuggerState())) {
                 Context.enter();
             }
-            Set<BEvent> waitBEvents = allRequestedBEvents.stream().filter(req -> waitFor.contains(req)).collect(Collectors.toSet());
-            Set<BEvent> blockedBEvents = allRequestedBEvents.stream().filter(req -> blocked.contains(req)).collect(Collectors.toSet());
-            if (!state.equals(RunnerState.State.JS_DEBUG)) {
+            Set<BEvent> waitBEvents =  allRequestedBEvents.stream().filter(req-> waitFor.contains(req)).collect(Collectors.toSet());
+            Set<BEvent> blockedBEvents =  allRequestedBEvents.stream().filter(req-> blocked.contains(req)).collect(Collectors.toSet());
+            if (!RunnerState.State.JS_DEBUG.equals(state.getDebuggerState())) {
                 Context.exit();
             }
-            Set<EventInfo> waitEvents = waitBEvents.stream().map((e) -> e.equals(none) ? null : new EventInfo(getEventName(e))).filter(Objects::nonNull).collect(Collectors.toSet());
-            Set<EventInfo> blockedEvents = blockedBEvents.stream().map((e) -> e.equals(none) ? null : new EventInfo(getEventName(e))).filter(Objects::nonNull).collect(Collectors.toSet());
+            Set<EventInfo> waitEvents = waitBEvents.stream().map((e)-> e.equals(none) ? null : new EventInfo(getEventName(e))).filter(Objects::nonNull).collect(Collectors.toSet());
+            Set<EventInfo> blockedEvents = blockedBEvents.stream().map((e)-> e.equals(none) ? null : new EventInfo(getEventName(e))).filter(Objects::nonNull).collect(Collectors.toSet());
             Set<EventInfo> requested = new ArrayList<>(bThreadSS.getSyncStatement().getRequest()).stream().map((r) -> new EventInfo(r.getName())).collect(Collectors.toSet());
 
             return new BThreadInfo(bThreadSS.getName(), env, waitEvents, blockedEvents, requested);
@@ -261,15 +269,15 @@ public class DebuggerStateHelper {
             if (cxInterpreterFrame == null) {
                 return getEnv(interpreterCallFrame);
             }
-            Object myScope = getValue(interpreterCallFrame, "scope");
+            Object myScope =getValue(interpreterCallFrame, "scope");
             currentRunningBT = isScopesRelated(cxInterpreterFrame, myScope);
             Object parentFrame = interpreterCallFrame;
             if (currentRunningBT) { //current running BT
-                logger.info("currentRunningBT + " + btName);
+                logger.info("currentRunningBT + " +btName);
                 for (int i = 0; i < lastContextData.frameCount(); i++) {
                     ScriptableObject scope = (ScriptableObject) lastContextData.getFrame(i).scope();
-                    env.put(i, getScope(scope));
-                    key++;
+                    env.put(i, getScope(scope, lastContextData.getFrame(i).getLineNumber()));
+                    key ++;
                 }
                 key = lastContextData.frameCount();
                 this.currentRunningBT = btName;
@@ -283,15 +291,16 @@ public class DebuggerStateHelper {
                     if (debuggerFrame != lastContextData) {
                         for (int i = 0; i < debuggerFrame.frameCount(); i++) {
                             ScriptableObject scope = (ScriptableObject) debuggerFrame.getFrame(i).scope();
-                            env.put(key, getScope(scope));
-                            key++;
+                            env.put(key, getScope(scope, debuggerFrame.getFrame(i).getLineNumber()));
+                            key ++ ;
                         }
                     }
                 }
                 else {
                     ScriptableObject scope = getValue(parentFrame, "scope");
-                    env.put(key, getScope(scope));
-                    key++;
+                    Dim.StackFrame stackFrame = getValue(parentFrame, "debuggerFrame");
+                    env.put(key, getScope(scope, stackFrame.getLineNumber()));
+                    key ++ ;
                 }
                 parentFrame = getValue(parentFrame, "parentFrame");
             }
@@ -307,9 +316,8 @@ public class DebuggerStateHelper {
         try {
             while (parentFrame != null) {
                 scope = getValue(parentFrame, "scope");
-                if (scope == myScope) {
+                if(scope == myScope)
                     return true;
-                }
                 parentFrame = getValue(parentFrame, "parentFrame");
             }
             return false;
@@ -324,11 +332,13 @@ public class DebuggerStateHelper {
         int key = 0;
         try {
             ScriptableObject scope = getValue(interpreterCallFrame, "scope");
-            env.put(key++, getScope(scope));
+            Dim.StackFrame stackFrame = getValue(interpreterCallFrame, "debuggerFrame");
+            env.put(key++, getScope(scope, stackFrame.getLineNumber()));
             Object parentFrame = getValue(interpreterCallFrame, "parentFrame");
             while (parentFrame != null) {
                 scope = getValue(parentFrame, "scope");
-                env.put(key, getScope(scope));
+                stackFrame = getValue(parentFrame, "debuggerFrame");
+                env.put(key, getScope(scope, stackFrame.getLineNumber()));
                 key++;
                 parentFrame = getValue(parentFrame, "parentFrame");
             }
@@ -338,13 +348,14 @@ public class DebuggerStateHelper {
         return env;
     }
 
-    private Map<String, String> getScope(ScriptableObject scope) {
+    private Map<String, String> getScope(ScriptableObject scope, int lineNumber) {
         Map<String, String> myEnv = new LinkedHashMap<>();
         try {
             Object function = getValue(scope, "function");
             Object interpretedData = getValue(function, "idata");
             String itsName = getValue(interpretedData, "itsName");
             myEnv.put("FUNCNAME", itsName != null ? itsName : "BTMain");
+            myEnv.put("LINENUMBER", String.valueOf(lineNumber));
             Object[] ids = Arrays.stream(scope.getIds()).filter((p) -> !p.toString().equals("arguments") && !p.toString().equals(itsName + "param")).toArray();
             for (Object id : ids) {
                 Object jsValue = collectJsValue(scope.get(id));
@@ -358,15 +369,15 @@ public class DebuggerStateHelper {
     }
 
     private String getVarGsonValue(Object jsValue) {
-        if (jsValue instanceof JsEventSet) {
+        if(jsValue instanceof JsEventSet)
             return Objects.toString(jsValue);
-        }
         GsonBuilder gsonBuilder = new GsonBuilder();
         gsonBuilder.serializeSpecialFloatingPointValues();
-        Gson gson = gsonBuilder.create();
+        Gson gson= gsonBuilder.create();
         try {
             return gson.toJson(jsValue);
-        } catch (Exception e) {
+        }
+        catch (Exception e){
             logger.error("getVarGsonValue Error: jsValue: {0}, error: {1} ", e, jsValue, e.getMessage());
             return null;
         }

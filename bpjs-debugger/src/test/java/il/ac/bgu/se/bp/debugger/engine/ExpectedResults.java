@@ -15,6 +15,7 @@ public class ExpectedResults {
         env.put("myvar1", "null");
         env.put("z", "null");
         env.put("FUNCNAME", "BTMain");
+        env.put("LINENUMBER", "2");
         bt1Env.put(0, env);
         Map<Integer, Map<String, String>> bt2Env =  new HashMap<>();
         bThreadInfoList.add(new BThreadInfo("bt-test-1", bt1Env));
@@ -28,6 +29,7 @@ public class ExpectedResults {
         env.put("myvar1", "10.0");
         env.put("z", "null");
         env.put("FUNCNAME", "BTMain");
+        env.put("LINENUMBER", "3");
         bt1Env.put(0, env);
         Map<Integer, Map<String, String>> bt2Env =  new HashMap<>();
         bThreadInfoList.add(new BThreadInfo("bt-test-1", bt1Env));
@@ -41,12 +43,14 @@ public class ExpectedResults {
         env1.put("myvar1", "10.0");
         env1.put("z", "null");
         env1.put("FUNCNAME", "BTMain");
+        env1.put("LINENUMBER", "3");
         bt1Env.put(0, env1);
         Map<Integer, Map<String, String>> bt2Env =  new HashMap<>();
         HashMap<String, String> env2 = new HashMap<>();
         env2.put("myvar2", "10.0");
         env2.put("z", "null");
         env2.put("FUNCNAME", "BTMain");
+        env2.put("LINENUMBER", "25");
         bt2Env.put(0, env2);
         Set<EventInfo> requested1= new HashSet<>(), requested2= new HashSet<>(), requested = new HashSet<>();
         requested1.add(new EventInfo("bt-1-event-1"));
