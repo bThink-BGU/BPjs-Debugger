@@ -26,7 +26,7 @@ Terminal:
 
 ## Using the server
 
-Base URL is localhost:8080/bpjs
+Base URL is localhost:8080/bpjs 
 
 Supported endpoints:
 
