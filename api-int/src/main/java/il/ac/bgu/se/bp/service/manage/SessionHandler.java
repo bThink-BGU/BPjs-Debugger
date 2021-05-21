@@ -18,6 +18,5 @@ public interface SessionHandler<T> extends PublisherVisitor, Subscriber<BPEvent>
     void removeUser(String userId);
 
     boolean validateUserId(String userId);
-
-    UserSession getUserSession(String userId);
+    String getUsersSourceCode(String userId);
 }

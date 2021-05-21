@@ -1,10 +1,13 @@
 package il.ac.bgu.se.bp.rest;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import il.ac.bgu.se.bp.rest.controller.BPjsIDERestController;
 import il.ac.bgu.se.bp.rest.request.*;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.response.DebugResponse;
 import il.ac.bgu.se.bp.rest.response.EventsHistoryResponse;
+import il.ac.bgu.se.bp.rest.response.SyncSnapshot;
 import il.ac.bgu.se.bp.service.BPjsIDEService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.Header;
@@ -13,6 +16,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.LinkedList;
 
 import static il.ac.bgu.se.bp.rest.utils.Constants.SIMP_SESSION_ID;
 import static il.ac.bgu.se.bp.rest.utils.Endpoints.*;
@@ -129,14 +133,6 @@ public class BPjsIDERestControllerImpl implements BPjsIDERestController {
     }
 
     @Override
-    @RequestMapping(value = SYNC_SNAPSHOT, method = RequestMethod.POST)
-    public @ResponseBody
-    BooleanResponse setSyncSnapshot(@RequestHeader("userId") String userId,
-                                    @RequestBody SetSyncSnapshotRequest setSyncSnapshotRequest) {
-        return bPjsIDEService.setSyncSnapshot(userId, setSyncSnapshotRequest);
-    }
-
-    @Override
     @RequestMapping(value = EVENTS, method = RequestMethod.GET)
     public @ResponseBody
     EventsHistoryResponse getEventsHistory(@RequestHeader("userId") String userId,
@@ -144,4 +140,44 @@ public class BPjsIDERestControllerImpl implements BPjsIDERestController {
                                            @RequestParam(name = "to") int to) {
         return bPjsIDEService.getEventsHistory(userId, from, to);
     }
+
+    @Override
+    @RequestMapping(value = SYNC_SNAPSHOT, method = RequestMethod.PUT)
+    public @ResponseBody
+    BooleanResponse setSyncSnapshot(@RequestHeader("userId") String userId,
+                                    @RequestBody SetSyncSnapshotRequest setSyncSnapshotRequest) {
+        return bPjsIDEService.setSyncSnapshot(userId, setSyncSnapshotRequest);
+    }
+
+    @Override
+    @RequestMapping(value = SYNC_SNAPSHOT, method = RequestMethod.GET)
+    public @ResponseBody
+    SyncSnapshot exportSyncSnapshot(@RequestHeader("userId") String userId) {
+        return bPjsIDEService.exportSyncSnapshot(userId);
+    }
+
+    @Override
+    @RequestMapping(value = SYNC_SNAPSHOT, method = RequestMethod.POST)
+    public @ResponseBody
+    BooleanResponse importSyncSnapshot(@RequestHeader("userId") String userId,
+                                       @RequestBody ImportSyncSnapshotRequest importSyncSnapshotRequest) {
+        return bPjsIDEService.importSyncSnapshot(userId, importSyncSnapshotRequest);
+    }
+
+
+
+    public static void main(String[] args) throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        ImportSyncSnapshotRequest request = new ImportSyncSnapshotRequest();
+        request.setDebug(true);
+        request.setBreakpoints(new LinkedList<>());
+        request.setSkipBreakpointsToggle(false);
+        request.setSkipSyncStateToggle(false);
+        request.setWaitForExternalEvents(true);
+        SyncSnapshot syncSnapshot = new SyncSnapshot("AAAA", "AAAA");
+        request.setSyncSnapshot(syncSnapshot);
+        System.out.println(objectMapper.writeValueAsString(request));
+
+    }
+
 }

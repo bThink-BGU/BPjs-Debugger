@@ -4,6 +4,7 @@ import il.ac.bgu.se.bp.rest.request.*;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.response.DebugResponse;
 import il.ac.bgu.se.bp.rest.response.EventsHistoryResponse;
+import il.ac.bgu.se.bp.rest.response.SyncSnapshot;
 import il.ac.bgu.se.bp.rest.utils.Endpoints;
 import il.ac.bgu.se.bp.session.ITSessionManagerImpl;
 import il.ac.bgu.se.bp.session.ITStompSessionHandler;
@@ -59,105 +60,107 @@ public class RestServiceTestHelper implements TestService {
 
     @Override
     public BooleanResponse run(String userId, RunRequest runRequest) {
-        return performPostRequest(userId, RUN, runRequest);
+        return performPostRequest(userId, RUN, runRequest, BooleanResponse.class);
     }
 
     @Override
     public DebugResponse debug(String userId, DebugRequest debugRequest) {
-        Response response = RestAssured.with().header(new Header(USER_ID, getSocketUserId(userId))).body(debugRequest)
-                .contentType(ContentType.JSON).when().post(BASE_REST_URI + DEBUG);
-        response.then().statusCode(200);
-        return response.getBody().as(DebugResponse.class);
+        return performPostRequest(userId, DEBUG, debugRequest, DebugResponse.class);
     }
 
     @Override
     public BooleanResponse setBreakpoint(String userId, SetBreakpointRequest setBreakpointRequest) {
-        return performPostRequest(userId, BREAKPOINT, setBreakpointRequest);
+        return performPostRequest(userId, BREAKPOINT, setBreakpointRequest, BooleanResponse.class);
     }
 
     @Override
     public BooleanResponse toggleMuteBreakpoints(String userId, ToggleBreakpointsRequest toggleBreakpointsRequest) {
-        return performPutRequest(userId, BREAKPOINT, toggleBreakpointsRequest);
+        return performPutRequest(userId, BREAKPOINT, toggleBreakpointsRequest, BooleanResponse.class);
     }
 
     @Override
     public BooleanResponse toggleMuteSyncPoints(String userId, ToggleSyncStatesRequest toggleMuteSyncPoints) {
-        return performPutRequest(userId, SYNC_STATES, toggleMuteSyncPoints);
+        return performPutRequest(userId, SYNC_STATES, toggleMuteSyncPoints, BooleanResponse.class);
     }
 
     @Override
     public BooleanResponse toggleWaitForExternal(String userId, ToggleWaitForExternalRequest toggleWaitForExternalRequest) {
-        return performPutRequest(userId, WAIT_EXTERNAL, toggleWaitForExternalRequest);
+        return performPutRequest(userId, WAIT_EXTERNAL, toggleWaitForExternalRequest, BooleanResponse.class);
     }
 
     @Override
     public BooleanResponse stop(String userId) {
-        return performGetRequest(userId, STOP);
+        return performGetRequest(userId, STOP, BooleanResponse.class);
     }
 
     @Override
     public BooleanResponse stepOut(String userId) {
-        return performGetRequest(userId, STEP_OUT);
+        return performGetRequest(userId, STEP_OUT, BooleanResponse.class);
     }
 
     @Override
     public BooleanResponse stepInto(String userId) {
-        return performGetRequest(userId, STEP_INTO);
+        return performGetRequest(userId, STEP_INTO, BooleanResponse.class);
     }
 
     @Override
     public BooleanResponse stepOver(String userId) {
-        return performGetRequest(userId, STEP_OVER);
+        return performGetRequest(userId, STEP_OVER, BooleanResponse.class);
     }
 
     @Override
     public BooleanResponse continueRun(String userId) {
-        return performGetRequest(userId, CONTINUE);
+        return performGetRequest(userId, CONTINUE, BooleanResponse.class);
     }
 
     @Override
     public BooleanResponse nextSync(String userId) {
-        return performGetRequest(userId, NEXT_SYNC);
+        return performGetRequest(userId, NEXT_SYNC, BooleanResponse.class);
     }
 
     @Override
     public BooleanResponse externalEvent(String userId, ExternalEventRequest externalEventRequest) {
-        return performPostRequest(userId, EXTERNAL_EVENT, externalEventRequest);
+        return performPostRequest(userId, EXTERNAL_EVENT, externalEventRequest, BooleanResponse.class);
     }
 
     @Override
     public BooleanResponse setSyncSnapshot(String userId, SetSyncSnapshotRequest setSyncSnapshotRequest) {
-        return performPostRequest(userId, SYNC_SNAPSHOT, setSyncSnapshotRequest);
+        return performPutRequest(userId, SYNC_SNAPSHOT, setSyncSnapshotRequest, BooleanResponse.class);
+    }
+
+    @Override
+    public SyncSnapshot exportSyncSnapshot(String userId) {
+        return performGetRequest(userId, SYNC_SNAPSHOT, SyncSnapshot.class);
+    }
+
+    @Override
+    public BooleanResponse importSyncSnapshot(String userId, ImportSyncSnapshotRequest importSyncSnapshotRequest) {
+        return null;
     }
 
     @Override
     public EventsHistoryResponse getEventsHistory(String userId, int from, int to) {
-        Response response = RestAssured.with()
-                .queryParam("from", from).queryParam("to", to)
-                .header(new Header(USER_ID, getSocketUserId(userId)))
-                .contentType(ContentType.JSON).when().get(BASE_REST_URI + EVENTS);
-        response.then().statusCode(200);
-        return response.getBody().as(EventsHistoryResponse.class);
+        return performGetRequest(userId, EVENTS, EventsHistoryResponse.class);
     }
 
-    private BooleanResponse performPostRequest(String userId, String URL, Object body) {
+    private <T> T performPostRequest(String userId, String URL, Object body, Class<T> clazz) {
         Response response = RestAssured.with().header(new Header(USER_ID, getSocketUserId(userId))).body(body)
                 .contentType(ContentType.JSON).when().post(BASE_REST_URI + URL);
         response.then().statusCode(200);
-        return response.getBody().as(BooleanResponse.class);
+        return response.getBody().as(clazz);
     }
 
-    private BooleanResponse performPutRequest(String userId, String URL, Object body) {
+    private <T> T performPutRequest(String userId, String URL, Object body, Class<T> clazz) {
         Response response = RestAssured.with().header(new Header(USER_ID, getSocketUserId(userId))).body(body)
                 .contentType(ContentType.JSON).when().put(BASE_REST_URI + URL);
         response.then().statusCode(200);
-        return response.getBody().as(BooleanResponse.class);
+        return response.getBody().as(clazz);
     }
 
-    private BooleanResponse performGetRequest(String userId, String URL) {
+    private <T> T performGetRequest(String userId, String URL, Class<T> clazz) {
         Response response = RestAssured.with().header(new Header(USER_ID, getSocketUserId(userId)))
                 .contentType(ContentType.JSON).when().get(BASE_REST_URI + URL);
         response.then().statusCode(200);
-        return response.getBody().as(BooleanResponse.class);
+        return response.getBody().as(clazz);
     }
 }

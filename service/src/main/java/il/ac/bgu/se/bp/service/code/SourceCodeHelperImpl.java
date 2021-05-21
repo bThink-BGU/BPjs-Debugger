@@ -38,8 +38,6 @@ public class SourceCodeHelperImpl implements SourceCodeHelper {
         String filename = generateFilename();
         try {
             String filepath = getBasePath() + filename;
-            System.out.println(getBasePath());
-            System.out.println(filepath);
             fileHelper.createFile(filepath);
             fileHelper.writeTextToFile(sourceCode, filepath);
             return filename;
@@ -47,7 +45,6 @@ public class SourceCodeHelperImpl implements SourceCodeHelper {
             logger.error("failed creating or writing to file with name: {0}, error: {1}", e, filename, e.getMessage());
             return null;
         }
-//        return "BPJSDebuggerForTesting.js";
     }
 
     @Override
@@ -56,6 +53,16 @@ public class SourceCodeHelperImpl implements SourceCodeHelper {
             fileHelper.removeFile(getBasePath() + filename);
         } catch (Exception e) {
             logger.error("failed removing file: {0}, error: {1}", e, filename, e.getMessage());
+        }
+    }
+
+    @Override
+    public String readCodeFile(String filename) {
+        try {
+            return fileHelper.readFile(getBasePath() + filename);
+        } catch (Exception e) {
+            logger.error("failed reading file: {0}, error: {1}", e, filename, e.getMessage());
+            return null;
         }
     }
 

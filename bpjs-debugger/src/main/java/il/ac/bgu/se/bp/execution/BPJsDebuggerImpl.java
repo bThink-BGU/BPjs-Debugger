@@ -18,9 +18,11 @@ import il.ac.bgu.se.bp.debugger.engine.events.BPConsoleEvent;
 import il.ac.bgu.se.bp.debugger.engine.events.ProgramStatusEvent;
 import il.ac.bgu.se.bp.debugger.manage.ProgramValidator;
 import il.ac.bgu.se.bp.error.ErrorCode;
+import il.ac.bgu.se.bp.execution.manage.SerializableSyncSnapshot;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.response.DebugResponse;
 import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
+import il.ac.bgu.se.bp.rest.response.SyncSnapshot;
 import il.ac.bgu.se.bp.socket.console.ConsoleMessage;
 import il.ac.bgu.se.bp.socket.console.LogType;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
@@ -32,9 +34,11 @@ import il.ac.bgu.se.bp.utils.DebuggerStateHelper;
 import il.ac.bgu.se.bp.utils.logger.Logger;
 import il.ac.bgu.se.bp.utils.observer.BPEvent;
 import il.ac.bgu.se.bp.utils.observer.Subscriber;
+import org.mozilla.javascript.Context;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -42,6 +46,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static il.ac.bgu.se.bp.utils.Common.NO_MORE_WAIT_EXTERNAL;
+import static il.ac.bgu.se.bp.utils.Common.objectMapper;
 import static il.ac.bgu.se.bp.utils.ProgramStatusHelper.getRunStatusByDebuggerLevel;
 import static il.ac.bgu.se.bp.utils.ResponseHelper.createErrorResponse;
 import static il.ac.bgu.se.bp.utils.ResponseHelper.createSuccessResponse;
@@ -159,6 +164,13 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     }
 
     @Override
+    public Serializable getSyncSnapshot() {
+        Context.enter();
+        syncSnapshot.getBThreadSnapshots().forEach(bThreadSyncSnapshot -> bThreadSyncSnapshot.getSyncStatement().setBthread(null));
+        return new SerializableSyncSnapshot(syncSnapshot);
+    }
+
+    @Override
     public BooleanResponse setSyncSnapshot(long snapShotTime) {
         logger.info("setSyncSnapshot() snapShotTime: {0}, state: {1}", snapShotTime, state.getDebuggerState().toString());
         if (!checkStateEquals(RunnerState.State.SYNC_STATE)) {
@@ -169,12 +181,29 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
             return createErrorResponse(ErrorCode.CANNOT_REPLACE_SNAPSHOT);
         }
 
-        syncSnapshot = newSnapshot;
+        return setSyncSnapshot(newSnapshot);
+    }
 
+    @Override
+    public BooleanResponse setSyncSnapshot(SyncSnapshot syncSnapshotHolder) {
+        return setSyncSnapshot(serializedSyncSnapshotToBProgramSyncSnapshot(syncSnapshotHolder.getSyncSnapshot(), bprog));
+    }
+
+    private BooleanResponse setSyncSnapshot(BProgramSyncSnapshot newSnapshot) {
+        syncSnapshot = newSnapshot;
         debuggerStateHelper.cleanFields();
         debuggerEngine.setSyncSnapshot(syncSnapshot);
         debuggerEngine.onStateChanged();
         return createSuccessResponse();
+    }
+
+    private BProgramSyncSnapshot serializedSyncSnapshotToBProgramSyncSnapshot(Serializable syncSnapshot, BProgram bprog) {
+        SerializableSyncSnapshot serializableSyncSnapshot = objectMapper.convertValue(syncSnapshot, SerializableSyncSnapshot.class);
+        BProgramSyncSnapshot bProgramSyncSnapshot = new BProgramSyncSnapshot(bprog, serializableSyncSnapshot.getThreadSnapshots(),
+                serializableSyncSnapshot.getExternalEvents(), serializableSyncSnapshot.getViolationRecord());
+
+        bProgramSyncSnapshot.getBThreadSnapshots().forEach(bThreadSyncSnapshot -> bThreadSyncSnapshot.getSyncStatement().setBthread(bThreadSyncSnapshot));
+        return bProgramSyncSnapshot;
     }
 
     @Override

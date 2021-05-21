@@ -4,6 +4,7 @@ import il.ac.bgu.se.bp.rest.request.*;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.response.DebugResponse;
 import il.ac.bgu.se.bp.rest.response.EventsHistoryResponse;
+import il.ac.bgu.se.bp.rest.response.SyncSnapshot;
 
 public interface BPjsIDEService {
 
@@ -26,7 +27,9 @@ public interface BPjsIDEService {
     BooleanResponse nextSync(String userId);
 
     BooleanResponse externalEvent(String userId, ExternalEventRequest externalEventRequest);
-    BooleanResponse setSyncSnapshot(String userId, SetSyncSnapshotRequest setSyncSnapshotRequest);
-
     EventsHistoryResponse getEventsHistory(String userId, int from, int to);
+
+    BooleanResponse setSyncSnapshot(String userId, SetSyncSnapshotRequest setSyncSnapshotRequest);
+    SyncSnapshot exportSyncSnapshot(String userId);
+    BooleanResponse importSyncSnapshot(String userId, ImportSyncSnapshotRequest importSyncSnapshotRequest);
 }
