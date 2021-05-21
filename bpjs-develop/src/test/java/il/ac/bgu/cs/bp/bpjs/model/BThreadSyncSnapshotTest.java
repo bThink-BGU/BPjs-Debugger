@@ -51,7 +51,7 @@ public class BThreadSyncSnapshotTest {
         BProgram bprog = new ResourceBProgram("SnapshotTests/ABCDTrace.js");
         BProgramSyncSnapshot setup = bprog.setup();
 
-        ExecutorService execSvc = ExecutorServiceMaker.makeWithName("BProgramSnapshotEqualityTest");
+        ExecutorService execSvc = BProgram.getExecutorServiceMaker().makeWithName("BProgramSnapshotEqualityTest");
         List<BProgramSyncSnapshot> snapshots = new ArrayList<>();
         BProgramSyncSnapshot step = setup.start(execSvc);
         snapshots.add(step);
@@ -85,7 +85,7 @@ public class BThreadSyncSnapshotTest {
                 "        }\n" +
                 "});");
         BProgramSyncSnapshot postSetup = bprog.setup();
-        ExecutorService execSvcA = ExecutorServiceMaker.makeWithName("BProgramSnapshotTriggerTest");
+        ExecutorService execSvcA = BProgram.getExecutorServiceMaker().makeWithName("BProgramSnapshotTriggerTest");
         BProgramSyncSnapshot postSync1 = postSetup.start(execSvcA);
         Set<BEvent> possibleEvents = bprog.getEventSelectionStrategy().selectableEvents(postSync1);
         EventSelectionResult esr = bprog.getEventSelectionStrategy().select(postSync1, possibleEvents).get();

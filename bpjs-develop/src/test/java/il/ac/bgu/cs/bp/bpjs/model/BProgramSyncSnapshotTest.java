@@ -73,7 +73,7 @@ public class BProgramSyncSnapshotTest {
                 "        bp.ASSERT(false,\"Failed Assert\");\n" +
                 "});");
         BProgramSyncSnapshot setup = bprog.setup();
-        ExecutorService execSvcA = ExecutorServiceMaker.makeWithName("BProgramSnapshotTriggerTest");
+        ExecutorService execSvcA = BProgram.getExecutorServiceMaker().makeWithName("BProgramSnapshotTriggerTest");
         BProgramSyncSnapshot stepa = setup.start(execSvcA);
         Set<BEvent> possibleEvents_a = bprog.getEventSelectionStrategy().selectableEvents(stepa);
         EventSelectionResult event_a = bprog.getEventSelectionStrategy().select(stepa, possibleEvents_a).get();
@@ -90,7 +90,7 @@ public class BProgramSyncSnapshotTest {
                 "        bp.hot(true).sync({request:bp.Event(\"B\")});\n" +
                 "});");
         BProgramSyncSnapshot setup = bprog.setup();
-        ExecutorService execSvcA = ExecutorServiceMaker.makeWithName("BProgramSnapshotTriggerTest");
+        ExecutorService execSvcA = BProgram.getExecutorServiceMaker().makeWithName("BProgramSnapshotTriggerTest");
         BProgramSyncSnapshot bpss = setup.start(execSvcA);
         assertFalse(bpss.isHot());
         Set<BEvent> possibleEvents_a = bprog.getEventSelectionStrategy().selectableEvents(bpss);
@@ -125,8 +125,8 @@ public class BProgramSyncSnapshotTest {
         BProgramSyncSnapshot setup2 = bprog2.setup();
 
         // Run first step
-        ExecutorService execSvcA = ExecutorServiceMaker.makeWithName("BProgramSnapshotEqualityTest");
-        ExecutorService execSvcB = ExecutorServiceMaker.makeWithName("BProgramSnapshotEqualityTest");
+        ExecutorService execSvcA = BProgram.getExecutorServiceMaker().makeWithName("BProgramSnapshotEqualityTest");
+        ExecutorService execSvcB = BProgram.getExecutorServiceMaker().makeWithName("BProgramSnapshotEqualityTest");
         BProgramSyncSnapshot stepa = setup.start(execSvcA);
         BProgramSyncSnapshot stepb = setup2.start(execSvcB);
         assertEquals(stepa, stepb);
@@ -182,8 +182,8 @@ public class BProgramSyncSnapshotTest {
         BProgramSyncSnapshot setup2 = bprog2.setup();
 
         // Run first step
-        ExecutorService execSvcA = ExecutorServiceMaker.makeWithName("BProgramSnapshotEqualityTest");
-        ExecutorService execSvcB = ExecutorServiceMaker.makeWithName("BProgramSnapshotEqualityTest");
+        ExecutorService execSvcA = BProgram.getExecutorServiceMaker().makeWithName("BProgramSnapshotEqualityTest");
+        ExecutorService execSvcB = BProgram.getExecutorServiceMaker().makeWithName("BProgramSnapshotEqualityTest");
         BProgramSyncSnapshot postStart1 = setup1.start(execSvcA);
         BProgramSyncSnapshot postStart2 = setup2.start(execSvcB);
         assertEquals(postStart1, postStart2);

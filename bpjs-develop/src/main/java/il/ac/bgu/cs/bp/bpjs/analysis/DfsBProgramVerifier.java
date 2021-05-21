@@ -163,7 +163,7 @@ public class DfsBProgramVerifier {
             inspections.addAll( ExecutionTraceInspections.DEFAULT_SET );
         }
         
-        ExecutorService execSvc = ExecutorServiceMaker.makeWithName("DfsBProgramRunner-" + INSTANCE_COUNTER.incrementAndGet());
+        ExecutorService execSvc = BProgram.getExecutorServiceMaker().makeWithName("DfsBProgramRunner-" + INSTANCE_COUNTER.incrementAndGet());
         long start = System.currentTimeMillis();
         listener.started(this);
         Violation vio = dfsUsingStack(new DfsTraversalNode(currentBProgram, currentBProgram.setup().start(execSvc), null), execSvc);

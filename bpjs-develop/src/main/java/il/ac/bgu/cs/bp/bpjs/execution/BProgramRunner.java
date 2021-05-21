@@ -73,7 +73,7 @@ public class BProgramRunner implements Runnable {
     public void run() {
         try {
             // setup bprogram and runtime parts.
-            execSvc = ExecutorServiceMaker.makeWithName("BProgramRunner-" + instanceNum );
+            execSvc = BProgram.getExecutorServiceMaker().makeWithName("BProgramRunner-" + instanceNum );
             failedAssertion = null;
             listeners.forEach(l -> l.starting(bprog));
             BProgramSyncSnapshot cur = bprog.setup();

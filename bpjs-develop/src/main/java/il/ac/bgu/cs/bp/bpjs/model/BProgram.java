@@ -1,6 +1,7 @@
 package il.ac.bgu.cs.bp.bpjs.model;
 
 import il.ac.bgu.cs.bp.bpjs.execution.jsproxy.BProgramJsProxy;
+import il.ac.bgu.cs.bp.bpjs.internal.ExecutorServiceMaker;
 import il.ac.bgu.cs.bp.bpjs.model.eventselection.EventSelectionStrategy;
 import il.ac.bgu.cs.bp.bpjs.model.eventselection.SimpleEventSelectionStrategy;
 
@@ -51,6 +52,7 @@ public abstract class BProgram {
      */
     private static final AtomicInteger INSTANCE_COUNTER = new AtomicInteger();
 
+    private static ExecutorServiceMaker executorServiceMaker = new ExecutorServiceMaker();
     /**
      * A callback interface invoked when a b-thread is added to {@code this}.
      */
@@ -524,7 +526,14 @@ public abstract class BProgram {
     public BpLog.LogLevel getLogLevel() {
         return (jsProxy != null ) ? BpLog.LogLevel.valueOf(jsProxy.log.getLevel()) : null;
     }
-    
+
+    public static ExecutorServiceMaker getExecutorServiceMaker() {
+        return executorServiceMaker;
+    }
+
+    public static void setExecutorServiceMaker(ExecutorServiceMaker executorServiceMaker) {
+        BProgram.executorServiceMaker = executorServiceMaker;
+    }
     @Override
     public String toString() {
         return "[BProgram " + getName() + "]";

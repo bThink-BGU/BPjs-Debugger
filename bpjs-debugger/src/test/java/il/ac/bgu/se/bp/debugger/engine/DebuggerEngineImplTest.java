@@ -44,7 +44,7 @@ public class DebuggerEngineImplTest {
     private final static int[] BREAKPOINTS_LINES = new int[]{2, 4};
     private final static Map<Integer, Boolean> breakpoints = new HashMap<>();
 
-    private final ExecutorService execSvc = ExecutorServiceMaker.makeWithName("TEST_");
+    private final ExecutorService execSvc = BProgram.getExecutorServiceMaker().makeWithName("TEST_");
     private final static BlockingQueue<BPDebuggerState> onStateChangedQueue = new ArrayBlockingQueue<>(5);
     private RunnerState state = new RunnerState();
     private BPDebuggerState expectedState;

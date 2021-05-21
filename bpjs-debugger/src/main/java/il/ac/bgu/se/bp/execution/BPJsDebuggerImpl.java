@@ -27,6 +27,7 @@ import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
 import il.ac.bgu.se.bp.socket.state.EventInfo;
 import il.ac.bgu.se.bp.socket.status.Status;
 import il.ac.bgu.se.bp.utils.DebuggerBProgramRunnerListener;
+import il.ac.bgu.se.bp.utils.DebuggerExecutorServiceMaker;
 import il.ac.bgu.se.bp.utils.DebuggerPrintStream;
 import il.ac.bgu.se.bp.utils.DebuggerStateHelper;
 import il.ac.bgu.se.bp.utils.logger.Logger;
@@ -83,6 +84,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         this.filename = filename;
         this.debuggerLevel = debuggerLevel;
         debuggerStateHelper = new DebuggerStateHelper(this, syncSnapshotHolder, debuggerLevel);
+        BProgram.setExecutorServiceMaker(new DebuggerExecutorServiceMaker());
         initDebugger();
     }
 
@@ -92,8 +94,8 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
 
     private void initDebugger() {
         debuggerExecutorId = "BPJsDebuggerRunner-" + debuggerThreadIdGenerator.incrementAndGet();
-        jsExecutorService = ExecutorServiceMaker.makeWithName(debuggerExecutorId);
-        bpExecutorService = ExecutorServiceMaker.makeWithName(debuggerExecutorId);
+        jsExecutorService = BProgram.getExecutorServiceMaker().makeWithName(debuggerExecutorId);
+        bpExecutorService = BProgram.getExecutorServiceMaker().makeWithName(debuggerExecutorId);
         logger = new Logger(BPJsDebuggerImpl.class, debuggerId);
         debuggerEngine = new DebuggerEngineImpl(debuggerId, filename, state, debuggerStateHelper, debuggerExecutorId);
         debuggerEngine.changeDebuggerLevel(debuggerLevel);
