@@ -43,7 +43,7 @@ public class Common {
         }
 
         private static class FunctionDeserializer<T extends Function> extends StdDeserializer<Function> {
-            private T classType;
+            private T ignored;
 
             private static final long serialVersionUID = -9076663982576848660L;
 
@@ -53,7 +53,7 @@ public class Common {
 
             @Override
             public Function deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
-                return jsonParser.readValueAs(classType.getClass());
+                return jsonParser.readValueAs(ignored.getClass());
             }
         }
     }

@@ -1,14 +1,13 @@
 package il.ac.bgu.cs.bp.bpjs.model;
 
 import il.ac.bgu.cs.bp.bpjs.model.internal.ContinuationProgramState;
-import java.io.Serializable;
-import java.util.Optional;
-
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.NativeContinuation;
 import org.mozilla.javascript.Scriptable;
 
+import java.io.Serializable;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * The state of a BThread at {@code bsync}.
@@ -27,7 +26,7 @@ public class BThreadSyncSnapshot implements Serializable {
      * The JavaScript function that will be called when {@code this} BThread
      * runs.
      */
-    private final Function entryPoint;
+    private Function entryPoint;
 
     /**
      * BThreads may specify a function that runs when they are removed because
@@ -74,8 +73,11 @@ public class BThreadSyncSnapshot implements Serializable {
         data = someData;
     }
 
+    public BThreadSyncSnapshot() {
+    }
+
     public BThreadSyncSnapshot(String name, Function entryPoint, Function interruptHandler,
-            Object continuation, SyncStatement bSyncStatement) {
+                               Object continuation, SyncStatement bSyncStatement) {
         this(name, entryPoint, interruptHandler, continuation, bSyncStatement, null);
     }
     
@@ -156,7 +158,7 @@ public class BThreadSyncSnapshot implements Serializable {
         }
         return programState;
     }
-    
+
     @Override
     public int hashCode() {
         final int prime = 31;
