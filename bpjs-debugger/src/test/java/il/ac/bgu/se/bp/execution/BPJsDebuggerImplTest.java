@@ -36,7 +36,8 @@ import static org.mockito.Mockito.*;
 @RunWith(MockitoJUnitRunner.class)
 public class BPJsDebuggerImplTest {
 
-    private final static String TEST_FILENAME = "BPJSDebuggerForTesting.js";
+    private final static String VALID_TEST_FILE = "TestCodeFile.js";
+    private final static String INVALID_TEST_FILE = "InvalidCode.js";
     private static final String debuggerId = "6981cb0a-f871-474b-98e9-faf7c02e18a4";
 
     private final static int[] BREAKPOINTS_LINES = new int[]{2, 4};
@@ -45,7 +46,7 @@ public class BPJsDebuggerImplTest {
     private final static BlockingQueue<BPDebuggerState> onStateChangedQueue = new ArrayBlockingQueue<>(5);
 
     @InjectMocks
-    private BPJsDebuggerImpl bpJsDebugger = new BPJsDebuggerImpl(debuggerId, TEST_FILENAME);
+    private BPJsDebuggerImpl bpJsDebugger = new BPJsDebuggerImpl(debuggerId, VALID_TEST_FILE);
 
     @Mock
     private DebuggerEngine debuggerEngine;
@@ -73,6 +74,20 @@ public class BPJsDebuggerImplTest {
 
         verify(debuggerEngine, times(1)).setupBreakpoints(breakpoints);
         verify(debuggerEngine, times(1)).setSyncSnapshot(any());
+    }
+
+    @Test (expected = IllegalArgumentException.class)
+    public void debugInvalidFile() {
+        new BPJsDebuggerImpl(debuggerId, "invalid_file_name__a.js");
+    }
+
+    @Test
+    public void debugInvalidCode() {
+        BPJsDebuggerImpl debugger = new BPJsDebuggerImpl(debuggerId, INVALID_TEST_FILE);
+        BooleanResponse booleanResponse = debugger.setup(breakpoints, false, false,false);
+        assertErrorResponse(booleanResponse, ErrorCode.BP_SETUP_FAIL);
+        assertFalse(bpJsDebugger.isSetup());
+        assertFalse(bpJsDebugger.isStarted());
     }
 
     @Test
