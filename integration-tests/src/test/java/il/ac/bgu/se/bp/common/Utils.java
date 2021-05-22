@@ -3,6 +3,7 @@ package il.ac.bgu.se.bp.common;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import il.ac.bgu.se.bp.socket.state.BThreadInfo;
+import il.ac.bgu.se.bp.socket.state.BThreadScope;
 import il.ac.bgu.se.bp.socket.state.EventInfo;
 import il.ac.bgu.se.bp.utils.Pair;
 import org.springframework.util.StringUtils;
@@ -21,9 +22,9 @@ public class Utils {
         return str.equals("null");
     }
 
-    public static Map<String, String> getLastEnvOfMatchingBThread(List<BThreadInfo> bThreadInfoList, List<String> bThreads) {
+    public static BThreadScope getLastEnvOfMatchingBThread(List<BThreadInfo> bThreadInfoList, List<String> bThreads) {
         for (String bThread : bThreads) {
-            Map<String, String> envByBThread = getLastEnvOfBThread(bThreadInfoList, bThread);
+            BThreadScope envByBThread = getLastEnvOfBThread(bThreadInfoList, bThread);
             if (envByBThread != null) {
                 return envByBThread;
             }
@@ -31,7 +32,7 @@ public class Utils {
         return null;
     }
 
-    private static Map<String, String> getLastEnvOfBThread(List<BThreadInfo> bThreadInfoList, String bThread) {
+    private static BThreadScope getLastEnvOfBThread(List<BThreadInfo> bThreadInfoList, String bThread) {
         for (BThreadInfo bThreadInfo : bThreadInfoList) {
             if (bThreadInfo.getName().equals(bThread))
                 return bThreadInfo.getEnv().get(0);
