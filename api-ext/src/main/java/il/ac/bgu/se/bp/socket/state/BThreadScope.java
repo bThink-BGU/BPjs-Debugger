@@ -13,6 +13,9 @@ public class BThreadScope  implements Serializable {
     private String currentLineNumber;
     private Map<String, String> variables;
 
+    public BThreadScope() {
+    }
+
     public BThreadScope(String scopeName, String currentLineNumber, Map<String, String> variables) {
         this.scopeName = scopeName;
         this.currentLineNumber = currentLineNumber;
@@ -55,9 +58,6 @@ public class BThreadScope  implements Serializable {
     public int hashCode() {
         return Objects.hash(scopeName, currentLineNumber, variables);
     }
-
-
-
 
     @Override
     public String toString() {
