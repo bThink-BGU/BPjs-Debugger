@@ -1,6 +1,5 @@
 package il.ac.bgu.se.bp.debugger.engine;
 
-import il.ac.bgu.cs.bp.bpjs.internal.ExecutorServiceMaker;
 import il.ac.bgu.cs.bp.bpjs.model.BProgram;
 import il.ac.bgu.cs.bp.bpjs.model.BProgramSyncSnapshot;
 import il.ac.bgu.cs.bp.bpjs.model.BThreadSyncSnapshot;
@@ -56,6 +55,7 @@ public class DebuggerEngineImplTest {
 
     @Mock
     private Publisher<BPEvent> publisher;
+
     @Mock
     private BPJsDebugger bpJsDebugger;
 
@@ -86,6 +86,7 @@ public class DebuggerEngineImplTest {
             e.printStackTrace();
         }
     }
+
     private void setMockDebugger() {
         try {
             FieldSetter.setField(debuggerStateHelper, DebuggerEngineImpl.class.getDeclaredField("bpJsDebugger"), bpJsDebugger);
@@ -93,6 +94,7 @@ public class DebuggerEngineImplTest {
             e.printStackTrace();
         }
     }
+
     @Test
     public void testIsBreakPointAllowed() throws InterruptedException {
         expectedStatus.push(Status.BREAKPOINT);
@@ -129,7 +131,7 @@ public class DebuggerEngineImplTest {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        verify(debuggerStateHelper, times(1)).generateDebuggerState(any(), any(), any(),any());
+        verify(debuggerStateHelper, times(1)).generateDebuggerState(any(), any(), any(), any());
     }
 
     @Test
@@ -146,7 +148,7 @@ public class DebuggerEngineImplTest {
 
         doCallRealMethod().when(debuggerStateHelper).setRecentlyRegisteredBThreads(any());
         doCallRealMethod().when(debuggerStateHelper).getLastState();
-        doCallRealMethod().when(debuggerStateHelper).peekNextState(any(),any(),any(),any());
+        doCallRealMethod().when(debuggerStateHelper).peekNextState(any(), any(), any(), any());
         doCallRealMethod().when(debuggerStateHelper).cleanFields();
 
 
@@ -163,13 +165,13 @@ public class DebuggerEngineImplTest {
         } catch (NoSuchFieldException e) {
             e.printStackTrace();
         }
-        when(debuggerStateHelper.generateDebuggerState(any(), any(), any(),any())).thenAnswer(invocationOnMock -> {
+        when(debuggerStateHelper.generateDebuggerState(any(), any(), any(), any())).thenAnswer(invocationOnMock -> {
             debuggerEngine.addCommand(new StepInto());
             return invocationOnMock.callRealMethod();
         });
         try {
             bProgramSyncSnapshot = bProgramSyncSnapshot.start(execSvc);
-            doCallRealMethod().when(debuggerStateHelper).generateDebuggerState(any(), any(), any(),any());
+            doCallRealMethod().when(debuggerStateHelper).generateDebuggerState(any(), any(), any(), any());
             state.setDebuggerState(RunnerState.State.SYNC_STATE);
             debuggerEngine.setSyncSnapshot(bProgramSyncSnapshot);
             debuggerEngine.onStateChanged();
@@ -185,12 +187,11 @@ public class DebuggerEngineImplTest {
         assertEquals(expectedState, state);
         debuggerEngine.onStateChanged();
 
-        state= onStateChangedQueue.take();
         state = onStateChangedQueue.take();
-      expectedState = ExpectedResults.testEnvChangedInBreakPoints_ENV3();
+        state = onStateChangedQueue.take();
+        expectedState = ExpectedResults.testEnvChangedInBreakPoints_ENV3();
         assertEquals(expectedState, state);
     }
-
 
     private <T> Void onStateChangedTester(T event) {
         if (event instanceof BPStateEvent) {

@@ -44,7 +44,7 @@ public class ProgramValidatorImpl implements ProgramValidator<BPJsDebugger> {
     }
 
     @Override
-    public BooleanResponse validateContinueRun(BPJsDebugger bProg) {
+    public BooleanResponse validateJSDebugState(BPJsDebugger bProg) {
         RunnerState state = bProg.getDebuggerState();
 
         if (state.getDebuggerState() != RunnerState.State.JS_DEBUG) {
@@ -52,6 +52,12 @@ public class ProgramValidatorImpl implements ProgramValidator<BPJsDebugger> {
         }
 
         return createSuccessResponse();
+    }
+
+    @Override
+    public BooleanResponse validateNotJSDebugState(BPJsDebugger bProg) {
+        return !validateJSDebugState(bProg).isSuccess() ? createSuccessResponse() :
+                createErrorResponse(ErrorCode.CANNOT_ADD_EXTERNAL_EVENT_ON_JS_DEBUG_STATE);
     }
 
     @Override
@@ -72,6 +78,10 @@ public class ProgramValidatorImpl implements ProgramValidator<BPJsDebugger> {
 
     @Override
     public BooleanResponse validateAndRun(BPJsDebugger bProg, RunnerState.State expectedState, Callable<BooleanResponse> callback) {
+        if (!bProg.isSetup()) {
+            return createErrorResponse(ErrorCode.SETUP_REQUIRED);
+        }
+
         RunnerState.State state = bProg.getDebuggerState().getDebuggerState();
 
         if (!RunnerState.State.JS_DEBUG.equals(state)) {
@@ -93,6 +103,9 @@ public class ProgramValidatorImpl implements ProgramValidator<BPJsDebugger> {
 
     @Override
     public BooleanResponse validateAndRunAsync(BPJsDebugger bProg, RunnerState.State expectedState, Callable<BooleanResponse> callback) {
+        if (!bProg.isSetup()) {
+            return createErrorResponse(ErrorCode.SETUP_REQUIRED);
+        }
         RunnerState.State actualState = bProg.getDebuggerState().getDebuggerState();
 
         if (!expectedState.equals(actualState)) {

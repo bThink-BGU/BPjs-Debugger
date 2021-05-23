@@ -7,8 +7,8 @@ import java.util.concurrent.Callable;
 
 public interface ProgramValidator<T> {
     BooleanResponse validateNextSync(T bProg);
-    BooleanResponse validateContinueRun(T bProg);
-
+    BooleanResponse validateJSDebugState(T bProg);
+    BooleanResponse validateNotJSDebugState(T bProg);
 
     BooleanResponse validateAndRun(T bProg, Callable<BooleanResponse> callback);
     BooleanResponse validateAndRun(T bProg, RunnerState.State expectedState, Callable<BooleanResponse> callback);

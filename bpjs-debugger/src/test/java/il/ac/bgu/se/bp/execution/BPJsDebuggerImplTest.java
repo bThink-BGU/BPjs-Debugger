@@ -1,23 +1,25 @@
 package il.ac.bgu.se.bp.execution;
 
+import il.ac.bgu.cs.bp.bpjs.model.BProgram;
+import il.ac.bgu.se.bp.debugger.RunnerState;
 import il.ac.bgu.se.bp.debugger.commands.Continue;
 import il.ac.bgu.se.bp.debugger.commands.StepInto;
 import il.ac.bgu.se.bp.debugger.commands.StepOut;
 import il.ac.bgu.se.bp.debugger.commands.StepOver;
 import il.ac.bgu.se.bp.debugger.engine.DebuggerEngine;
+import il.ac.bgu.se.bp.debugger.manage.ProgramValidator;
 import il.ac.bgu.se.bp.error.ErrorCode;
 import il.ac.bgu.se.bp.execution.manage.ProgramValidatorImpl;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
+import il.ac.bgu.se.bp.utils.asyncHelper.AsyncOperationRunner;
 import il.ac.bgu.se.bp.utils.asyncHelper.AsyncOperationRunnerImpl;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.mockito.Spy;
+import org.mockito.*;
+import org.mockito.internal.util.reflection.FieldSetter;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.Arrays;
@@ -45,6 +47,8 @@ public class BPJsDebuggerImplTest {
 
     private final static BlockingQueue<BPDebuggerState> onStateChangedQueue = new ArrayBlockingQueue<>(5);
 
+    private ArgumentCaptor<BProgram> bProgramArgumentCaptor;
+
     @InjectMocks
     private BPJsDebuggerImpl bpJsDebugger = new BPJsDebuggerImpl(debuggerId, VALID_TEST_FILE);
 
@@ -52,23 +56,24 @@ public class BPJsDebuggerImplTest {
     private DebuggerEngine debuggerEngine;
 
     @Spy
-    private AsyncOperationRunnerImpl asyncOperationRunner;
+    private AsyncOperationRunner asyncOperationRunner = new AsyncOperationRunnerImpl();
 
     @Spy
-    private ProgramValidatorImpl programValidator;
+    private ProgramValidator programValidator = new ProgramValidatorImpl();
 
     @Before
-    public void setUp() {
+    public void setUp() throws NoSuchFieldException {
         MockitoAnnotations.initMocks(this);
         onStateChangedQueue.clear();
         Arrays.stream(BREAKPOINTS_LINES).forEach(lineNumber -> breakpoints.put(lineNumber, Boolean.TRUE));
         doAnswer(a -> onStateChangedTester(new BPDebuggerState())).when(debuggerEngine).onStateChanged();
         when(debuggerEngine.getBreakpoints()).thenReturn(new boolean[0]);
+        FieldSetter.setField(programValidator, ProgramValidatorImpl.class.getDeclaredField("asyncOperationRunner"), asyncOperationRunner);
     }
 
     private void setupDebugger() {
         assertFalse(bpJsDebugger.isSetup());
-        BooleanResponse booleanResponse = bpJsDebugger.setup(breakpoints, false, false,false);
+        BooleanResponse booleanResponse = bpJsDebugger.setup(breakpoints, false, false, false);
         assertSuccessResponse(booleanResponse);
         assertTrue(bpJsDebugger.isSetup());
 
@@ -76,7 +81,7 @@ public class BPJsDebuggerImplTest {
         verify(debuggerEngine, times(1)).setSyncSnapshot(any());
     }
 
-    @Test (expected = IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void debugInvalidFile() {
         new BPJsDebuggerImpl(debuggerId, "invalid_file_name__a.js");
     }
@@ -84,7 +89,7 @@ public class BPJsDebuggerImplTest {
     @Test
     public void debugInvalidCode() {
         BPJsDebuggerImpl debugger = new BPJsDebuggerImpl(debuggerId, INVALID_TEST_FILE);
-        BooleanResponse booleanResponse = debugger.setup(breakpoints, false, false,false);
+        BooleanResponse booleanResponse = debugger.setup(breakpoints, false, false, false);
         assertErrorResponse(booleanResponse, ErrorCode.BP_SETUP_FAIL);
         assertFalse(bpJsDebugger.isSetup());
         assertFalse(bpJsDebugger.isStarted());
@@ -138,7 +143,7 @@ public class BPJsDebuggerImplTest {
         assertErrorResponse(bpJsDebugger.setSyncSnapshot(123123L), ErrorCode.NOT_IN_BP_SYNC_STATE);
         assertErrorResponse(bpJsDebugger.setSyncSnapshot(-1L), ErrorCode.NOT_IN_BP_SYNC_STATE);
 
-        assertSuccessResponse(bpJsDebugger.startSync(new HashMap<>(), false, false,false));
+        assertSuccessResponse(bpJsDebugger.startSync(new HashMap<>(), false, false, false));
         sleepUntil(e -> !onStateChangedQueue.isEmpty(), 3);
         assertErrorResponse(bpJsDebugger.setSyncSnapshot(123123L), ErrorCode.CANNOT_REPLACE_SNAPSHOT);
         assertErrorResponse(bpJsDebugger.setSyncSnapshot(-1L), ErrorCode.CANNOT_REPLACE_SNAPSHOT);
@@ -147,7 +152,7 @@ public class BPJsDebuggerImplTest {
     @Test
     public void startSyncTest() throws InterruptedException {
         setupDebugger();
-        assertSuccessResponse(bpJsDebugger.startSync(new HashMap<>(), false, false,false ));
+        assertSuccessResponse(bpJsDebugger.startSync(new HashMap<>(), false, false, false));
 
         sleepUntil(e -> bpJsDebugger.isStarted(), 3);
         assertTrue(bpJsDebugger.isStarted());
@@ -160,7 +165,7 @@ public class BPJsDebuggerImplTest {
     @Test
     public void nextSyncTest() throws InterruptedException {
         setupDebugger();
-        assertSuccessResponse(bpJsDebugger.startSync(new HashMap<>(), false, false,false ));
+        assertSuccessResponse(bpJsDebugger.startSync(new HashMap<>(), false, false, false));
 
         sleepUntil(e -> bpJsDebugger.isStarted(), 3);
         assertTrue(bpJsDebugger.isStarted());
@@ -190,8 +195,8 @@ public class BPJsDebuggerImplTest {
         }
     }
 
-   // @Test
-    public void debuggerCommands() throws Exception {
+    @Test
+    public void debuggerCommands_withoutSetup() {
         assertErrorResponse(bpJsDebugger.setBreakpoint(1, true), ErrorCode.SETUP_REQUIRED);
         assertErrorResponse(bpJsDebugger.stop(), ErrorCode.SETUP_REQUIRED);
         assertErrorResponse(bpJsDebugger.stepOut(), ErrorCode.SETUP_REQUIRED);
@@ -202,7 +207,10 @@ public class BPJsDebuggerImplTest {
         assertErrorResponse(bpJsDebugger.getState(), ErrorCode.SETUP_REQUIRED);
         assertErrorResponse(bpJsDebugger.getState(), ErrorCode.SETUP_REQUIRED);
         assertErrorResponse(bpJsDebugger.getState(), ErrorCode.SETUP_REQUIRED);
+    }
 
+    @Test
+    public void debuggerCommands_afterSetup() {
         setupDebugger();
 
         when(debuggerEngine.isBreakpointAllowed(anyInt())).thenReturn(false);
@@ -215,50 +223,67 @@ public class BPJsDebuggerImplTest {
         assertSuccessResponse(bpJsDebugger.setBreakpoint(1, true));
         verify(debuggerEngine, times(1)).setBreakpoint(eq(1), eq(true));
 
-        assertSuccessResponse(bpJsDebugger.stop());
-        verify(debuggerEngine, times(1)).stop();
-
-        /* todo Alex
-        first option: fake move state to JS_DEBUG and expect success
-         */
-        assertSuccessResponse(bpJsDebugger.stepOut());
-        verify(debuggerEngine, times(0)).stepOut();
-        verify(debuggerEngine, times(1)).addCommand(isA(StepOut.class));
-         /*
-        second option: expect error
-         */
         assertErrorResponse(bpJsDebugger.stepOut(), ErrorCode.NOT_IN_JS_DEBUG_STATE);
         verify(debuggerEngine, times(0)).stepOut();
-        verify(debuggerEngine, times(1)).addCommand(isA(StepOut.class));
 
         assertErrorResponse(bpJsDebugger.stepInto(), ErrorCode.NOT_IN_JS_DEBUG_STATE);
         verify(debuggerEngine, times(0)).stepInto();
+
+        assertErrorResponse(bpJsDebugger.stepOver(), ErrorCode.NOT_IN_JS_DEBUG_STATE);
+        verify(debuggerEngine, times(0)).stepOver();
+
+        assertErrorResponse(bpJsDebugger.continueRun(), ErrorCode.NOT_IN_JS_DEBUG_STATE);
+        verify(debuggerEngine, times(0)).continueRun();
+    }
+
+    @Test
+    public void debuggerCommands_jsDebugState() throws Exception {
+        setupDebugger();
+        setDebuggerState(RunnerState.State.JS_DEBUG);
+
+        assertSuccessResponse(bpJsDebugger.stepOut());
+        verify(debuggerEngine, times(1)).addCommand(isA(StepOut.class));
+
+        assertSuccessResponse(bpJsDebugger.stepInto());
         verify(debuggerEngine, times(1)).addCommand(isA(StepInto.class));
 
         assertSuccessResponse(bpJsDebugger.stepOver());
-        verify(debuggerEngine, times(0)).stepOver();
         verify(debuggerEngine, times(1)).addCommand(isA(StepOver.class));
 
         assertSuccessResponse(bpJsDebugger.continueRun());
-        verify(debuggerEngine, times(0)).continueRun();
         verify(debuggerEngine, times(1)).addCommand(isA(Continue.class));
+
+        assertSuccessResponse(bpJsDebugger.stop());
+        verify(debuggerEngine, times(1)).stop();
 
         assertSuccessResponse(bpJsDebugger.getState());
         verify(debuggerEngine, times(1)).getState();
     }
 
+    @Test
+    public void addExternalEvent_jsDebugState() {
+        setDebuggerState(RunnerState.State.JS_DEBUG);
+        assertErrorResponse(bpJsDebugger.addExternalEvent("externalEvent1"), ErrorCode.CANNOT_ADD_EXTERNAL_EVENT_ON_JS_DEBUG_STATE);
+    }
+
+    @Test
+    public void addExternalEvent_ableToInjectExternalEvent() {
+        setDebuggerState(RunnerState.State.WAITING_FOR_EXTERNAL_EVENT);
+        assertSuccessResponse(bpJsDebugger.addExternalEvent("externalEvent1"));
+    }
+
+    private void setDebuggerState(RunnerState.State state) {
+        bpJsDebugger.getDebuggerState().setDebuggerState(state);
+    }
+
     private void assertSuccessResponse(BooleanResponse booleanResponse) {
-        assertTrue(booleanResponse.isSuccess());
+        assertTrue(!booleanResponse.isSuccess() ? booleanResponse.getErrorCode().toString() : "", booleanResponse.isSuccess());
         assertNull(booleanResponse.getErrorCode());
     }
 
     private void assertErrorResponse(BooleanResponse booleanResponse, ErrorCode expectedErrorCode) {
         assertFalse(booleanResponse.isSuccess());
         assertEquals(expectedErrorCode, booleanResponse.getErrorCode());
-    }
-
-    private static boolean onExitTester() {
-        return true;
     }
 
     private static Void onStateChangedTester(BPDebuggerState debuggerState) {

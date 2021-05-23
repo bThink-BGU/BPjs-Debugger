@@ -2,7 +2,6 @@ package il.ac.bgu.se.bp.execution;
 
 import il.ac.bgu.cs.bp.bpjs.execution.listeners.BProgramRunnerListener;
 import il.ac.bgu.cs.bp.bpjs.execution.listeners.PrintBProgramRunnerListener;
-import il.ac.bgu.cs.bp.bpjs.internal.ExecutorServiceMaker;
 import il.ac.bgu.cs.bp.bpjs.model.*;
 import il.ac.bgu.cs.bp.bpjs.model.eventselection.EventSelectionResult;
 import il.ac.bgu.cs.bp.bpjs.model.eventselection.EventSelectionStrategy;
@@ -490,6 +489,12 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         if (StringUtils.isEmpty(externalEvent)) {
             return createErrorResponse(ErrorCode.INVALID_EVENT);
         }
+
+        BooleanResponse booleanResponse = bPjsProgramValidator.validateNotJSDebugState(this);
+        if (!booleanResponse.isSuccess()) {
+            return booleanResponse;
+        }
+
         logger.info("Adding external event: {0}, debugger state: {1}", externalEvent, state.getDebuggerState());
         BEvent bEvent = new BEvent(externalEvent);
 
@@ -502,10 +507,6 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
             syncSnapshot = syncSnapshot.copyWith(updatedExternals);
             debuggerEngine.setSyncSnapshot(syncSnapshot);
             debuggerEngine.onStateChanged();
-        }
-        if (!checkStateEquals(RunnerState.State.WAITING_FOR_EXTERNAL_EVENT) &&
-                !checkStateEquals(RunnerState.State.SYNC_STATE)) {
-            bprog.enqueueExternalEvent(bEvent);
         }
 
         return createSuccessResponse();

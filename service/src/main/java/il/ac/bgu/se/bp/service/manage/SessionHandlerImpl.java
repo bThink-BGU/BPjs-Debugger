@@ -150,7 +150,7 @@ public class SessionHandlerImpl implements SessionHandler<BPJsDebugger<BooleanRe
         verifySessionsThreshold(bpDebugProgramsByUsers, BP_JS_PROGRAM_TTL);
     }
 
-    private <T> void verifySessionsThreshold(Map<String, ? extends UserSession> userSessionsByIds, int threshold) {
+    private void verifySessionsThreshold(Map<String, ? extends UserSession> userSessionsByIds, int threshold) {
         LocalDateTime currentTime = getCurrentLocalDateTime();
         userSessionsByIds.forEach((userId, userSession) -> {
             if (!userSession.getLastOperationTime().plusHours(threshold).isAfter(currentTime)) {
