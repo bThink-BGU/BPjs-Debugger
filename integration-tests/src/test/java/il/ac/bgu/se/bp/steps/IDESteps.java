@@ -6,10 +6,7 @@ import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.response.DebugResponse;
 import il.ac.bgu.se.bp.rest.socket.StompPrincipal;
 import il.ac.bgu.se.bp.session.ITSessionManager;
-import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
-import il.ac.bgu.se.bp.socket.state.BThreadInfo;
-import il.ac.bgu.se.bp.socket.state.EventInfo;
-import il.ac.bgu.se.bp.socket.state.EventsStatus;
+import il.ac.bgu.se.bp.socket.state.*;
 import il.ac.bgu.se.bp.socket.status.Status;
 import il.ac.bgu.se.bp.testService.TestService;
 import il.ac.bgu.se.bp.utils.Pair;
@@ -332,7 +329,7 @@ public class IDESteps {
         assertBreakpoints(username, breakpoints, lastDebuggerState, true);
 
         List<String> bThreadsOfCurrentBreakpoint = getBThreadNamesByBreakpoint(bThreads, lastDebuggerState.getCurrentLineNumber());
-        Map<String, String> actualEnv = getLastEnvOfMatchingBThread(lastDebuggerState.getbThreadInfoList(), bThreadsOfCurrentBreakpoint);
+        BThreadScope actualEnv = getLastEnvOfMatchingBThread(lastDebuggerState.getbThreadInfoList(), bThreadsOfCurrentBreakpoint);
         assertEnvVariables(actualEnv, lastDebuggerState.getCurrentLineNumber(), doubleVars, stringVars);
     }
 
@@ -354,11 +351,11 @@ public class IDESteps {
         assertEnvs(expectedEnvs, bThreadInfo.getEnv());
     }
 
-    private void assertEnvs(List<Map<String, String>> expectedEnvs, Map<Integer, Map<String, String>> actualEnvs) {
+    private void assertEnvs(List<Map<String, String>> expectedEnvs, Map<Integer, BThreadScope> actualEnvs) {
         assertEquals(expectedEnvs.size(), actualEnvs.size());
 
         for (int i = 0; i < expectedEnvs.size(); i++) {
-            Map<String, String> actualEnv = actualEnvs.get(i);
+            Map<String, String> actualEnv = actualEnvs.get(i).getVariables();
             Map<String, String> expectedEnv = expectedEnvs.get(i);
 
             assertEquals(expectedEnv.size(), actualEnv.size());
@@ -369,14 +366,14 @@ public class IDESteps {
         }
     }
 
-    private void assertEnvVariables(Map<String, String> actualEnv, int currentBreakpoint, String doubleVars, String stringVars) {
+    private void assertEnvVariables(BThreadScope actualEnv, int currentBreakpoint, String doubleVars, String stringVars) {
         List<Pair<String, String>> expectedStringVars = createStringEnvByBreakpoints(stringVars).get(currentBreakpoint);
         if (expectedStringVars != null) {   // test file might not include string vars at this breakpoint
-            expectedStringVars.forEach(var -> assertEquals(var.getRight(), strToString(actualEnv.get(var.getLeft()))));
+            expectedStringVars.forEach(var -> assertEquals(var.getRight(), strToString(actualEnv.getVariables().get(var.getLeft()))));
         }
         List<Pair<String, Double>> expectedDoubleVars = createDoubleEnvByBreakpoints(doubleVars).get(currentBreakpoint);
         if (expectedDoubleVars != null) {   // test file might not include double vars at this breakpoint
-            expectedDoubleVars.forEach(var -> assertEquals(var.getRight(), strToDouble(actualEnv.get(var.getLeft())), 0));
+            expectedDoubleVars.forEach(var -> assertEquals(var.getRight(), strToDouble(actualEnv.getVariables().get((var.getLeft()))), 0));
         }
     }
 

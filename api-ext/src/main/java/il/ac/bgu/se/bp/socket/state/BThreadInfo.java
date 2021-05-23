@@ -6,7 +6,7 @@ public class BThreadInfo implements Serializable {
     private static final long serialVersionUID = 2208145820539894522L;
 
     private String name;
-    private Map<Integer, Map<String, String>> env;
+    private Map<Integer, BThreadScope> env;
     private Set<EventInfo> wait;
     private Set<EventInfo> blocked;
     private Set<EventInfo> requested;
@@ -14,13 +14,13 @@ public class BThreadInfo implements Serializable {
     public BThreadInfo() {
     }
 
-    public BThreadInfo(String name, Map<Integer, Map<String, String>> env) {
+    public BThreadInfo(String name, Map<Integer, BThreadScope> env) {
         this.name = name;
         this.env = env;
         this.requested = new HashSet<>();
     }
 
-    public BThreadInfo(String name, Map<Integer, Map<String, String>> env, Set<EventInfo> wait, Set<EventInfo> blocked, Set<EventInfo> requested) {
+    public BThreadInfo(String name, Map<Integer, BThreadScope> env, Set<EventInfo> wait, Set<EventInfo> blocked, Set<EventInfo> requested) {
         this.name = name;
         this.env = env == null ? new HashMap<>() : env;
         this.wait = wait;
@@ -36,11 +36,11 @@ public class BThreadInfo implements Serializable {
         this.name = name;
     }
 
-    public Map<Integer, Map<String, String>> getEnv() {
+    public Map<Integer, BThreadScope> getEnv() {
         return env;
     }
 
-    public void setEnv(Map<Integer, Map<String, String>> env) {
+    public void setEnv(Map<Integer, BThreadScope> env) {
         this.env = env;
     }
 
@@ -74,7 +74,7 @@ public class BThreadInfo implements Serializable {
         if (o == null || getClass() != o.getClass()) return false;
         BThreadInfo that = (BThreadInfo) o;
         return name.equals(that.name) &&
-                env.equals(that.env) &&
+                new ArrayList<>( env.values() ).equals(new ArrayList<>( env.values() )) &&
                 Objects.equals(wait,that.wait) &&
                 Objects.equals(blocked,that.blocked) &&
                 Objects.equals(requested,that.requested);
@@ -86,7 +86,7 @@ public class BThreadInfo implements Serializable {
         List<String> envS = new LinkedList<>();
 
         for (Map.Entry e : env.entrySet()) {
-            envS.add(e.getKey() + ":" + e.getValue());
+            envS.add(e.getKey() + ":" + e.getValue().toString());
         }
 
         return pref + "BThreadInfo{" + "\n" +
