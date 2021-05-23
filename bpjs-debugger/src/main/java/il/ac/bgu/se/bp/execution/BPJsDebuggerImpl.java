@@ -340,6 +340,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         logger.info("Triggering event " + event);
         debuggerStateHelper.updateCurrentEvent(event.getName());
         BProgramSyncSnapshot lastSnapshot = syncSnapshot;
+        debuggerEngine.setSyncSnapshot(syncSnapshot);
         syncSnapshot = syncSnapshot.triggerEvent(event, jsExecutorService, listeners);
         if (!syncSnapshot.isStateValid()) {
             onInvalidStateError("Next Sync fatal error");
@@ -420,6 +421,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         esr.getIndicesToRemove().stream().sorted(reverseOrder())
                 .forEach(idxObj -> updatedExternals.remove(idxObj.intValue()));
         syncSnapshot = syncSnapshot.copyWith(updatedExternals);
+        debuggerEngine.setSyncSnapshot(syncSnapshot);
     }
 
     private <T> T awaitForExecutorServiceToFinishTask(Callable<T> callable) {
