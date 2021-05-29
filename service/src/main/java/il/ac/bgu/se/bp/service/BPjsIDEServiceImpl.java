@@ -284,42 +284,41 @@ public class BPjsIDEServiceImpl implements BPjsIDEService {
 
     @Override
     public BooleanResponse importSyncSnapshot(String userId, ImportSyncSnapshotRequest importSyncSnapshotRequest) {
-        return createErrorResponse(ErrorCode.NOT_SUPPORTED);
-//        if (!validateRequest(importSyncSnapshotRequest)) {
-//            return createErrorResponse(ErrorCode.INVALID_REQUEST);
-//        }
-//
-//        if (!sessionHandler.validateUserId(userId)) {
-//            return createErrorResponse(ErrorCode.UNKNOWN_USER);
-//        }
-//
-//        String filename = sourceCodeHelper.createCodeFile(importSyncSnapshotRequest.getSyncSnapshot().getSourceCode());
-//        if (StringUtils.isEmpty(filename)) {
-//            return new DebugResponse(createErrorResponse(ErrorCode.INVALID_SOURCE_CODE));
-//        }
-//
-//        logger.info("received import sync snapshot request for user: {0}", userId);
-//        BPJsDebugger<BooleanResponse> bpProgramDebugger = debuggerFactory.getBPJsDebugger(userId, filename, DebuggerLevel.NORMAL);
-//        bpProgramDebugger.subscribe(sessionHandler);
-//
-//        boolean isDebug = importSyncSnapshotRequest.isDebug();
-//        boolean isSkipSyncPoint = isDebug && importSyncSnapshotRequest.isSkipSyncStateToggle();
-//        boolean isSkipBreakpoints = isDebug && importSyncSnapshotRequest.isSkipBreakpointsToggle();
-//        boolean isWaitForExternalEvents = importSyncSnapshotRequest.isWaitForExternalEvents();
-//        Map<Integer, Boolean> breakpointsMap = isDebug ? importSyncSnapshotRequest.getBreakpoints()
-//                .stream().collect(Collectors.toMap(Function.identity(), b -> Boolean.TRUE)) : new HashMap<>();
-//        if (isDebug) {
-//            sessionHandler.addNewDebugExecution(userId, bpProgramDebugger, filename);
-//        }
-//        else {
-//            sessionHandler.addNewRunExecution(userId, bpProgramDebugger, filename);
-//        }
-//        sessionHandler.updateLastOperationTime(userId);
-//        BooleanResponse setupResponse = bpProgramDebugger.setup(breakpointsMap, isSkipBreakpoints, isSkipSyncPoint, isWaitForExternalEvents);
-//        if (!setupResponse.isSuccess()) {
-//            return setupResponse;
-//        }
-//        return bpProgramDebugger.setSyncSnapshot(importSyncSnapshotRequest.getSyncSnapshot());
+        if (!validateRequest(importSyncSnapshotRequest)) {
+            return createErrorResponse(ErrorCode.INVALID_REQUEST);
+        }
+
+        if (!sessionHandler.validateUserId(userId)) {
+            return createErrorResponse(ErrorCode.UNKNOWN_USER);
+        }
+
+        String filename = sourceCodeHelper.createCodeFile(importSyncSnapshotRequest.getSyncSnapshot().getSourceCode());
+        if (StringUtils.isEmpty(filename)) {
+            return new DebugResponse(createErrorResponse(ErrorCode.INVALID_SOURCE_CODE));
+        }
+
+        logger.info("received import sync snapshot request for user: {0}", userId);
+        BPJsDebugger<BooleanResponse> bpProgramDebugger = debuggerFactory.getBPJsDebugger(userId, filename, DebuggerLevel.NORMAL);
+        bpProgramDebugger.subscribe(sessionHandler);
+
+        boolean isDebug = importSyncSnapshotRequest.isDebug();
+        boolean isSkipSyncPoint = isDebug && importSyncSnapshotRequest.isSkipSyncStateToggle();
+        boolean isSkipBreakpoints = isDebug && importSyncSnapshotRequest.isSkipBreakpointsToggle();
+        boolean isWaitForExternalEvents = importSyncSnapshotRequest.isWaitForExternalEvents();
+        Map<Integer, Boolean> breakpointsMap = isDebug ? importSyncSnapshotRequest.getBreakpoints()
+                .stream().collect(Collectors.toMap(Function.identity(), b -> Boolean.TRUE)) : new HashMap<>();
+        if (isDebug) {
+            sessionHandler.addNewDebugExecution(userId, bpProgramDebugger, filename);
+        }
+        else {
+            sessionHandler.addNewRunExecution(userId, bpProgramDebugger, filename);
+        }
+        sessionHandler.updateLastOperationTime(userId);
+        BooleanResponse setupResponse = bpProgramDebugger.setup(breakpointsMap, isSkipBreakpoints, isSkipSyncPoint, isWaitForExternalEvents);
+        if (!setupResponse.isSuccess()) {
+            return setupResponse;
+        }
+        return bpProgramDebugger.setSyncSnapshot(importSyncSnapshotRequest.getSyncSnapshot());
     }
 
     private BooleanResponse createErrorResponse(ErrorCode errorCode) {

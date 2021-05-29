@@ -1,5 +1,6 @@
 package il.ac.bgu.se.bp.execution;
 
+import il.ac.bgu.cs.bp.bpjs.bprogramio.BProgramSyncSnapshotIO;
 import il.ac.bgu.cs.bp.bpjs.execution.listeners.BProgramRunnerListener;
 import il.ac.bgu.cs.bp.bpjs.execution.listeners.PrintBProgramRunnerListener;
 import il.ac.bgu.cs.bp.bpjs.internal.ExecutorServiceMaker;
@@ -18,7 +19,6 @@ import il.ac.bgu.se.bp.debugger.engine.events.BPConsoleEvent;
 import il.ac.bgu.se.bp.debugger.engine.events.ProgramStatusEvent;
 import il.ac.bgu.se.bp.debugger.manage.ProgramValidator;
 import il.ac.bgu.se.bp.error.ErrorCode;
-import il.ac.bgu.se.bp.execution.manage.SerializableSyncSnapshot;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.response.DebugResponse;
 import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
@@ -34,7 +34,6 @@ import il.ac.bgu.se.bp.utils.DebuggerStateHelper;
 import il.ac.bgu.se.bp.utils.logger.Logger;
 import il.ac.bgu.se.bp.utils.observer.BPEvent;
 import il.ac.bgu.se.bp.utils.observer.Subscriber;
-import org.mozilla.javascript.Context;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
 
@@ -46,7 +45,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static il.ac.bgu.se.bp.utils.Common.NO_MORE_WAIT_EXTERNAL;
-import static il.ac.bgu.se.bp.utils.Common.objectMapper;
 import static il.ac.bgu.se.bp.utils.ProgramStatusHelper.getRunStatusByDebuggerLevel;
 import static il.ac.bgu.se.bp.utils.ResponseHelper.createErrorResponse;
 import static il.ac.bgu.se.bp.utils.ResponseHelper.createSuccessResponse;
@@ -165,9 +163,12 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
 
     @Override
     public Serializable getSyncSnapshot() {
-        Context.enter();
-        syncSnapshot.getBThreadSnapshots().forEach(bThreadSyncSnapshot -> bThreadSyncSnapshot.getSyncStatement().setBthread(null));
-        return new SerializableSyncSnapshot(syncSnapshot);
+        try {
+            return new BProgramSyncSnapshotIO(bprog).serialize(syncSnapshot);
+        } catch (Exception e) {
+            logger.error("failed serializing bprog SyncSnapshot", e);
+            return null;
+        }
     }
 
     @Override
@@ -197,13 +198,13 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         return createSuccessResponse();
     }
 
-    private BProgramSyncSnapshot serializedSyncSnapshotToBProgramSyncSnapshot(Serializable syncSnapshot, BProgram bprog) {
-        SerializableSyncSnapshot serializableSyncSnapshot = objectMapper.convertValue(syncSnapshot, SerializableSyncSnapshot.class);
-        BProgramSyncSnapshot bProgramSyncSnapshot = new BProgramSyncSnapshot(bprog, serializableSyncSnapshot.getThreadSnapshots(),
-                serializableSyncSnapshot.getExternalEvents(), serializableSyncSnapshot.getViolationRecord());
-
-        bProgramSyncSnapshot.getBThreadSnapshots().forEach(bThreadSyncSnapshot -> bThreadSyncSnapshot.getSyncStatement().setBthread(bThreadSyncSnapshot));
-        return bProgramSyncSnapshot;
+    private BProgramSyncSnapshot serializedSyncSnapshotToBProgramSyncSnapshot(byte[] syncSnapshot, BProgram bprog) {
+        try {
+            return new BProgramSyncSnapshotIO(bprog).deserialize(syncSnapshot);
+        } catch (Exception e) {
+            logger.error("deserialization from sync snapshot bytes to object failed", e);
+            return null;
+        }
     }
 
     @Override

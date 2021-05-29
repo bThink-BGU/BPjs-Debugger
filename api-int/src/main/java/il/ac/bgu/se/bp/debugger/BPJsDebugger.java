@@ -7,7 +7,6 @@ import il.ac.bgu.se.bp.socket.state.EventInfo;
 import il.ac.bgu.se.bp.utils.observer.BPEvent;
 import il.ac.bgu.se.bp.utils.observer.Publisher;
 
-import java.io.Serializable;
 import java.util.Map;
 import java.util.SortedMap;
 
@@ -32,7 +31,7 @@ public interface BPJsDebugger<T> extends Debugger<T>, Publisher<BPEvent> {
     T toggleMuteSyncPoints(boolean toggleMuteSyncPoints);
 
     GetSyncSnapshotsResponse getSyncSnapshotsHistory();
-    Serializable getSyncSnapshot();
+    byte[] getSyncSnapshot();
     T setSyncSnapshot(long snapShotTime);
     T setSyncSnapshot(SyncSnapshot newSnapshot);
 

@@ -1,18 +1,19 @@
 package il.ac.bgu.se.bp.rest.response;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Objects;
 
 public class SyncSnapshot implements Serializable {
     private static final long serialVersionUID = 8433468883477207141L;
 
     private String sourceCode;
-    private Serializable syncSnapshot;
+    private byte[] syncSnapshot;
 
     public SyncSnapshot() {
     }
 
-    public SyncSnapshot(String sourceCode, Serializable syncSnapshot) {
+    public SyncSnapshot(String sourceCode, byte[] syncSnapshot) {
         this.sourceCode = sourceCode;
         this.syncSnapshot = syncSnapshot;
     }
@@ -25,11 +26,11 @@ public class SyncSnapshot implements Serializable {
         this.sourceCode = sourceCode;
     }
 
-    public Serializable getSyncSnapshot() {
+    public byte[] getSyncSnapshot() {
         return syncSnapshot;
     }
 
-    public void setSyncSnapshot(Serializable syncSnapshot) {
+    public void setSyncSnapshot(byte[] syncSnapshot) {
         this.syncSnapshot = syncSnapshot;
     }
 
@@ -43,7 +44,7 @@ public class SyncSnapshot implements Serializable {
         }
         SyncSnapshot that = (SyncSnapshot) queryType;
         return Objects.equals(sourceCode, that.sourceCode) &&
-                Objects.equals(syncSnapshot, that.syncSnapshot);
+                Arrays.equals(syncSnapshot, that.syncSnapshot);
     }
 
     @Override
@@ -55,7 +56,7 @@ public class SyncSnapshot implements Serializable {
     public String toString() {
         return "SyncSnapshot{" +
                 "sourceCode='" + sourceCode + '\'' +
-                ", syncSnapshot=" + syncSnapshot +
+                ", syncSnapshot=" + Arrays.toString(syncSnapshot) +
                 '}';
     }
 }
