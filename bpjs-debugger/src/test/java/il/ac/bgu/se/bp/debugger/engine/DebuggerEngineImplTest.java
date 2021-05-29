@@ -4,7 +4,6 @@ import il.ac.bgu.cs.bp.bpjs.BPjs;
 import il.ac.bgu.cs.bp.bpjs.model.BProgram;
 import il.ac.bgu.cs.bp.bpjs.model.BProgramSyncSnapshot;
 import il.ac.bgu.cs.bp.bpjs.model.ResourceBProgram;
-import il.ac.bgu.cs.bp.bpjs.model.StorageModificationStrategy;
 import il.ac.bgu.se.bp.debugger.BPJsDebugger;
 import il.ac.bgu.se.bp.debugger.DebuggerLevel;
 import il.ac.bgu.se.bp.debugger.RunnerState;
@@ -23,16 +22,16 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.mockito.internal.util.reflection.FieldSetter;
-import org.mozilla.javascript.tools.debugger.Dim;
 
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doCallRealMethod;
 
 public class DebuggerEngineImplTest {
 
@@ -92,45 +91,6 @@ public class DebuggerEngineImplTest {
         } catch (NoSuchFieldException e) {
             e.printStackTrace();
         }
-    }
-
-    @Test
-    public void testIsBreakPointAllowed() throws InterruptedException {
-        expectedStatus.push(Status.BREAKPOINT);
-        doAnswer(invocation -> onStateChangedTester(invocation.getArgument(0))).when(publisher).notifySubscribers(any());
-        expectedState = new BPDebuggerState(new LinkedList<>(), null);
-        BProgram bProg = new ResourceBProgram(TEST_FILENAME);
-        BProgramSyncSnapshot bProgramSyncSnapshot = bProg.setup();
-        assertFalse(debuggerEngine.isBreakpointAllowed(50)); // after EOF
-        assertFalse(debuggerEngine.isBreakpointAllowed(16)); //end of function }
-        assertTrue(debuggerEngine.isBreakpointAllowed(3));
-        assertTrue(debuggerEngine.isBreakpointAllowed(1));
-
-        debuggerEngine.setSyncSnapshot(bProgramSyncSnapshot);
-        bProgramSyncSnapshot.start(execSvc, StorageModificationStrategy.PASSTHROUGH);
-    }
-
-    @Test
-    public void testSetBreakpointPositive() {
-        testStatus = false;
-        doAnswer(invocation -> onStateChangedTester(invocation.getArgument(0))).when(publisher).notifySubscribers(any());
-        expectedState = new BPDebuggerState(new LinkedList<>(), null);
-        BProgram bProg = new ResourceBProgram(TEST_FILENAME);
-        BProgramSyncSnapshot bProgramSyncSnapshot = bProg.setup();
-        debuggerEngine.setSyncSnapshot(bProgramSyncSnapshot);
-        debuggerEngine.setBreakpoint(2, true);
-        when(debuggerStateHelper.generateDebuggerState(any(), any(), any(), any())).thenAnswer(invocationOnMock -> {
-            int line = invocationOnMock.getArgument(2, Dim.ContextData.class).getFrame(0).getLineNumber();
-            assertEquals(2, line);
-            debuggerEngine.continueRun();
-            return new BPDebuggerState();
-        });
-        try {
-            bProgramSyncSnapshot.start(execSvc, StorageModificationStrategy.PASSTHROUGH);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        verify(debuggerStateHelper, times(1)).generateDebuggerState(any(), any(), any(), any());
     }
 
     @Test
