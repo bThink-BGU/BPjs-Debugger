@@ -1,5 +1,6 @@
 package il.ac.bgu.se.bp.execution;
 
+import il.ac.bgu.cs.bp.bpjs.bprogramio.BProgramSyncSnapshotIO;
 import il.ac.bgu.cs.bp.bpjs.execution.listeners.BProgramRunnerListener;
 import il.ac.bgu.cs.bp.bpjs.execution.listeners.PrintBProgramRunnerListener;
 import il.ac.bgu.cs.bp.bpjs.model.*;
@@ -20,6 +21,7 @@ import il.ac.bgu.se.bp.error.ErrorCode;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.response.DebugResponse;
 import il.ac.bgu.se.bp.rest.response.GetSyncSnapshotsResponse;
+import il.ac.bgu.se.bp.rest.response.SyncSnapshot;
 import il.ac.bgu.se.bp.socket.console.ConsoleMessage;
 import il.ac.bgu.se.bp.socket.console.LogType;
 import il.ac.bgu.se.bp.socket.state.BPDebuggerState;
@@ -160,6 +162,16 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     }
 
     @Override
+    public byte[] getSyncSnapshot() {
+        try {
+            return new BProgramSyncSnapshotIO(bprog).serialize(syncSnapshot);
+        } catch (Exception e) {
+            logger.error("failed serializing bprog SyncSnapshot", e);
+            return null;
+        }
+    }
+
+    @Override
     public BooleanResponse setSyncSnapshot(long snapShotTime) {
         logger.info("setSyncSnapshot() snapShotTime: {0}, state: {1}", snapShotTime, state.getDebuggerState().toString());
         if (!checkStateEquals(RunnerState.State.SYNC_STATE)) {
@@ -170,8 +182,21 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
             return createErrorResponse(ErrorCode.CANNOT_REPLACE_SNAPSHOT);
         }
 
-        syncSnapshot = newSnapshot;
+        return setSyncSnapshot(newSnapshot);
+    }
 
+    @Override
+    public BooleanResponse setSyncSnapshot(SyncSnapshot syncSnapshotHolder) {
+        try {
+            return setSyncSnapshot(new BProgramSyncSnapshotIO(bprog).deserialize(syncSnapshotHolder.getSyncSnapshot()));
+        } catch (Exception e) {
+            logger.error("deserialization from sync snapshot bytes to object failed", e);
+            return createErrorResponse(ErrorCode.IMPORT_SYNC_SNAPSHOT_FAILURE);
+        }
+    }
+
+    private BooleanResponse setSyncSnapshot(BProgramSyncSnapshot newSnapshot) {
+        syncSnapshot = newSnapshot;
         debuggerStateHelper.cleanFields();
         debuggerEngine.setSyncSnapshot(syncSnapshot);
         debuggerEngine.onStateChanged();

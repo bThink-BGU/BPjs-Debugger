@@ -3,9 +3,7 @@ package il.ac.bgu.se.bp.service.code;
 import il.ac.bgu.se.bp.utils.logger.Logger;
 import org.springframework.stereotype.Component;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
+import java.io.*;
 import java.nio.file.Files;
 
 @Component
@@ -27,6 +25,26 @@ public class FileHelperImpl implements FileHelper {
     @Override
     public void removeFile(String filename) throws Exception {
         removeFile(new File(filename));
+    }
+
+    @Override
+    public String readFile(String filename) throws Exception {
+        File file = new File(filename);
+        if (!file.exists()) {
+            return null;
+        }
+
+        StringBuilder resultStringBuilder = new StringBuilder();
+        try (InputStream inputStream = new FileInputStream(file)) {
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(inputStream))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    resultStringBuilder.append(line).append("\n");
+                }
+            }
+        }
+
+        return resultStringBuilder.toString();
     }
 
     private void removeFile(File file) throws Exception {

@@ -20,6 +20,7 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -30,7 +31,7 @@ import static java.util.stream.Stream.generate;
 
 public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisitor {
 
-    private static final String commands = "b / rb / go / si / sov / sou / getss / n / e / re / we / h / tmb / tsp / sss / stop";
+    private static final String commands = "b / rb / go / si / sov / sou / getss / n / e / re / we / h / tmb / tsp / sss / ex / stop";
     private static final String menu;
     private static final String prefix = "==========";
     private static final String suffix = "==========";
@@ -198,6 +199,7 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
                         "e <event name>- add external event+ " +
                         "re <event name> - remove external event" +
                         "we <0/1>- wait for external events " +
+                        "ex - export sync snapshot" +
                         "");
             }
             case "tsp":
@@ -218,6 +220,18 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
             case "gets":
                 sendRequest(bpJsDebugger::getState);
                 break;
+            case "ex":
+                serialize();
+                break;
+        }
+    }
+
+    private void serialize() {
+        try {
+            Serializable serialize = bpJsDebugger.getSyncSnapshot();
+            System.out.println(serialize);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 

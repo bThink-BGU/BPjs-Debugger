@@ -1,6 +1,6 @@
 Feature: External Events
 
-  Scenario: user debugs and add external events
+  Scenario: user debugs and adds external events
     Given user alex has connected with userId 4655ae8e-cdfe-4ce3-ac2b-dc03743a780f
 
     Given alex has connected to websocket with alex-session

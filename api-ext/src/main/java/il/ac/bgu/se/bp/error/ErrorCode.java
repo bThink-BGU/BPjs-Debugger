@@ -29,7 +29,11 @@ public enum ErrorCode {
     UNKNOWN_USER(82),
 
 
-    GENERAL_ERROR(100)
+    GENERAL_ERROR(100),
+    NOT_SUPPORTED(101),
+
+
+    IMPORT_SYNC_SNAPSHOT_FAILURE(300)
     ;
 
 

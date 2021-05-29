@@ -5,6 +5,7 @@ import il.ac.bgu.se.bp.rest.request.*;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.response.DebugResponse;
 import il.ac.bgu.se.bp.rest.response.EventsHistoryResponse;
+import il.ac.bgu.se.bp.rest.response.SyncSnapshot;
 import il.ac.bgu.se.bp.service.BPjsIDEService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.Header;
@@ -129,14 +130,6 @@ public class BPjsIDERestControllerImpl implements BPjsIDERestController {
     }
 
     @Override
-    @RequestMapping(value = SYNC_SNAPSHOT, method = RequestMethod.POST)
-    public @ResponseBody
-    BooleanResponse setSyncSnapshot(@RequestHeader("userId") String userId,
-                                    @RequestBody SetSyncSnapshotRequest setSyncSnapshotRequest) {
-        return bPjsIDEService.setSyncSnapshot(userId, setSyncSnapshotRequest);
-    }
-
-    @Override
     @RequestMapping(value = EVENTS, method = RequestMethod.GET)
     public @ResponseBody
     EventsHistoryResponse getEventsHistory(@RequestHeader("userId") String userId,
@@ -144,4 +137,28 @@ public class BPjsIDERestControllerImpl implements BPjsIDERestController {
                                            @RequestParam(name = "to") int to) {
         return bPjsIDEService.getEventsHistory(userId, from, to);
     }
+
+    @Override
+    @RequestMapping(value = SYNC_SNAPSHOT, method = RequestMethod.PUT)
+    public @ResponseBody
+    BooleanResponse setSyncSnapshot(@RequestHeader("userId") String userId,
+                                    @RequestBody SetSyncSnapshotRequest setSyncSnapshotRequest) {
+        return bPjsIDEService.setSyncSnapshot(userId, setSyncSnapshotRequest);
+    }
+
+    @Override
+    @RequestMapping(value = SYNC_SNAPSHOT, method = RequestMethod.GET)
+    public @ResponseBody
+    SyncSnapshot exportSyncSnapshot(@RequestHeader("userId") String userId) {
+        return bPjsIDEService.exportSyncSnapshot(userId);
+    }
+
+    @Override
+    @RequestMapping(value = SYNC_SNAPSHOT, method = RequestMethod.POST)
+    public @ResponseBody
+    BooleanResponse importSyncSnapshot(@RequestHeader("userId") String userId,
+                                       @RequestBody ImportSyncSnapshotRequest importSyncSnapshotRequest) {
+        return bPjsIDEService.importSyncSnapshot(userId, importSyncSnapshotRequest);
+    }
+
 }

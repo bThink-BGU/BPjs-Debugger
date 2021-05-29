@@ -5,6 +5,7 @@ import il.ac.bgu.se.bp.rest.request.*;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
 import il.ac.bgu.se.bp.rest.response.DebugResponse;
 import il.ac.bgu.se.bp.rest.response.EventsHistoryResponse;
+import il.ac.bgu.se.bp.rest.response.SyncSnapshot;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.security.Principal;
@@ -87,6 +88,16 @@ public class ControllerTestHelper implements TestService {
     @Override
     public BooleanResponse setSyncSnapshot(String userId, SetSyncSnapshotRequest setSyncSnapshotRequest) {
         return bPjsIDERestController.setSyncSnapshot(userId, setSyncSnapshotRequest);
+    }
+
+    @Override
+    public SyncSnapshot exportSyncSnapshot(String userId) {
+        return bPjsIDERestController.exportSyncSnapshot(userId);
+    }
+
+    @Override
+    public BooleanResponse importSyncSnapshot(String userId, ImportSyncSnapshotRequest importSyncSnapshotRequest) {
+        return bPjsIDERestController.importSyncSnapshot(userId, importSyncSnapshotRequest);
     }
 
     @Override

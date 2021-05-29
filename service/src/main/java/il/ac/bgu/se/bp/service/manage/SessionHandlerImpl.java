@@ -91,11 +91,8 @@ public class SessionHandlerImpl implements SessionHandler<BPJsDebugger<BooleanRe
 
     @Override
     public BPJsDebugger<BooleanResponse> getBPjsDebuggerOrRunnerByUser(String userId) {
-        BPJsDebugger<BooleanResponse> bpJsDebugger = getBPjsDebuggerByUser(userId);
-        if (bpJsDebugger == null) {
-            return getBPjsRunnerByUser(userId);
-        }
-        return bpJsDebugger;
+        UserProgramSession<BPJsDebugger<BooleanResponse>> userSession = getUserDebuggerSession(userId);
+        return userSession != null ? userSession.getProgram() : null;
     }
 
     private BPJsDebugger<BooleanResponse> getBPJsDebuggerFrom(String userId, Map<String, UserProgramSession<BPJsDebugger<BooleanResponse>>> bpDebuggersByUsers) {
@@ -114,11 +111,22 @@ public class SessionHandlerImpl implements SessionHandler<BPJsDebugger<BooleanRe
     }
 
     @Override
-    public UserSession getUserSession(String userId) {
+    public String getUsersSourceCode(String userId) {
+        UserProgramSession<BPJsDebugger<BooleanResponse>> userSession = getUserDebuggerSession(userId);
+        return userSession != null ? sourceCodeHelper.readCodeFile(userSession.getFilename()) : null;
+    }
+
+    private UserSession getUserSession(String userId) {
         UserSession userSession = unknownSessions.get(userId);
         userSession = userSession == null ? bpRunProgramsByUsers.get(userId) : userSession;
         return userSession == null ? bpDebugProgramsByUsers.get(userId) : userSession;
     }
+
+    private UserProgramSession<BPJsDebugger<BooleanResponse>> getUserDebuggerSession(String userId) {
+        UserProgramSession<BPJsDebugger<BooleanResponse>> userSession = bpRunProgramsByUsers.get(userId);
+        return userSession == null ? bpDebugProgramsByUsers.get(userId) : userSession;
+    }
+
 
     @Override
     public void updateLastOperationTime(String userId) {
