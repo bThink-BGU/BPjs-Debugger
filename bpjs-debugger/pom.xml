@@ -12,16 +12,12 @@
     <artifactId>bp-ide-bpjs-debugger</artifactId>
 
     <dependencies>
-<!--        <dependency>-->
-<!--            <groupId>com.github.bthink-bgu</groupId>-->
-<!--            <artifactId>BPjs</artifactId>-->
-<!--        </dependency>-->
-
         <dependency>
-            <groupId>il.ac.bgu.se.bp</groupId>
-            <artifactId>bp-ide-bpjs-bp-framework</artifactId>
-            <version>${project.version}</version>
+            <groupId>com.github.bthink-bgu</groupId>
+            <artifactId>BPjs</artifactId>
+            <version>0.12.1</version>
         </dependency>
+
         <dependency>
             <groupId>org.mozilla</groupId>
             <artifactId>rhino</artifactId>

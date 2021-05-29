@@ -34,7 +34,6 @@
         <module>bpjs-debugger</module>
         <module>controller</module>
         <module>service</module>
-        <module>bpjs-develop</module>
         <module>integration-tests</module>
     </modules>
 
@@ -83,11 +82,6 @@
 
     <dependencyManagement>
         <dependencies>
-<!--            <dependency>-->
-<!--                <groupId>com.github.bthink-bgu</groupId>-->
-<!--                <artifactId>BPjs</artifactId>-->
-<!--                <version>${bpjs.version}</version>-->
-<!--            </dependency>-->
 
             <dependency>
                 <groupId>junit</groupId>

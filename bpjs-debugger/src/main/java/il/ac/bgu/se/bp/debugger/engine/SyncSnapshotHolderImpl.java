@@ -43,8 +43,9 @@ public class SyncSnapshotHolderImpl implements SyncSnapshotHolder<BProgramSyncSn
         BProgram aBProgram = oldBProgramSyncSnapshot.getBProgram();
         Set<BThreadSyncSnapshot> someThreadSnapshots = oldBProgramSyncSnapshot.getBThreadSnapshots();
         List<BEvent> someExternalEvents = oldBProgramSyncSnapshot.getExternalEvents();
-        FailedAssertion aViolationRecord = oldBProgramSyncSnapshot.getFailedAssertion();
-        return new BProgramSyncSnapshot(aBProgram, someThreadSnapshots, someExternalEvents, aViolationRecord);
+        SafetyViolationTag violationTag = oldBProgramSyncSnapshot.getViolationTag();
+        Map<String, Object> dataStore = oldBProgramSyncSnapshot.getDataStore();
+        return new BProgramSyncSnapshot(aBProgram, someThreadSnapshots, dataStore, someExternalEvents, violationTag);
     }
 
     @Override

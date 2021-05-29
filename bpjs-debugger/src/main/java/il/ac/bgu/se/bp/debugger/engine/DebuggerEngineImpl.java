@@ -1,6 +1,6 @@
 package il.ac.bgu.se.bp.debugger.engine;
 
-import il.ac.bgu.cs.bp.bpjs.model.BProgram;
+import il.ac.bgu.cs.bp.bpjs.BPjs;
 import il.ac.bgu.cs.bp.bpjs.model.BProgramSyncSnapshot;
 import il.ac.bgu.se.bp.debugger.DebuggerLevel;
 import il.ac.bgu.se.bp.debugger.RunnerState;
@@ -53,7 +53,7 @@ public class DebuggerEngineImpl implements DebuggerEngine<BProgramSyncSnapshot> 
         this.debuggerStateHelper = debuggerStateHelper;
         this.debuggerId = debuggerId;
         this.logger = new Logger(DebuggerEngineImpl.class, debuggerId);
-        this.execSvc = BProgram.getExecutorServiceMaker().makeWithName(debuggerThreadId);
+        this.execSvc = BPjs.getExecutorServiceMaker().makeWithName(debuggerThreadId);
 
         initDim();
         setIsRunning(true);

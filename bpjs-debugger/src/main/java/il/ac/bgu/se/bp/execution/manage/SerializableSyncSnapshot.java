@@ -12,7 +12,7 @@ public class SerializableSyncSnapshot implements Serializable {
 
     private Set<BThreadSyncSnapshot> threadSnapshots;
     private List<BEvent> externalEvents;
-    private FailedAssertion violationRecord;
+    private SafetyViolationTag safetyViolationTag;
     private BProgram bProgram;
 
     public SerializableSyncSnapshot() {
@@ -21,7 +21,7 @@ public class SerializableSyncSnapshot implements Serializable {
     public SerializableSyncSnapshot(BProgramSyncSnapshot syncSnapshot) {
         threadSnapshots = syncSnapshot.getBThreadSnapshots();
         externalEvents = syncSnapshot.getExternalEvents();
-        violationRecord = syncSnapshot.getFailedAssertion();
+        safetyViolationTag = syncSnapshot.getViolationTag();
         bProgram = syncSnapshot.getBProgram();
     }
 
@@ -33,8 +33,8 @@ public class SerializableSyncSnapshot implements Serializable {
         return externalEvents;
     }
 
-    public FailedAssertion getViolationRecord() {
-        return violationRecord;
+    public SafetyViolationTag getViolationRecord() {
+        return safetyViolationTag;
     }
 
     @Override
@@ -48,12 +48,12 @@ public class SerializableSyncSnapshot implements Serializable {
         SerializableSyncSnapshot that = (SerializableSyncSnapshot) queryType;
         return Objects.equals(threadSnapshots, that.threadSnapshots) &&
                 Objects.equals(externalEvents, that.externalEvents) &&
-                Objects.equals(violationRecord, that.violationRecord);
+                Objects.equals(safetyViolationTag, that.safetyViolationTag);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(threadSnapshots, externalEvents, violationRecord);
+        return Objects.hash(threadSnapshots, externalEvents, safetyViolationTag);
     }
 
     @Override
@@ -61,7 +61,7 @@ public class SerializableSyncSnapshot implements Serializable {
         return "SerializableSyncSnapshot{" +
                 "threadSnapshots=" + threadSnapshots +
                 ", externalEvents=" + externalEvents +
-                ", violationRecord=" + violationRecord +
+                ", violationRecord=" + safetyViolationTag +
                 '}';
     }
 }

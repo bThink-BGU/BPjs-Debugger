@@ -1,5 +1,6 @@
 package il.ac.bgu.se.bp.execution;
 
+import il.ac.bgu.cs.bp.bpjs.BPjs;
 import il.ac.bgu.cs.bp.bpjs.bprogramio.BProgramSyncSnapshotIO;
 import il.ac.bgu.cs.bp.bpjs.execution.listeners.BProgramRunnerListener;
 import il.ac.bgu.cs.bp.bpjs.execution.listeners.PrintBProgramRunnerListener;
@@ -43,6 +44,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static il.ac.bgu.cs.bp.bpjs.model.StorageModificationStrategy.PASSTHROUGH;
 import static il.ac.bgu.se.bp.utils.Common.NO_MORE_WAIT_EXTERNAL;
 import static il.ac.bgu.se.bp.utils.ProgramStatusHelper.getRunStatusByDebuggerLevel;
 import static il.ac.bgu.se.bp.utils.ResponseHelper.createErrorResponse;
@@ -85,7 +87,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         this.filename = filename;
         this.debuggerLevel = debuggerLevel;
         debuggerStateHelper = new DebuggerStateHelper(this, syncSnapshotHolder, debuggerLevel);
-        BProgram.setExecutorServiceMaker(new DebuggerExecutorServiceMaker());
+        BPjs.setExecutorServiceMaker(new DebuggerExecutorServiceMaker());
         initDebugger();
     }
 
@@ -95,8 +97,8 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
 
     private void initDebugger() {
         debuggerExecutorId = "BPJsDebuggerRunner-" + debuggerThreadIdGenerator.incrementAndGet();
-        jsExecutorService = BProgram.getExecutorServiceMaker().makeWithName(debuggerExecutorId);
-        bpExecutorService = BProgram.getExecutorServiceMaker().makeWithName(debuggerExecutorId);
+        jsExecutorService = BPjs.getExecutorServiceMaker().makeWithName(debuggerExecutorId);
+        bpExecutorService = BPjs.getExecutorServiceMaker().makeWithName(debuggerExecutorId);
         logger = new Logger(BPJsDebuggerImpl.class, debuggerId);
         debuggerEngine = new DebuggerEngineImpl(debuggerId, filename, state, debuggerStateHelper, debuggerExecutorId);
         debuggerEngine.changeDebuggerLevel(debuggerLevel);
@@ -124,7 +126,8 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
             }
             syncSnapshot.getBThreadSnapshots().forEach(sn -> listeners.forEach(l -> l.bthreadAdded(bprog, sn)));
             isBProgSetup = true;
-            if (syncSnapshot.getFailedAssertion() != null) {
+            SafetyViolationTag violationTag = syncSnapshot.getViolationTag();
+            if (violationTag != null && !StringUtils.isEmpty(violationTag.getMessage())) {
                 onExit();
                 return new DebugResponse(false, ErrorCode.BP_SETUP_FAIL, new boolean[0]);
             }
@@ -253,7 +256,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         try {
             setIsStarted(true);
             listeners.forEach(l -> l.started(bprog));
-            syncSnapshot = syncSnapshot.start(jsExecutorService);
+            syncSnapshot = syncSnapshot.start(jsExecutorService, PASSTHROUGH);
             if (!syncSnapshot.isStateValid()) {
                 onInvalidStateError("Start sync fatal error");
                 onExit();
@@ -286,8 +289,8 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     }
 
     private void onInvalidStateError(String error) {
-        FailedAssertion failedAssertion = syncSnapshot.getFailedAssertion();
-        listeners.forEach(l -> l.assertionFailed(bprog, failedAssertion));
+        SafetyViolationTag violationTag = syncSnapshot.getViolationTag();
+        listeners.forEach(l -> l.assertionFailed(bprog, violationTag));
         state.setDebuggerState(RunnerState.State.STOPPED);
         logger.error(error);
     }
@@ -366,7 +369,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         debuggerStateHelper.updateCurrentEvent(event.getName());
         BProgramSyncSnapshot lastSnapshot = syncSnapshot;
         debuggerEngine.setSyncSnapshot(syncSnapshot);
-        syncSnapshot = syncSnapshot.triggerEvent(event, jsExecutorService, listeners);
+        syncSnapshot = syncSnapshot.triggerEvent(event, jsExecutorService, listeners, PASSTHROUGH);
         if (!syncSnapshot.isStateValid()) {
             onInvalidStateError("Next Sync fatal error");
             return;

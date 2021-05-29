@@ -4,7 +4,7 @@ import il.ac.bgu.cs.bp.bpjs.execution.listeners.BProgramRunnerListener;
 import il.ac.bgu.cs.bp.bpjs.model.BEvent;
 import il.ac.bgu.cs.bp.bpjs.model.BProgram;
 import il.ac.bgu.cs.bp.bpjs.model.BThreadSyncSnapshot;
-import il.ac.bgu.cs.bp.bpjs.model.FailedAssertion;
+import il.ac.bgu.cs.bp.bpjs.model.SafetyViolationTag;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -39,7 +39,7 @@ public class DebuggerBProgramRunnerListener implements BProgramRunnerListener {
     }
 
     @Override
-    public void assertionFailed(BProgram bp, FailedAssertion theFailedAssertion) {
+    public void assertionFailed(BProgram bProgram, SafetyViolationTag safetyViolationTag) {
 
     }
 
