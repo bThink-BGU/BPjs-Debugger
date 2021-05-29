@@ -199,6 +199,7 @@ public class BPJsDebuggerCliRunner implements Subscriber<BPEvent>, PublisherVisi
                         "e <event name>- add external event+ " +
                         "re <event name> - remove external event" +
                         "we <0/1>- wait for external events " +
+                        "ex - export sync snapshot" +
                         "");
             }
             case "tsp":

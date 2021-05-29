@@ -37,7 +37,6 @@ import il.ac.bgu.se.bp.utils.observer.Subscriber;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
 
-import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -162,7 +161,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     }
 
     @Override
-    public Serializable getSyncSnapshot() {
+    public byte[] getSyncSnapshot() {
         try {
             return new BProgramSyncSnapshotIO(bprog).serialize(syncSnapshot);
         } catch (Exception e) {
@@ -187,7 +186,12 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
 
     @Override
     public BooleanResponse setSyncSnapshot(SyncSnapshot syncSnapshotHolder) {
-        return setSyncSnapshot(serializedSyncSnapshotToBProgramSyncSnapshot(syncSnapshotHolder.getSyncSnapshot(), bprog));
+        try {
+            return setSyncSnapshot(new BProgramSyncSnapshotIO(bprog).deserialize(syncSnapshotHolder.getSyncSnapshot()));
+        } catch (Exception e) {
+            logger.error("deserialization from sync snapshot bytes to object failed", e);
+            return createErrorResponse(ErrorCode.IMPORT_SYNC_SNAPSHOT_FAILURE);
+        }
     }
 
     private BooleanResponse setSyncSnapshot(BProgramSyncSnapshot newSnapshot) {
@@ -196,15 +200,6 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         debuggerEngine.setSyncSnapshot(syncSnapshot);
         debuggerEngine.onStateChanged();
         return createSuccessResponse();
-    }
-
-    private BProgramSyncSnapshot serializedSyncSnapshotToBProgramSyncSnapshot(byte[] syncSnapshot, BProgram bprog) {
-        try {
-            return new BProgramSyncSnapshotIO(bprog).deserialize(syncSnapshot);
-        } catch (Exception e) {
-            logger.error("deserialization from sync snapshot bytes to object failed", e);
-            return null;
-        }
     }
 
     @Override

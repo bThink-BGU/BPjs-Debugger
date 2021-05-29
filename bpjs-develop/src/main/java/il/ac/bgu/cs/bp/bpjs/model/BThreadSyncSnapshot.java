@@ -26,7 +26,7 @@ public class BThreadSyncSnapshot implements Serializable {
      * The JavaScript function that will be called when {@code this} BThread
      * runs.
      */
-    private Function entryPoint;
+    private final Function entryPoint;
 
     /**
      * BThreads may specify a function that runs when they are removed because
@@ -71,9 +71,6 @@ public class BThreadSyncSnapshot implements Serializable {
         this.continuation = (NativeContinuation)continuation;
         this.syncStatement = bSyncStatement;
         data = someData;
-    }
-
-    public BThreadSyncSnapshot() {
     }
 
     public BThreadSyncSnapshot(String name, Function entryPoint, Function interruptHandler,

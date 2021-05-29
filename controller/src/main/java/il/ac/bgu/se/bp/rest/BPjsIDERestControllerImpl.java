@@ -1,7 +1,5 @@
 package il.ac.bgu.se.bp.rest;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import il.ac.bgu.se.bp.rest.controller.BPjsIDERestController;
 import il.ac.bgu.se.bp.rest.request.*;
 import il.ac.bgu.se.bp.rest.response.BooleanResponse;
@@ -16,7 +14,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
-import java.util.LinkedList;
 
 import static il.ac.bgu.se.bp.rest.utils.Constants.SIMP_SESSION_ID;
 import static il.ac.bgu.se.bp.rest.utils.Endpoints.*;
@@ -162,22 +159,6 @@ public class BPjsIDERestControllerImpl implements BPjsIDERestController {
     BooleanResponse importSyncSnapshot(@RequestHeader("userId") String userId,
                                        @RequestBody ImportSyncSnapshotRequest importSyncSnapshotRequest) {
         return bPjsIDEService.importSyncSnapshot(userId, importSyncSnapshotRequest);
-    }
-
-
-
-    public static void main(String[] args) throws JsonProcessingException {
-        ObjectMapper objectMapper = new ObjectMapper();
-        ImportSyncSnapshotRequest request = new ImportSyncSnapshotRequest();
-        request.setDebug(true);
-        request.setBreakpoints(new LinkedList<>());
-        request.setSkipBreakpointsToggle(false);
-        request.setSkipSyncStateToggle(false);
-        request.setWaitForExternalEvents(true);
-        SyncSnapshot syncSnapshot = new SyncSnapshot("AAAA", "AAAA");
-        request.setSyncSnapshot(syncSnapshot);
-        System.out.println(objectMapper.writeValueAsString(request));
-
     }
 
 }

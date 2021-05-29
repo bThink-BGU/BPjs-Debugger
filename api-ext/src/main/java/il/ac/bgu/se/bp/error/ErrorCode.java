@@ -29,7 +29,10 @@ public enum ErrorCode {
 
 
     GENERAL_ERROR(100),
-    NOT_SUPPORTED(101)
+    NOT_SUPPORTED(101),
+
+
+    IMPORT_SYNC_SNAPSHOT_FAILURE(300)
     ;
 
 
