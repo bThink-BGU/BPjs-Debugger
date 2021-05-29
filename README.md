@@ -45,7 +45,7 @@ Supported endpoints:
 | Continue                    | bpjs/continue      | GET    | None                                                                                                   | userId  |
 | Next Sync                   | bpjs/nextSync      | GET    | None                                                                                                   | userId  |
 | Add / Remove External Event | bpjs/externalEvent | POST   | {externalEvent: String, addEvent: boolean}                                                             | userId  |
-| Set Sync Snapshot           | bpjs/syncSnapshot  | POST   | {snapShotTime: long}                                                                                   | userId  |
+| Set Sync Snapshot           | bpjs/syncSnapshot  | PUT   | {snapShotTime: long}                                                                                   | userId  |
 | Get Events History          | bpjs/events        | GET    | from={int}&to{int}                                                                                     | userId  |
 
 ---
