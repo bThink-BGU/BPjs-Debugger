@@ -315,6 +315,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     private void runNextSync() {
         logger.info("runNextSync state: {0}", state.getDebuggerState());
         if (!isThereAnyPossibleEvents()) {
+            listeners.forEach(l -> l.superstepDone(bprog));
             if (!bprog.isWaitForExternalEvents()) {
                 debuggerEngine.onStateChanged();
                 logger.info("Event queue empty, not need to wait to external event. terminating....");
@@ -394,9 +395,8 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         debuggerEngine.onStateChanged();
         logger.info("waiting for external event");
         state.setDebuggerState(RunnerState.State.WAITING_FOR_EXTERNAL_EVENT);
-        notifySubscribers(new ProgramStatusEvent(debuggerId, Status.WAITING_FOR_EXTERNAL_EVENT));
         try {
-            listeners.forEach(l -> l.superstepDone(bprog));
+            notifySubscribers(new ProgramStatusEvent(debuggerId, Status.WAITING_FOR_EXTERNAL_EVENT));
             BEvent next = bprog.takeExternalEvent(); // and now we wait for external event
             if (next == null) {
                 logger.info("Event queue empty, not need to wait to external event. terminating....");
@@ -618,5 +618,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     private boolean checkStateEquals(RunnerState.State expectedState) {
         return expectedState.equals(state.getDebuggerState());
     }
-
+    public String getDebuggerId() {
+        return debuggerId;
+    }
 }

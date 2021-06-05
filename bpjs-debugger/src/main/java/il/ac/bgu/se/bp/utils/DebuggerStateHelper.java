@@ -14,6 +14,7 @@ import il.ac.bgu.se.bp.debugger.RunnerState;
 import il.ac.bgu.se.bp.debugger.engine.SyncSnapshotHolder;
 import il.ac.bgu.se.bp.socket.state.*;
 import il.ac.bgu.se.bp.utils.logger.Logger;
+import il.ac.bgu.se.bp.utils.observer.BPEvent;
 import org.apache.commons.lang3.ArrayUtils;
 import org.mozilla.javascript.*;
 import org.mozilla.javascript.tools.debugger.Dim;
@@ -429,6 +430,13 @@ public class DebuggerStateHelper {
 
     public void updateCurrentEvent(String name) {
         this.currentEvent = name;
+    }
+
+    public String getDebuggerId(){
+        return this.bpJsDebugger.getDebuggerId();
+    }
+    public void notifyDebuggerSubscribers(BPEvent event){
+        this.bpJsDebugger.notifySubscribers(event);
     }
 
 

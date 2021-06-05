@@ -6,5 +6,6 @@ public enum Status {
     BREAKPOINT,
     SYNCSTATE,
     WAITING_FOR_EXTERNAL_EVENT,
+    SUPERSTEPDONE,
     STOP
 }

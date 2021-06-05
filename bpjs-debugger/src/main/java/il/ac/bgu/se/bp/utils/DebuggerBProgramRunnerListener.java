@@ -5,6 +5,8 @@ import il.ac.bgu.cs.bp.bpjs.model.BEvent;
 import il.ac.bgu.cs.bp.bpjs.model.BProgram;
 import il.ac.bgu.cs.bp.bpjs.model.BThreadSyncSnapshot;
 import il.ac.bgu.cs.bp.bpjs.model.SafetyViolationTag;
+import il.ac.bgu.se.bp.debugger.engine.events.ProgramStatusEvent;
+import il.ac.bgu.se.bp.socket.status.Status;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -30,7 +32,7 @@ public class DebuggerBProgramRunnerListener implements BProgramRunnerListener {
 
     @Override
     public void superstepDone(BProgram bp) {
-
+        this.debuggerStateHelper.notifyDebuggerSubscribers(new ProgramStatusEvent(debuggerStateHelper.getDebuggerId(), Status.SUPERSTEPDONE));
     }
 
     @Override

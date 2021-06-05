@@ -36,6 +36,7 @@ public interface BPJsDebugger<T> extends Debugger<T>, Publisher<BPEvent> {
     T setSyncSnapshot(SyncSnapshot newSnapshot);
 
     RunnerState getDebuggerState();
+    String getDebuggerId();
     String getDebuggerExecutorId();
 
 
