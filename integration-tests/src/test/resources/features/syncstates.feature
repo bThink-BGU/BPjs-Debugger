@@ -48,8 +48,8 @@ Feature: Sync States
     When ron clicks on next sync
     Then The response should be true with errorCode null
 
-    Then wait until user alex has reached status stop
-    And wait until user tal has reached status stop
+    Then wait until user alex has reached status superstepdone
+    And wait until user tal has reached status superstepdone
     And wait until program of user alex is over
     And wait until program of user tal is over
     And wait until user avishai has reached status syncstate
@@ -79,8 +79,8 @@ Feature: Sync States
     When ron clicks on next sync
     Then The response should be true with errorCode null
 
-    Then wait until user avishai has reached status stop
-    And wait until user ron has reached status stop
+    Then wait until user avishai has reached status superstepdone
+    And wait until user ron has reached status superstepdone
     And wait until program of user avishai is over
     And wait until program of user ron is over
 
@@ -153,10 +153,10 @@ Feature: Sync States
     When alex clicks on next sync
     Then The response should be true with errorCode null
 
-    Then wait until user alex has reached status stop
+    Then wait until user alex has reached status superstepdone
     And wait until program of user alex is over
     When tal clicks on next sync
     Then The response should be true with errorCode null
 
-    Then wait until user tal has reached status stop
+    Then wait until user tal has reached status superstepdone
     And wait until program of user tal is over

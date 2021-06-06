@@ -53,6 +53,10 @@ public class ITSessionManagerImpl extends SessionHandlerImpl implements ITSessio
             debuggerStatesPerUser.remove(userId);
             consoleMessagesPerUser.remove(userId);
         }
+        else if (Status.SUPERSTEPDONE.equals(userStatus)) {
+            debuggerStatesPerUser.remove(userId);
+            consoleMessagesPerUser.remove(userId);
+        }
         usersStatus.put(userId, userStatus);
     }
 

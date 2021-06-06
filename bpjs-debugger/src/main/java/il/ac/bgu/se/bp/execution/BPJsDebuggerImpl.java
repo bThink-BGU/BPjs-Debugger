@@ -315,12 +315,12 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
     private void runNextSync() {
         logger.info("runNextSync state: {0}", state.getDebuggerState());
         if (!isThereAnyPossibleEvents()) {
-            listeners.forEach(l -> l.superstepDone(bprog));
             if (!bprog.isWaitForExternalEvents()) {
                 debuggerEngine.onStateChanged();
                 logger.info("Event queue empty, not need to wait to external event. terminating....");
                 listeners.forEach(l -> l.ended(bprog));
                 onExit();
+                listeners.forEach(l -> l.superstepDone(bprog));
                 return;
             }
             nextSyncOnNoPossibleEvents();
@@ -420,7 +420,6 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         if (!jsExecutorService.isTerminated()) {
             forceStopDebugger();
         }
-        notifySubscribers(new ProgramStatusEvent(debuggerId, Status.STOP));
     }
 
     private void forceStopDebugger() {
@@ -499,6 +498,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         }
         setIsStarted(false);
         onExit();
+        notifySubscribers(new ProgramStatusEvent(debuggerId, Status.STOP));
         return createSuccessResponse();
     }
 

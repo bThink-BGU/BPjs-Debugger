@@ -75,5 +75,5 @@ Feature: External Events
     When alex clicks on next sync
     Then The response should be true with errorCode null
 
-    Then wait until user alex has reached status stop
+    Then wait until user alex has reached status superstepdone
     And wait until program of user alex is over
