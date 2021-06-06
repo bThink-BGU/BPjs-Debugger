@@ -420,6 +420,7 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
         if (!jsExecutorService.isTerminated()) {
             forceStopDebugger();
         }
+        notifySubscribers(new ProgramStatusEvent(debuggerId, Status.STOP));
     }
 
     private void forceStopDebugger() {
@@ -497,7 +498,6 @@ public class BPJsDebuggerImpl implements BPJsDebugger<BooleanResponse> {
             return createErrorResponse(ErrorCode.SETUP_REQUIRED);
         }
         setIsStarted(false);
-        notifySubscribers(new ProgramStatusEvent(debuggerId, Status.STOP));
         onExit();
         return createSuccessResponse();
     }
