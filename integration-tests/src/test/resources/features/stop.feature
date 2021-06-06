@@ -86,7 +86,7 @@ Feature: Stop & Invalid States
     When ron clicks on next sync
     Then The response should be true with errorCode null
 
-    Then wait until user avishai has reached status stop
-    And wait until user ron has reached status stop
+    Then wait until user avishai has reached status superstepdone
+    And wait until user ron has reached status superstepdone
     And wait until program of user avishai is over
     And wait until program of user ron is over
