@@ -7,6 +7,8 @@ The project contains 5 Modules:
 - controller - responsible for the incoming HTTP/WS requests and messages
 
 ---
+## Compiling the code
+run ```mvn install```
 
 ## Running the CLI Debugger
 - under bpjs-debugger:
@@ -19,8 +21,12 @@ IntelliJ:
     - run il.ac.bgu.se.bp.app.Application 
 
 Terminal:
-- cd controller
-- mvn spring-boot:run
+```bash
+cd controller
+mvn spring-boot:run
+```
+- 
+- 
 
 ---
 
