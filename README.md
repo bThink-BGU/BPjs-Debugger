@@ -6,6 +6,8 @@ The project contains 5 Modules:
 - service - manipulates clients and their running sessions - run/debug sessions
 - controller - responsible for the incoming HTTP/WS requests and messages
 
+  This project goes with https://github.com/bThink-BGU/BPjs-React-ID
+
 ---
 ## Compiling the code
 run ```mvn install -DskipTests```
