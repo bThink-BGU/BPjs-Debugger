@@ -8,13 +8,17 @@ The project contains 5 Modules:
 
 ---
 ## Compiling the code
-run ```mvn install```
+run ```mvn install -DskipTests```
 
 ## Running the CLI Debugger
 - under bpjs-debugger:
     - run il.ac.bgu.se.bp.mains.BPJsDebuggerCliRunner 
 
 ## Running the server
+> IMPORTANT:
+> You must install the client first
+
+
 IntelliJ:
 - choose both clean and install on maven tool window and run
 - under controller module:
