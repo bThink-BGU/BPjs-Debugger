@@ -6,7 +6,7 @@ The project contains 5 Modules:
 - service - manipulates clients and their running sessions - run/debug sessions
 - controller - responsible for the incoming HTTP/WS requests and messages
 
-If you want to run the BPjs React IDE with this debugger, there's no need to clone this project; just head to https://github.com/bThink-BGU/BPjs-React-ID and use the docker image.
+If you want to run the BPjs React IDE with this debugger, there's no need to clone this project; just head to https://github.com/bThink-BGU/BPjs-React-IDE and use the docker image.
 
 ---
 ## Compiling the code
